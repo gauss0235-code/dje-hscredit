@@ -17,6 +17,9 @@
 </style>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 
+<!-- html2canvas: 결과 이미지 생성용 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
 :root {
   --sky-blue-dark: #4A8AB8;
@@ -455,6 +458,16 @@ body {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
 }
 
+.subject-suneung-mark {
+  display: inline-block;
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  color: #991B1B;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+
 .subject-row2 {
   display: flex;
   align-items: center;
@@ -719,6 +732,107 @@ body {
   stroke-linejoin: round;
 }
 
+/* ============ 공유 섹션 ============ */
+.share-section {
+  margin: 24px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #DBEAFE 100%);
+  border-radius: 16px;
+  border: 2px solid #BFDBFE;
+}
+
+.share-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.05em;
+  color: var(--sky-blue-dark);
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.share-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.share-btn {
+  padding: 14px 8px;
+  border-radius: 12px;
+  border: none;
+  background: white;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.88em;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(74, 138, 184, 0.12);
+}
+
+.share-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(74, 138, 184, 0.2);
+}
+
+.share-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.share-btn.primary {
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  color: white;
+}
+
+.share-btn svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.share-hint {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.85em;
+  color: var(--text-mid);
+  min-height: 20px;
+}
+
+.share-hint.success {
+  color: var(--green-text);
+}
+
+.share-hint.error {
+  color: var(--red-text);
+}
+
+/* 캡쳐용 워터마크 */
+.share-watermark {
+  text-align: center;
+  font-size: 0.78em;
+  color: var(--text-mid);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #E5E7EB;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+
+.share-school-name {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.15em;
+  color: var(--sky-blue-dark);
+  margin-bottom: 6px;
+}
+
 /* ============ 로딩/에러 ============ */
 .loading-screen {
   display: flex;
@@ -777,10 +891,14 @@ body {
   .nav-btn { font-size: 1em; padding: 14px; }
   .progress-bar { padding: 10px 14px; }
   .progress-content { gap: 10px; }
-  .progress-back { font-size: 0.78em; padding: 5px 9px; }
+  .progress-back { font-size: 0.85em; padding: 7px 12px; }
   .school-name { font-size: 1.25em; }
   .subject-name { font-size: 0.94em; }
   .result-table { font-size: 0.78em; min-width: 480px; }
+  .share-section { padding: 16px; }
+  .share-buttons { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .share-btn { padding: 12px 4px; font-size: 0.78em; }
+  .share-btn svg { width: 20px; height: 20px; }
 }
 </style>
 </head>
@@ -964,6 +1082,10 @@ const ICONS = {
   print: '<svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
   reset: '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
   home: '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+  image: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+  copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  link: '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
 };
 
 // ============================================
@@ -1216,6 +1338,29 @@ function isRecommended(subjectName) {
 }
 
 // ============================================
+// 수능 출제 과목 (2028 대입)
+// ============================================
+const SUNEUNG_SUBJECTS = [
+  '화법과 언어', '독서와 작문', '문학',
+  '대수', '미적분Ⅰ', '확률과 통계',
+  '한국사1', '한국사2',
+  '통합사회1', '통합사회2',
+  '통합과학1', '통합과학2',
+  '영어Ⅰ', '영어Ⅱ',
+];
+
+function isSuneung(subjectName) {
+  // 정규화 (공백, 로마 숫자 처리)
+  const normalize = (s) => s.replace(/\s/g, '')
+    .replace(/Ⅰ/g, '1').replace(/Ⅱ/g, '2').replace(/Ⅲ/g, '3')
+    .replace(/I+/g, m => m.length.toString());
+  
+  const normalizedName = normalize(subjectName);
+  
+  return SUNEUNG_SUBJECTS.some(s => normalize(s) === normalizedName);
+}
+
+// ============================================
 // 과목 설명 가져오기
 // ============================================
 function getSubjectDescription(subjectName) {
@@ -1441,6 +1586,7 @@ function renderSemesterStep(sem) {
 
 function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
   const recommended = isRecommended(subj.name);
+  const suneung = isSuneung(subj.name);
   const description = getSubjectDescription(subj.name);
   const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
   const isSelected = isFixed || (groupName && (state.selections[semKey]?.choices[groupName] || []).includes(subj.name));
@@ -1460,6 +1606,7 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
         <div class="subject-info">
           <div class="subject-row1">
             <span class="subject-name">${subj.name}</span>
+            ${suneung ? '<span class="subject-suneung-mark">📝 수능출제과목</span>' : ''}
             ${recommended ? '<span class="subject-recommend-mark">⭐ 추천</span>' : ''}
           </div>
           <div class="subject-row2">
@@ -1618,37 +1765,65 @@ function renderResultStep() {
         <span>완성! 나의 3년 교육과정</span>
       </div>
       
-      <div class="result-summary">
-        <h2>🎉 시뮬레이션 완료!</h2>
-        <div class="total-credit">
-          진로: <strong style="color: var(--text-brown);">${state.career}</strong> · 
-          총 <strong>${totalCredit}</strong> 학점
+      <!-- 캡쳐 대상 영역 -->
+      <div id="shareableContent">
+        <div class="result-summary">
+          <h2>🎉 시뮬레이션 완료!</h2>
+          <div class="share-school-name">${SCHOOL_NAME}등학교</div>
+          <div class="total-credit">
+            진로: <strong style="color: var(--text-brown);">${state.career}</strong> · 
+            총 <strong>${totalCredit}</strong> 학점
+          </div>
+        </div>
+        
+        <div class="result-table-wrap">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th>학기</th>
+                <th>과목</th>
+                <th>학점</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${SEMESTERS.map(sem => {
+                const items = bySem[sem.key] || [];
+                if (items.length === 0) return '';
+                return items.map((item, i) => `
+                  <tr>
+                    ${i === 0 ? `<td rowspan="${items.length}" class="semester-cell"><strong>${sem.label}</strong><br><small>${semCredits[sem.key]}학점</small></td>` : ''}
+                    <td style="text-align: left; padding-left: 10px;">${item.name} ${item.isFixed ? '<span class="subject-tag" style="font-size: 0.7em;">지정</span>' : ''}</td>
+                    <td>${item.credit}</td>
+                  </tr>
+                `).join('');
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="share-watermark">
+          대전광역시 고등학교 교육과정 안내 · djhs-curriculum.kro.kr
         </div>
       </div>
       
-      <div class="result-table-wrap">
-        <table class="result-table">
-          <thead>
-            <tr>
-              <th>학기</th>
-              <th>과목</th>
-              <th>학점</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${SEMESTERS.map(sem => {
-              const items = bySem[sem.key] || [];
-              if (items.length === 0) return '';
-              return items.map((item, i) => `
-                <tr>
-                  ${i === 0 ? `<td rowspan="${items.length}" class="semester-cell"><strong>${sem.label}</strong><br><small>${semCredits[sem.key]}학점</small></td>` : ''}
-                  <td style="text-align: left; padding-left: 10px;">${item.name} ${item.isFixed ? '<span class="subject-tag" style="font-size: 0.7em;">지정</span>' : ''}</td>
-                  <td>${item.credit}</td>
-                </tr>
-              `).join('');
-            }).join('')}
-          </tbody>
-        </table>
+      <!-- 공유 버튼 (캡쳐 대상 외) -->
+      <div class="share-section">
+        <div class="share-title">📤 친구나 부모님에게 공유하기</div>
+        <div class="share-buttons">
+          <button class="share-btn primary" id="shareBtn">
+            ${ICONS.share}
+            <span>공유하기</span>
+          </button>
+          <button class="share-btn" id="saveImageBtn">
+            ${ICONS.image}
+            <span>이미지 저장</span>
+          </button>
+          <button class="share-btn" id="copyLinkBtn">
+            ${ICONS.copy}
+            <span>링크 복사</span>
+          </button>
+        </div>
+        <div class="share-hint" id="shareHint"></div>
       </div>
       
       <div class="result-actions">
@@ -1689,6 +1864,162 @@ function bindResultEvents() {
   });
   
   document.getElementById('homeBtn').addEventListener('click', goHome);
+  
+  // === 공유 버튼들 ===
+  const shareBtn = document.getElementById('shareBtn');
+  const saveImageBtn = document.getElementById('saveImageBtn');
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  
+  if (shareBtn) shareBtn.addEventListener('click', shareResult);
+  if (saveImageBtn) saveImageBtn.addEventListener('click', saveAsImage);
+  if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyShareLink);
+}
+
+// ============================================
+// 공유 기능
+// ============================================
+function showShareHint(message, type = 'success') {
+  const hint = document.getElementById('shareHint');
+  if (!hint) return;
+  hint.textContent = message;
+  hint.className = 'share-hint ' + type;
+  setTimeout(() => {
+    if (hint.textContent === message) {
+      hint.textContent = '';
+      hint.className = 'share-hint';
+    }
+  }, 4000);
+}
+
+// 결과를 캔버스로 그려서 Blob으로 반환
+async function generateShareImage() {
+  const target = document.getElementById('shareableContent');
+  if (!target) throw new Error('공유할 내용을 찾을 수 없어요');
+  if (typeof html2canvas === 'undefined') throw new Error('이미지 생성 도구를 불러오지 못했어요');
+  
+  // 캔버스 생성 (모바일 화면 너비 고정)
+  const canvas = await html2canvas(target, {
+    backgroundColor: '#FFFFFF',
+    scale: 2,  // 고화질
+    useCORS: true,
+    logging: false,
+  });
+  
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('이미지 변환 실패'));
+    }, 'image/png');
+  });
+}
+
+// 1) 공유하기 (Web Share API 우선)
+async function shareResult() {
+  const btn = document.getElementById('shareBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  showShareHint('이미지 생성 중...');
+  
+  try {
+    const blob = await generateShareImage();
+    const file = new File([blob], `${SCHOOL_NAME}_과목선택.png`, { type: 'image/png' });
+    const shareData = {
+      title: `${SCHOOL_NAME}등학교 과목 선택`,
+      text: `${SCHOOL_NAME}등학교 ${state.career} 진로로 과목을 선택해봤어요!`,
+      files: [file],
+    };
+    
+    // Web Share API + 파일 공유 지원 확인 (모바일에서 잘 작동)
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      showShareHint('공유 창이 열렸어요!');
+    } else if (navigator.share) {
+      // 파일 공유 안되면 텍스트만
+      const url = window.location.href;
+      await navigator.share({
+        title: shareData.title,
+        text: shareData.text,
+        url: url,
+      });
+      showShareHint('공유 창이 열렸어요!');
+    } else {
+      // 폴백: 이미지 다운로드 + 안내
+      downloadBlob(blob, `${SCHOOL_NAME}_과목선택.png`);
+      showShareHint('이미지를 저장했어요. 카카오톡 등에서 직접 첨부해주세요.', 'success');
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      // 사용자가 공유 취소
+      showShareHint('');
+    } else {
+      console.error('공유 실패:', err);
+      showShareHint('공유 중 문제가 생겼어요. 이미지 저장을 시도해주세요.', 'error');
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// 2) 이미지로 저장
+async function saveAsImage() {
+  const btn = document.getElementById('saveImageBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  showShareHint('이미지 생성 중...');
+  
+  try {
+    const blob = await generateShareImage();
+    const filename = `${SCHOOL_NAME}_과목선택_${new Date().toISOString().slice(0, 10)}.png`;
+    downloadBlob(blob, filename);
+    showShareHint('이미지가 저장됐어요!', 'success');
+  } catch (err) {
+    console.error('이미지 저장 실패:', err);
+    showShareHint('이미지 저장 중 문제가 생겼어요.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// 3) 링크 복사
+async function copyShareLink() {
+  // 사이트 링크 (시뮬레이터 자체 URL은 학교/시트ID 포함)
+  const url = window.location.href;
+  
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      showShareHint('링크가 복사됐어요! 원하는 곳에 붙여넣기하세요.', 'success');
+    } else {
+      // 폴백: 임시 textarea
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) {
+        showShareHint('링크가 복사됐어요!', 'success');
+      } else {
+        showShareHint('복사할 수 없어요. 주소창에서 직접 복사해주세요.', 'error');
+      }
+    }
+  } catch (err) {
+    console.error('링크 복사 실패:', err);
+    showShareHint('복사 중 문제가 생겼어요.', 'error');
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function goHome() {
