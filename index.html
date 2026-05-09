@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>대전광역시 고등학교 교육과정 | 한눈에 살펴보기</title>
-<meta name="description" content="대전광역시 고등학교 교육과정 편성표 및 과목 선택 프로그램을 한눈에 확인할 수 있는 사이트입니다.">
+<meta name="description" content="대전광역시 고등학교 교육과정 편성표 및 과목 선택 시뮬레이터를 한곳에서 확인할 수 있는 사이트입니다.">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff" as="font" type="font/woff" crossorigin>
@@ -431,6 +431,19 @@ h1, h2 {
   font-size: 1.05em;
   color: var(--sky-blue-dark);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.year-title .year-badge svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  stroke: var(--sky-blue-dark);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .year-title .year-line {
   flex: 1;
@@ -459,7 +472,7 @@ h1, h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   position: relative;
   overflow: hidden;
 }
@@ -475,18 +488,39 @@ h1, h2 {
 }
 
 .year-btn .icon {
-  font-size: 1.6em;
-  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.year-btn .icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s;
+}
+.year-btn:hover .icon svg {
+  transform: scale(1.1);
 }
 
 .year-btn .label {
-  font-size: 0.92em;
+  font-size: 0.88em;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .year-btn.curriculum {
   background: linear-gradient(135deg, #E0F2FE 0%, #DBEAFE 100%);
 }
 .year-btn.curriculum::before { background: var(--sky-blue-dark); }
+.year-btn.curriculum .icon svg {
+  stroke: var(--sky-blue-dark);
+}
 .year-btn.curriculum:hover {
   border-color: var(--sky-blue-dark);
   transform: translateY(-3px);
@@ -498,12 +532,21 @@ h1, h2 {
   background: linear-gradient(135deg, #FFF7E0 0%, #FFE9B3 100%);
 }
 .year-btn.subject::before { background: #F59E0B; }
+.year-btn.subject .icon svg {
+  stroke: #B45309;
+}
 .year-btn.subject:hover {
   border-color: #F59E0B;
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
 }
 .year-btn.subject:hover::before { opacity: 1; }
+
+/* 비활성 버튼 아이콘 색상 */
+.year-btn.disabled .icon svg {
+  stroke: #9CA3AF;
+  opacity: 0.5;
+}
 
 .modal .close-btn {
   width: 100%;
@@ -737,7 +780,7 @@ h1, h2 {
   border-spacing: 0;
   font-size: 0.85em;
   table-layout: auto;
-  min-width: 740px;
+  min-width: 480px;
 }
 
 .curriculum-table thead th {
@@ -745,7 +788,7 @@ h1, h2 {
   color: white;
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-weight: 700;
-  padding: 12px 8px;
+  padding: 10px 3px;
   text-align: center;
   font-size: 1em;
   letter-spacing: -0.02em;
@@ -764,7 +807,7 @@ h1, h2 {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
   color: white;
   font-size: 1em;
-  padding: 10px;
+  padding: 8px 3px;
   border-bottom: 1px solid rgba(255,255,255,0.25);
 }
 
@@ -799,8 +842,8 @@ h1, h2 {
   color: var(--text-brown);
   vertical-align: middle;
   border-right: 2px solid #E8C896;
-  width: 45px;
-  padding: 12px 3px;
+  width: 28px;
+  padding: 12px 2px;
 }
 
 /* 짧은 단어 → 세로쓰기 */
@@ -840,28 +883,28 @@ h1, h2 {
   font-size: 1em;
   color: var(--text-dark);
   text-align: center;
-  width: 60px;
+  width: 41px;
 }
 
 .curriculum-table tbody td.subject-name {
   text-align: left;
-  padding-left: 10px;
+  padding-left: 6px;
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
-  width: 95px;
-  min-width: 95px;
+  width: 68px;
+  min-width: 68px;
 }
 
 .curriculum-table tbody td.credits {
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
-  width: 45px;
+  width: 30px;
 }
 
 .curriculum-table tbody td.semester {
-  width: 44px;
+  width: 28px;
   font-weight: 700;
   font-size: 1em;
   color: var(--sky-blue-dark);
@@ -905,9 +948,9 @@ h1, h2 {
   font-size: 1em;
   color: var(--text-dark);
   font-weight: 700;
-  padding: 8px 6px;
+  padding: 8px 3px;
   white-space: pre-line;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .curriculum-table tbody td.total-credits {
@@ -915,7 +958,7 @@ h1, h2 {
   color: #15803D;
   font-weight: 700;
   font-size: 1em;
-  width: 45px;
+  width: 30px;
 }
 
 /* 과목유형 - 일반 텍스트, 과목명과 동일 */
@@ -924,7 +967,7 @@ h1, h2 {
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
-  width: 70px;
+  width: 46px;
 }
 
 /* 에러/안내 메시지 */
@@ -1027,7 +1070,8 @@ footer {
   .modal { padding: 28px 22px 22px; }
   .modal h3 { font-size: 1.4em; }
   .year-btn { padding: 14px 10px; font-size: 0.85em; }
-  .year-btn .icon { font-size: 1.4em; }
+  .year-btn .icon { width: 26px; height: 26px; }
+  .year-title .year-badge svg { width: 18px; height: 18px; }
 }
 </style>
 </head>
@@ -1061,7 +1105,7 @@ footer {
       </h1>
       <p class="hero-subtitle">
         대전광역시 고등학교의 교육과정 편성표와<br>
-        과목 선택 프로그램을 한곳에서 확인하세요.
+        과목 선택 시뮬레이터를 한 곳에서 확인하세요.
       </p>
       
       <div class="search-box">
@@ -1221,7 +1265,7 @@ footer {
 </div>
 
 <footer>
-  <p>© 2026 대전광역시 고등학교 교육과정 안내</p>
+  <p>Copyright © 대전광역시 고등학교 교육과정 지원단. All rights reserved.</p>
 </footer>
 
 <script>
@@ -1357,15 +1401,22 @@ backBtn.addEventListener('click', zoomOut);
 function showSchoolModal(school) {
   const modal = document.getElementById('modalContent');
   
+  // SVG 아이콘 정의 (Lucide 스타일 라인 아트)
+  const SVG_STUDENTS = `<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><circle cx="16" cy="8" r="2.5"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 14a3.5 3.5 0 0 1 3.5 3.5V19"/></svg>`;
+  
+  const SVG_CLIPBOARD = `<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 4h6v2H9z" fill="currentColor" stroke="none" opacity="0.15"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>`;
+  
+  const SVG_SIMULATOR = `<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><circle cx="18" cy="6" r="2.5" fill="currentColor" stroke="none" opacity="0.15"/></svg>`;
+  
   // 2026 편성표 버튼 처리
   const curr2026Url = school.curriculum2026;
   const curr2026Btn = curr2026Url
     ? `<button class="year-btn curriculum" onclick="openCurriculumEmbed('${school.name}', '${curr2026Url}')">
-         <span class="icon">📋</span>
+         <span class="icon">${SVG_CLIPBOARD}</span>
          <span class="label">교육과정 편성표</span>
        </button>`
     : `<button class="year-btn curriculum disabled" onclick="alert('${school.name}고등학교의 2026학년도 편성표는 아직 등록되지 않았습니다.')">
-         <span class="icon">📋</span>
+         <span class="icon">${SVG_CLIPBOARD}</span>
          <span class="label">교육과정 편성표</span>
          <span class="status">준비 중</span>
        </button>`;
@@ -1374,26 +1425,26 @@ function showSchoolModal(school) {
   const subj2026Url = school.subject2026;
   const subj2026Btn = subj2026Url
     ? `<button class="year-btn subject" onclick="window.open('${subj2026Url}', '_blank', 'noopener,noreferrer')">
-         <span class="icon">✏️</span>
-         <span class="label">과목 선택</span>
+         <span class="icon">${SVG_SIMULATOR}</span>
+         <span class="label">과목 선택 시뮬레이터</span>
          <span class="badge-new">새 탭에서 열림</span>
        </button>`
-    : `<button class="year-btn subject disabled" onclick="alert('${school.name}고등학교의 2026학년도 과목 선택 프로그램은 아직 등록되지 않았습니다.')">
-         <span class="icon">✏️</span>
-         <span class="label">과목 선택</span>
+    : `<button class="year-btn subject disabled" onclick="alert('${school.name}고등학교의 2026학년도 과목 선택 시뮬레이터는 아직 등록되지 않았습니다.')">
+         <span class="icon">${SVG_SIMULATOR}</span>
+         <span class="label">과목 선택 시뮬레이터</span>
          <span class="status">준비 중</span>
        </button>`;
   
   // 2027 버튼들 (전체 미준비)
   const curr2027Btn = `<button class="year-btn curriculum disabled" onclick="alert('2027학년도 입학생 자료는 추후 업데이트될 예정입니다.')">
-       <span class="icon">📋</span>
+       <span class="icon">${SVG_CLIPBOARD}</span>
        <span class="label">교육과정 편성표</span>
        <span class="status">준비 중</span>
      </button>`;
   
   const subj2027Btn = `<button class="year-btn subject disabled" onclick="alert('2027학년도 입학생 자료는 추후 업데이트될 예정입니다.')">
-       <span class="icon">✏️</span>
-       <span class="label">과목 선택</span>
+       <span class="icon">${SVG_SIMULATOR}</span>
+       <span class="label">과목 선택 시뮬레이터</span>
        <span class="status">준비 중</span>
      </button>`;
   
@@ -1408,7 +1459,7 @@ function showSchoolModal(school) {
     
     <div class="year-section">
       <div class="year-title">
-        <span class="year-badge">📚 2026학년도 입학생</span>
+        <span class="year-badge">${SVG_STUDENTS}<span>2026학년도 입학생</span></span>
         <div class="year-line"></div>
       </div>
       <div class="year-buttons">
@@ -1419,7 +1470,7 @@ function showSchoolModal(school) {
     
     <div class="year-section">
       <div class="year-title">
-        <span class="year-badge">🎓 2027학년도 입학생</span>
+        <span class="year-badge">${SVG_STUDENTS}<span>2027학년도 입학생</span></span>
         <div class="year-line"></div>
       </div>
       <div class="year-buttons">
@@ -1622,24 +1673,24 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
     <table class="curriculum-table">
       <thead>
         <tr>
-          <th rowspan="2" style="width:45px;">구분</th>
-          <th rowspan="2" style="width:60px;">교과(군)</th>
-          <th rowspan="2" style="width:95px; min-width:95px;">과목</th>
-          <th rowspan="2" style="width:70px;">과목유형</th>
-          <th rowspan="2" style="width:45px;">기본<br>학점</th>
-          <th rowspan="2" style="width:65px;">이수<br>구분</th>
+          <th rowspan="2" style="width:28px;">구분</th>
+          <th rowspan="2" style="width:41px;">교과(군)</th>
+          <th rowspan="2" style="width:68px; min-width:68px;">과목</th>
+          <th rowspan="2" style="width:46px;">과목유형</th>
+          <th rowspan="2" style="width:30px;">기본<br>학점</th>
+          <th rowspan="2" style="width:45px;">이수<br>구분</th>
           <th colspan="2" class="group-header">1학년</th>
           <th colspan="2" class="group-header">2학년</th>
           <th colspan="2" class="group-header">3학년</th>
-          <th rowspan="2" style="width:45px;">운영<br>학점</th>
+          <th rowspan="2" style="width:30px;">운영<br>학점</th>
         </tr>
         <tr>
-          <th style="width:44px;">1학기</th>
-          <th style="width:44px;">2학기</th>
-          <th style="width:44px;">1학기</th>
-          <th style="width:44px;">2학기</th>
-          <th style="width:44px;">1학기</th>
-          <th style="width:44px;">2학기</th>
+          <th style="width:28px;">1학기</th>
+          <th style="width:28px;">2학기</th>
+          <th style="width:28px;">1학기</th>
+          <th style="width:28px;">2학기</th>
+          <th style="width:28px;">1학기</th>
+          <th style="width:28px;">2학기</th>
         </tr>
       </thead>
       <tbody>
