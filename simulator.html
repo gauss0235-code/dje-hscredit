@@ -54,14 +54,17 @@ body {
 }
 
 /* ============ 진행률 바 (상단 고정) ============ */
-.progress-bar {
+.top-sticky {
   position: sticky;
   top: 0;
   z-index: 100;
   background: white;
-  border-bottom: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.progress-bar {
+  background: white;
   padding: 14px 20px;
-  box-shadow: none;
 }
 
 .progress-content {
@@ -381,73 +384,31 @@ body {
   animation: shake-x 0.3s ease-in-out 2;
 }
 
-/* === 상단 고정 진행 상태 사이드바 === */
+/* === 진행률 바 아래 학점 상태 (top-sticky 안에 들어감) === */
 .status-summary {
-  position: sticky;
-  top: 65px;  /* 진행률 바 바로 아래에 붙도록 */
-  z-index: 90;  /* 진행률 바보다 낮음 */
   background: linear-gradient(135deg, #F8FAFB 0%, #F0F4F8 100%);
   border-top: 1px solid #E5E7EB;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 10px 20px;
+  padding: 8px 20px 10px;
   font-size: 0.85em;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  margin-top: -1px;  /* 진행률 바와 매끄럽게 */
 }
 .status-summary .status-content {
   max-width: 800px;
   margin: 0 auto;
 }
-.status-summary .status-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  padding: 4px 0;
-}
-.status-summary .status-toggle-label {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
-  color: var(--sky-blue-dark);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.status-summary .status-toggle-label svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.status-summary .status-toggle-arrow {
-  transition: transform 0.25s;
-  width: 18px;
-  height: 18px;
-  color: var(--sky-blue-dark);
-}
-.status-summary .status-toggle-arrow.open {
-  transform: rotate(180deg);
-}
 .status-summary .status-quick {
   display: flex;
-  gap: 16px;
   flex-wrap: wrap;
-  font-size: 0.92em;
-  color: var(--text-mid);
-  align-items: center;
-  margin-top: 4px;
+  gap: 6px;
 }
 .status-summary .status-quick .item {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  padding: 4px 10px;
   background: white;
   border-radius: 8px;
   border: 1px solid #E5E7EB;
+  font-size: 0.92em;
 }
 .status-summary .status-quick .item .label {
   color: var(--text-mid);
@@ -456,21 +417,29 @@ body {
 .status-summary .status-quick .item .value {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   color: var(--sky-blue-dark);
+  font-size: 0.95em;
 }
-.status-summary .status-quick .item .value.over {
-  color: var(--red-text);
+.status-summary .status-quick .item.complete {
+  background: #DCFCE7;
+  border-color: #86EFAC;
 }
+.status-summary .status-quick .item.complete .value,
 .status-summary .status-quick .item .value.ok {
   color: var(--green-text);
 }
-.status-summary .status-detail {
-  margin-top: 10px;
-  display: none;
-  padding-top: 10px;
-  border-top: 1px solid #E5E7EB;
+.status-summary .status-quick .item.over {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
 }
-.status-summary .status-detail.open {
-  display: block;
+.status-summary .status-quick .item.over .value,
+.status-summary .status-quick .item .value.over {
+  color: var(--red-text);
+}
+.status-summary .status-quick .item.shortage {
+  background: white;
+}
+.status-summary .status-detail {
+  display: none;  /* 더 이상 사용 안 함 */
 }
 .status-summary .status-section {
   margin-bottom: 8px;
@@ -1192,51 +1161,44 @@ body {
   .share-buttons { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .share-btn { padding: 12px 4px; font-size: 0.78em; }
   .share-btn svg { width: 20px; height: 20px; }
-  .status-summary { top: 56px; padding: 8px 14px; }
-  .status-summary .status-quick { gap: 6px; font-size: 0.82em; }
-  .status-summary .status-quick .item { padding: 2px 7px; gap: 3px; }
-  .status-summary .area-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .status-summary { padding: 6px 14px 8px; }
+  .status-summary .status-quick { gap: 4px; }
+  .status-summary .status-quick .item { padding: 3px 7px; gap: 4px; font-size: 0.82em; }
+  .status-summary .status-quick .item .value { font-size: 0.92em; }
 }
 </style>
 </head>
 <body>
 
-<!-- 진행률 바 -->
-<div class="progress-bar">
-  <div class="progress-content">
-    <button class="progress-back" id="homeBackBtn" onclick="goHome()">
-      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-      <span id="homeBackLabel">홈으로</span>
-    </button>
-    <div class="progress-info">
-      <div class="progress-text">
-        <span><strong id="stepNum">1</strong> / 8 단계</span>
-        <span id="stepLabel">진로 선택</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill" style="width: 12.5%"></div>
+<!-- 진행률 바 + 학점 상태 (한 덩어리로 sticky) -->
+<div class="top-sticky">
+  <div class="progress-bar">
+    <div class="progress-content">
+      <button class="progress-back" id="homeBackBtn" onclick="goHome()">
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <span id="homeBackLabel">홈으로</span>
+      </button>
+      <div class="progress-info">
+        <div class="progress-text">
+          <span><strong id="stepNum">1</strong> / 8 단계</span>
+          <span id="stepLabel">진로 선택</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width: 12.5%"></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
-<!-- 상단 고정 진행 상태 (학기 진행 중에만 표시) -->
-<div class="status-summary" id="statusSummary">
-  <div class="status-content">
-    <div class="status-toggle" id="statusToggle">
-      <div class="status-toggle-label" id="statusToggleLabel">
-        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span>진행 상태</span>
+  
+  <!-- 학점 상태 (학기 진행 중에만 표시) -->
+  <div class="status-summary" id="statusSummary">
+    <div class="status-content">
+      <div class="status-quick" id="statusQuick">
+        <!-- 빠른 요약 - 4가지 항목 -->
       </div>
-      <svg class="status-toggle-arrow" id="statusToggleArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </div>
-    <div class="status-quick" id="statusQuick">
-      <!-- 빠른 요약 -->
-    </div>
-    <div class="status-detail" id="statusDetail">
-      <!-- 상세 -->
+      <div class="status-detail" id="statusDetail">
+        <!-- 상세 -->
+      </div>
     </div>
   </div>
 </div>
@@ -1786,8 +1748,15 @@ function computeStats(state, curriculumData) {
   const areaCredits = {
     '국어': 0, '수학': 0, '영어': 0, '사회': 0,
     '과학': 0, '체육': 0, '예술': 0, '기술교양': 0,
+    '한국사': 0,  // 사회의 일부지만 별도 추적
   };
   let totalCredits = 0;
+  
+  // 한국사 인지 판별
+  const isKoreanHistory = (subjectName) => {
+    const n = (subjectName || '').replace(/\s/g, '');
+    return n.includes('한국사');
+  };
   
   for (const sem of SEMESTERS) {
     const semKey = sem.key;
@@ -1802,6 +1771,10 @@ function computeStats(state, curriculumData) {
       totalCredits += subj.credit;
       const area = classifyArea(subj.area);
       if (area in areaCredits) areaCredits[area] += subj.credit;
+      // 한국사 별도 합산 (사회와 중복 합산은 OK - 표시용)
+      if (isKoreanHistory(subj.name)) {
+        areaCredits['한국사'] += subj.credit;
+      }
     }
     // 학생선택
     for (const [groupName, names] of Object.entries(sel.choices || {})) {
@@ -1814,6 +1787,9 @@ function computeStats(state, curriculumData) {
         totalCredits += subj.credit;
         const area = classifyArea(subj.area);
         if (area in areaCredits) areaCredits[area] += subj.credit;
+        if (isKoreanHistory(subj.name)) {
+          areaCredits['한국사'] += subj.credit;
+        }
       }
     }
   }
@@ -1898,11 +1874,23 @@ function validateAll(state, curriculumData) {
   // (3) 교과군별 필수 이수 학점
   if (curriculumData.schoolCategory !== 'excluded') {
     const reqs = getRequirements(curriculumData.schoolCategory);
-    for (const [areaName, required] of Object.entries(reqs)) {
-      const current = stats.areaCredits[areaName];
-      const displayName = areaName === '기술교양' ? '기술·가정/정보/제2외국어/한문/교양' : areaName;
+    // 표시 순서: 국어, 수학, 영어, 한국사, 사회, 과학, 체육, 예술, 기술교양
+    const checkOrder = [
+      { key: '국어', label: '국어 교과군', required: reqs['국어'] },
+      { key: '수학', label: '수학 교과군', required: reqs['수학'] },
+      { key: '영어', label: '영어 교과군', required: reqs['영어'] },
+      { key: '한국사', label: '한국사', required: 6 },
+      { key: '사회', label: '사회(역사/도덕 포함) 교과군', required: reqs['사회'] },
+      { key: '과학', label: '과학 교과군', required: reqs['과학'] },
+      { key: '체육', label: '체육 교과군', required: reqs['체육'] },
+      { key: '예술', label: '예술 교과군', required: reqs['예술'] },
+      { key: '기술교양', label: '기술·가정/정보/제2외국어/한문/교양 교과군', required: reqs['기술교양'] },
+    ];
+    
+    for (const { key, label, required } of checkOrder) {
+      const current = stats.areaCredits[key] || 0;
       checks.push({
-        title: `${displayName} 교과군 ${required}학점 이상`,
+        title: `${label} ${required}학점 이상`,
         passed: current >= required,
         detail: `현재 ${current}학점 / 필요 ${required}학점`,
       });
@@ -1998,12 +1986,7 @@ function updateStatusSummary(stepNum) {
   const targets = state.curriculumData.semesterTargets;
   const totalTarget = Object.values(targets).reduce((a,b)=>a+b, 0);
   
-  // === 빠른 요약 (항상 보임) ===
-  // 1) 총 교과 선택 학점
-  // 2) 국·수·영 합계 (상한과 비교)
-  // 3) 국어 필수 학점 채움 여부
-  // 4) 수학 필수 학점 채움 여부
-  
+  // 국·수·영 합계와 상한
   const kme = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
   const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
   const kmeOver = kme > kmeMax;
@@ -2011,86 +1994,62 @@ function updateStatusSummary(stepNum) {
   const isExcluded = state.curriculumData.schoolCategory === 'excluded';
   const reqs = isExcluded ? null : getRequirements(state.curriculumData.schoolCategory);
   
-  // 국어, 수학 필수 학점 채움
-  const koreanCurrent = stats.areaCredits['국어'] || 0;
-  const koreanRequired = reqs ? reqs['국어'] : 8;
-  const koreanComplete = koreanCurrent >= koreanRequired;
-  
-  const mathCurrent = stats.areaCredits['수학'] || 0;
-  const mathRequired = reqs ? reqs['수학'] : 8;
-  const mathComplete = mathCurrent >= mathRequired;
-  
   const totalProgress = totalTarget > 0 ? `${stats.totalCredits}/${totalTarget}` : `${stats.totalCredits}`;
   
-  const quickHtml = `
-    <div class="item">
-      <span class="label">총 학점:</span>
-      <span class="value">${totalProgress}</span>
-    </div>
-    <div class="item">
-      <span class="label">국·수·영:</span>
-      <span class="value ${kmeOver ? 'over' : ''}">${kme}/${kmeMax}${kmeOver ? ' ⚠' : ''}</span>
-    </div>
-    <div class="item">
-      <span class="label">국어:</span>
-      <span class="value ${koreanComplete ? 'ok' : ''}">${koreanCurrent}/${koreanRequired}${koreanComplete ? ' ✓' : ''}</span>
-    </div>
-    <div class="item">
-      <span class="label">수학:</span>
-      <span class="value ${mathComplete ? 'ok' : ''}">${mathCurrent}/${mathRequired}${mathComplete ? ' ✓' : ''}</span>
-    </div>
-  `;
-  document.getElementById('statusQuick').innerHTML = quickHtml;
+  // 상태바 항목 만들기
+  const items = [];
   
-  // === 상세 (펼쳐졌을 때) - 나머지 교과군 ===
-  let detailHtml = '';
+  // 1. 총 학점
+  const totalComplete = totalTarget > 0 && stats.totalCredits === totalTarget;
+  items.push(`
+    <div class="item ${totalComplete ? 'complete' : ''}">
+      <span class="label">총학점</span>
+      <span class="value">${totalProgress}${totalComplete ? ' ✓' : ''}</span>
+    </div>
+  `);
   
-  if (!isExcluded) {
-    // 국어, 수학은 위에 이미 보였으니 빼고 나머지만
-    const restAreas = Object.entries(reqs).filter(([area, _]) => area !== '국어' && area !== '수학');
-    const areaItems = restAreas.map(([area, required]) => {
-      const current = stats.areaCredits[area] || 0;
-      const isComplete = current >= required;
-      const cls = isComplete ? 'complete' : 'shortage';
-      const mark = isComplete ? '✓' : '!';
-      const displayName = area === '기술교양' ? '기술·가정 외' : area;
-      return `
-        <div class="area-item ${cls}">
-          <span class="area-name">${displayName}</span>
-          <span class="area-value">${current}/${required}<span class="check-mark">${mark}</span></span>
-        </div>
-      `;
-    }).join('');
+  // 2. 국·수·영 합산 상한
+  items.push(`
+    <div class="item ${kmeOver ? 'over' : ''}">
+      <span class="label">국·수·영</span>
+      <span class="value">${kme}/${kmeMax}${kmeOver ? ' ⚠' : ''}</span>
+    </div>
+  `);
+  
+  // 3. 교과군별 필수 이수 학점
+  if (!isExcluded && reqs) {
+    // 표시 순서: 국어, 수학, 영어, 한국사(6), 사회(통합사회 포함, 14), 과학, 체육, 예술, 기술교양
+    const order = [
+      { key: '국어', label: '국어', required: reqs['국어'] },
+      { key: '수학', label: '수학', required: reqs['수학'] },
+      { key: '영어', label: '영어', required: reqs['영어'] },
+      { key: '한국사', label: '한국사', required: 6 },
+      { key: '사회', label: '사회', required: reqs['사회'] },
+      { key: '과학', label: '과학', required: reqs['과학'] },
+      { key: '체육', label: '체육', required: reqs['체육'] },
+      { key: '예술', label: '예술', required: reqs['예술'] },
+      { key: '기술교양', label: '기술·교양', required: reqs['기술교양'] },
+    ];
     
-    detailHtml = `
-      <div class="status-section">
-        <div class="section-label">그 외 교과군 필수 이수 학점</div>
-        <div class="area-grid">${areaItems}</div>
-      </div>
-    `;
-  } else {
-    detailHtml = `
-      <div class="status-section">
-        <div class="section-label" style="color: var(--text-mid); font-size: 0.85em;">
-          이 학교 유형은 별도 학점 배당 기준이 적용돼요
+    for (const { key, label, required } of order) {
+      const current = stats.areaCredits[key] || 0;
+      const isComplete = current >= required;
+      items.push(`
+        <div class="item ${isComplete ? 'complete' : 'shortage'}">
+          <span class="label">${label}</span>
+          <span class="value">${current}/${required}${isComplete ? ' ✓' : ''}</span>
         </div>
+      `);
+    }
+  } else if (isExcluded) {
+    items.push(`
+      <div class="item">
+        <span class="label" style="color: var(--text-mid);">이 학교 유형은 별도 학점 배당 기준이 적용돼요</span>
       </div>
-    `;
+    `);
   }
   
-  document.getElementById('statusDetail').innerHTML = detailHtml;
-  
-  // 토글 이벤트 (한 번만 등록)
-  const toggle = document.getElementById('statusToggle');
-  if (toggle && !toggle.dataset.bound) {
-    toggle.dataset.bound = '1';
-    toggle.addEventListener('click', () => {
-      const detail = document.getElementById('statusDetail');
-      const arrow = document.getElementById('statusToggleArrow');
-      detail.classList.toggle('open');
-      arrow.classList.toggle('open');
-    });
-  }
+  document.getElementById('statusQuick').innerHTML = items.join('');
 }
 
 // ============================================
