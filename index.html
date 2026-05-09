@@ -741,7 +741,7 @@ h1, h2 {
 }
 
 .curriculum-table thead th {
-  background: linear-gradient(135deg, var(--sky-blue-dark) 0%, #6BA6CE 100%);
+  background: var(--sky-blue-dark);
   color: white;
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-weight: 700;
@@ -760,7 +760,7 @@ h1, h2 {
 }
 
 .curriculum-table thead .group-header {
-  background: linear-gradient(135deg, #2C3E50 0%, #4A8AB8 100%);
+  background: #2C3E50;
   font-size: 0.85em;
   padding: 8px;
 }
@@ -773,6 +773,10 @@ h1, h2 {
   vertical-align: middle;
   background: white;
   transition: background 0.15s;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 400;
+  font-size: 0.92em;
+  color: var(--text-dark);
 }
 
 .curriculum-table tbody tr:hover td {
@@ -783,47 +787,60 @@ h1, h2 {
   border-right: none;
 }
 
+/* 구분 열: 짧은 단어 (학교지정/학생선택)는 세로쓰기 */
 .curriculum-table tbody td.section {
   background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-weight: 700;
   font-size: 0.95em;
   color: var(--text-brown);
-  letter-spacing: -0.02em;
   vertical-align: middle;
   border-right: 2px solid #E8C896;
-  width: 60px;
+  width: 50px;
+  padding: 14px 4px;
+}
+
+/* 짧은 단어 → 세로쓰기 */
+.curriculum-table tbody td.section.vertical {
   writing-mode: vertical-rl;
   text-orientation: upright;
   letter-spacing: 4px;
-  padding: 16px 6px;
+}
+
+/* 긴 문구 → 가로쓰기 (학기별 교과 이수학점 등) */
+.curriculum-table tbody td.section.horizontal {
+  writing-mode: horizontal-tb;
+  letter-spacing: -0.02em;
+  font-size: 0.88em;
+  padding: 10px 6px;
 }
 
 .curriculum-table tbody td.subject-area {
   background: #F0F9FF;
-  font-weight: 700;
-  color: var(--sky-blue-dark);
+  font-weight: 400;
+  color: var(--text-dark);
   text-align: center;
-  width: 70px;
+  width: 60px;
 }
 
 .curriculum-table tbody td.subject-name {
   text-align: left;
-  padding-left: 14px;
-  font-weight: 600;
+  padding-left: 12px;
+  font-weight: 400;
   color: var(--text-dark);
-  min-width: 130px;
+  width: 110px;
+  min-width: 110px;
 }
 
 .curriculum-table tbody td.credits {
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-dark);
   width: 50px;
 }
 
 .curriculum-table tbody td.semester {
   width: 56px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--sky-blue-dark);
   position: relative;
 }
@@ -831,12 +848,14 @@ h1, h2 {
 .curriculum-table tbody td.semester.has-value {
   background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
   font-size: 1em;
+  font-weight: 700;
 }
 
 .curriculum-table tbody td.semester.cross-semester {
   background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
   color: #78350F;
   font-size: 0.85em;
+  font-weight: 700;
 }
 
 .curriculum-table tbody td.semester.cross-semester .cross-mark {
@@ -853,6 +872,7 @@ h1, h2 {
   font-size: 0.95em;
   line-height: 1.5;
   padding: 8px 4px;
+  font-weight: 700;
 }
 .curriculum-table tbody td.semester.multi-value div {
   font-weight: 700;
@@ -861,14 +881,14 @@ h1, h2 {
 .curriculum-table tbody td.completion-type {
   font-size: 0.88em;
   color: var(--text-dark);
-  font-weight: 600;
+  font-weight: 400;
   padding: 8px 6px;
 }
 
 .curriculum-table tbody td.total-credits {
   background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
   color: #15803D;
-  font-weight: 800;
+  font-weight: 700;
   width: 60px;
 }
 
@@ -1571,7 +1591,7 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
         <tr>
           <th rowspan="2" style="width:60px;">구분</th>
           <th rowspan="2" style="width:80px;">교과(군)</th>
-          <th rowspan="2" style="min-width:140px;">과목</th>
+          <th rowspan="2" style="width:110px; min-width:110px;">과목</th>
           <th rowspan="2" style="width:90px;">과목유형</th>
           <th rowspan="2" style="width:60px;">기본<br>학점</th>
           <th rowspan="2" style="width:80px;">이수<br>구분</th>
@@ -1595,7 +1615,24 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
   // 본문: 데이터 행마다 셀 그리기
   const NUM_COLS = 13;
   
+  // "편성 조건 준수 여부 점검" 행을 만나면 거기서 끝
+  // (그 이후는 점검표라 표시 안 함)
+  let stopRow = lastDataRow + 1;
   for (let r = dataStartRow; r <= lastDataRow; r++) {
+    const row = grid[r] || [];
+    const allText = row.map(c => (c || '').toString()).join(' ');
+    if (allText.includes('편성 조건') && allText.includes('점검')) {
+      stopRow = r;
+      break;
+    }
+    // 또는 "편성조건준수" 같은 변형도 처리
+    if (allText.replace(/\s/g, '').includes('편성조건') && allText.includes('점검')) {
+      stopRow = r;
+      break;
+    }
+  }
+  
+  for (let r = dataStartRow; r < stopRow; r++) {
     const row = grid[r] || [];
     
     // 행 전체가 비었으면(병합도 없음) 스킵
@@ -1634,8 +1671,11 @@ function renderCurriculumCell(colIdx, value, spanAttr) {
   // 12: 운영학점
   
   if (colIdx === 0) {
-    // 구분 (학교지정/학생선택) - 세로쓰기
-    return `<td class="section"${spanAttr}>${value}</td>`;
+    // 구분 (학교지정/학생선택은 세로, 긴 문구는 가로)
+    // 4글자 이하면 세로쓰기, 그 이상은 가로쓰기
+    const cleanValue = value.replace(/\s/g, '');
+    const orientClass = cleanValue.length <= 4 ? 'vertical' : 'horizontal';
+    return `<td class="section ${orientClass}"${spanAttr}>${value}</td>`;
   }
   if (colIdx === 1) {
     // 교과(군)
