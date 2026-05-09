@@ -380,7 +380,8 @@ body {
   25% { transform: translateX(-6px); }
   75% { transform: translateX(6px); }
 }
-.choice-group.shake {
+.choice-group.shake,
+.subject-card.shake {
   animation: shake-x 0.3s ease-in-out 2;
 }
 
@@ -1019,6 +1020,50 @@ body {
   margin-bottom: 6px;
 }
 
+/* 공유 링크로 접속한 경우 안내 배너 */
+.shared-banner {
+  background: linear-gradient(135deg, #FFF8E7 0%, #FFE9B3 100%);
+  border: 2px solid #E8C896;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.92em;
+  color: var(--text-brown);
+}
+.shared-banner .banner-icon {
+  font-size: 1.4em;
+  flex-shrink: 0;
+}
+.shared-banner .banner-content {
+  flex: 1;
+}
+.shared-banner .banner-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1em;
+  margin-bottom: 2px;
+}
+.shared-banner .banner-action {
+  margin-top: 6px;
+}
+.shared-banner .banner-action button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--gradient-blue);
+  color: white;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.88em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.shared-banner .banner-action button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(74, 138, 184, 0.25);
+}
+
 /* 종합 점검 결과 */
 .validation-section {
   margin: 24px 0;
@@ -1243,6 +1288,7 @@ const state = {
   curriculumData: null,  // 편성표 분석 결과
   subjectLookup: null,    // PDF에서 추출한 과목 설명
   expandedSubjects: new Set(),  // 펼쳐진 과목들
+  fromShare: false,  // 공유 링크로 접속한 경우
 };
 
 // 학기 정의
@@ -1390,8 +1436,30 @@ async function init() {
     document.body.style.background = 'transparent';
   }
   
-  // 이전 진행 상태 복원
-  loadState();
+  // === 상태 복원: URL 파라미터(공유 링크) 우선, 없으면 localStorage ===
+  const sharedStateParam = urlParams.get('s');
+  let restoredFromShare = false;
+  if (sharedStateParam) {
+    try {
+      // Base64 → JSON (UTF-8 안전)
+      const json = decodeURIComponent(escape(atob(sharedStateParam)));
+      const sharedState = JSON.parse(json);
+      if (sharedState && sharedState.career && sharedState.selections) {
+        state.career = sharedState.career;
+        state.selections = sharedState.selections;
+        state.currentStep = sharedState.step || 8;
+        state.fromShare = true;
+        restoredFromShare = true;
+      }
+    } catch (e) {
+      console.warn('공유 링크 상태 복원 실패:', e);
+    }
+  }
+  
+  if (!restoredFromShare) {
+    // 이전 진행 상태 복원 (localStorage)
+    loadState();
+  }
   
   try {
     // 1. PDF 과목 설명 데이터 로드 (선택적)
@@ -1835,7 +1903,7 @@ function validateSemester(semKey, state, curriculumData) {
   if (kmeTotal > kmeMax) {
     errors.push({
       type: 'kme_over',
-      message: `국·수·영 합계가 ${kmeTotal}학점으로 상한(${kmeMax}학점)을 초과해요. 다른 교과를 선택해주세요.`,
+      message: `국어·수학·영어 교과의 선택 학점 총합이 ${kmeTotal}학점으로 상한(${kmeMax}학점)을 초과해요. 다른 교과를 선택해주세요.`,
     });
   }
   
@@ -2003,7 +2071,7 @@ function updateStatusSummary(stepNum) {
   const totalComplete = totalTarget > 0 && stats.totalCredits === totalTarget;
   items.push(`
     <div class="item ${totalComplete ? 'complete' : ''}">
-      <span class="label">총학점</span>
+      <span class="label">총 교과 학점</span>
       <span class="value">${totalProgress}${totalComplete ? ' ✓' : ''}</span>
     </div>
   `);
@@ -2028,7 +2096,7 @@ function updateStatusSummary(stepNum) {
       { key: '과학', label: '과학', required: reqs['과학'] },
       { key: '체육', label: '체육', required: reqs['체육'] },
       { key: '예술', label: '예술', required: reqs['예술'] },
-      { key: '기술교양', label: '기술·교양', required: reqs['기술교양'] },
+      { key: '기술교양', label: '기술·가정/정보/제2외국어/한문/교양', required: reqs['기술교양'] },
     ];
     
     for (const { key, label, required } of order) {
@@ -2078,6 +2146,16 @@ function showLimitAlert(groupName, takeN) {
       setTimeout(() => g.classList.remove('shake'), 700);
     }
   });
+}
+
+// 국·수·영 상한 초과 시 경고
+function showKMEAlert(card, attemptedTotal, kmeMax) {
+  showToast(`국어·수학·영어 교과 선택 학점 총합이 ${attemptedTotal}학점이 되어 상한(${kmeMax}학점)을 초과해요`);
+  // 클릭한 과목 카드에 흔들림 효과
+  if (card) {
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 700);
+  }
 }
 
 // === Step 1: 진로 선택 ===
@@ -2293,7 +2371,9 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
     <div class="subject-card ${isFixed ? 'fixed' : ''} ${isSelected ? 'selected' : ''} ${recommended ? 'recommended' : ''}" 
          data-subject="${subj.name}" 
          data-group="${groupName || ''}" 
-         data-fixed="${isFixed}">
+         data-fixed="${isFixed}"
+         data-area="${classifyArea(subj.area)}"
+         data-credit="${subj.credit}">
       <div class="subject-main">
         <div class="subject-checkbox">${ICONS.check}</div>
         <div class="subject-info">
@@ -2342,14 +2422,27 @@ function bindSemesterEvents(sem) {
       if (idx >= 0) {
         choices.splice(idx, 1);
       } else {
-        // === 3번 기능: 선택군 한도 초과 차단 ===
+        // === 선택군 한도 초과 차단 ===
         const semData = state.curriculumData.semesters[sem.key];
         const group = semData.choiceGroups[groupName];
         if (group && group.takeN !== null && choices.length >= group.takeN) {
-          // 이미 한도까지 선택됨 - 추가 선택 차단
           showLimitAlert(groupName, group.takeN);
           return;
         }
+        
+        // === 국·수·영 상한 초과 차단 ===
+        const subjectArea = card.dataset.area;
+        const subjectCredit = parseFloat(card.dataset.credit) || 0;
+        if (subjectArea === '국어' || subjectArea === '수학' || subjectArea === '영어') {
+          const stats = computeStats(state, state.curriculumData);
+          const currentKME = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
+          const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
+          if (currentKME + subjectCredit > kmeMax) {
+            showKMEAlert(card, currentKME + subjectCredit, kmeMax);
+            return;
+          }
+        }
+        
         choices.push(subjectName);
       }
       
@@ -2494,6 +2587,20 @@ function renderResultStep() {
     </div>
   `;
   
+  // 공유 링크로 접속한 경우 안내 배너
+  const sharedBannerHtml = state.fromShare ? `
+    <div class="shared-banner">
+      <div class="banner-icon">🔗</div>
+      <div class="banner-content">
+        <div class="banner-title">공유받은 결과를 보고 계세요</div>
+        <div>이 화면은 누군가가 공유한 과목 선택 결과예요. 직접 시뮬레이션 해보고 싶다면 아래를 눌러주세요.</div>
+        <div class="banner-action">
+          <button onclick="startFresh()">처음부터 시작하기</button>
+        </div>
+      </div>
+    </div>
+  ` : '';
+  
   return `
     <div class="step-card">
       <div class="step-title">
@@ -2501,6 +2608,7 @@ function renderResultStep() {
         <span>완성! 나의 3년 교육과정</span>
       </div>
       
+      ${sharedBannerHtml}
       ${validationHtml}
       
       <!-- 캡쳐 대상 영역 -->
@@ -2661,38 +2769,83 @@ async function shareResult() {
   try {
     const blob = await generateShareImage();
     const file = new File([blob], `${SCHOOL_NAME}_과목선택.png`, { type: 'image/png' });
-    const shareData = {
-      title: `${SCHOOL_NAME}등학교 과목 선택`,
-      text: `${SCHOOL_NAME}등학교 ${state.career} 진로로 과목을 선택해봤어요!`,
+    
+    // 상태 인코딩된 공유 URL 생성
+    const shareUrl = buildShareableUrl();
+    const shareTitle = `${SCHOOL_NAME}등학교 과목 선택`;
+    const shareText = `${SCHOOL_NAME}등학교 - ${state.career} 진로로 3년 교육과정을 설계해봤어요!`;
+    
+    // 1) 이미지 + 텍스트 + URL 동시 공유 시도 (가장 풍부한 공유)
+    const fullShareData = {
+      title: shareTitle,
+      text: shareText,
+      url: shareUrl,
       files: [file],
     };
     
-    // Web Share API + 파일 공유 지원 확인 (모바일에서 잘 작동)
-    if (navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-      showShareHint('공유 창이 열렸어요!');
-    } else if (navigator.share) {
-      // 파일 공유 안되면 텍스트만
-      const url = window.location.href;
-      await navigator.share({
-        title: shareData.title,
-        text: shareData.text,
-        url: url,
-      });
-      showShareHint('공유 창이 열렸어요!');
-    } else {
-      // 폴백: 이미지 다운로드 + 안내
-      downloadBlob(blob, `${SCHOOL_NAME}_과목선택.png`);
-      showShareHint('이미지를 저장했어요. 카카오톡 등에서 직접 첨부해주세요.', 'success');
+    if (navigator.canShare && navigator.canShare(fullShareData)) {
+      try {
+        await navigator.share(fullShareData);
+        showShareHint('공유 창이 열렸어요!', 'success');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') { showShareHint(''); return; }
+        // 실패 시 다음 폴백으로
+      }
     }
+    
+    // 2) 이미지 + 텍스트 (URL 제외)
+    const fileShareData = {
+      title: shareTitle,
+      text: shareText,
+      files: [file],
+    };
+    if (navigator.canShare && navigator.canShare(fileShareData)) {
+      try {
+        await navigator.share(fileShareData);
+        showShareHint('공유 창이 열렸어요!', 'success');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') { showShareHint(''); return; }
+      }
+    }
+    
+    // 3) 텍스트 + URL만 (이미지 미지원 환경)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        // 이미지는 별도 다운로드 안내
+        showShareHint('공유 창이 열렸어요! 이미지가 필요하면 "이미지 저장"을 눌러주세요.', 'success');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') { showShareHint(''); return; }
+      }
+    }
+    
+    // 4) 폴백: PC 등에서 클립보드에 URL 복사 + 이미지 다운로드
+    let copied = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        copied = true;
+      }
+    } catch (e) {}
+    
+    downloadBlob(blob, `${SCHOOL_NAME}_과목선택.png`);
+    
+    if (copied) {
+      showShareHint('링크가 복사되고 이미지가 저장됐어요. 카카오톡 등에 붙여넣고 이미지를 첨부하세요.', 'success');
+    } else {
+      showShareHint('이미지가 저장됐어요. 카카오톡 등에서 첨부해주세요.', 'success');
+    }
+    
   } catch (err) {
-    if (err.name === 'AbortError') {
-      // 사용자가 공유 취소
-      showShareHint('');
-    } else {
-      console.error('공유 실패:', err);
-      showShareHint('공유 중 문제가 생겼어요. 이미지 저장을 시도해주세요.', 'error');
-    }
+    console.error('공유 실패:', err);
+    showShareHint('공유 중 문제가 생겼어요. 이미지 저장을 시도해주세요.', 'error');
   } finally {
     btn.disabled = false;
   }
@@ -2719,14 +2872,46 @@ async function saveAsImage() {
 }
 
 // 3) 링크 복사
+// === 공유용 URL 생성 (상태 인코딩) ===
+function buildShareableUrl() {
+  // 현재 URL의 origin + path만 가져오기 (기존 쿼리 파라미터 제거)
+  const baseUrl = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams();
+  params.set('school', SCHOOL_NAME);
+  params.set('sheetId', SHEET_ID);
+  
+  // 상태를 JSON → Base64 압축
+  const shareState = {
+    career: state.career,
+    selections: state.selections,
+    step: 8,  // 결과 화면으로 바로
+  };
+  try {
+    const json = JSON.stringify(shareState);
+    // UTF-8 안전 Base64 (한글 포함)
+    const encoded = btoa(unescape(encodeURIComponent(json)));
+    params.set('s', encoded);
+  } catch (e) {
+    console.warn('상태 인코딩 실패:', e);
+  }
+  
+  return `${baseUrl}?${params.toString()}`;
+}
+
 async function copyShareLink() {
-  // 사이트 링크 (시뮬레이터 자체 URL은 학교/시트ID 포함)
-  const url = window.location.href;
+  const url = buildShareableUrl();
+  
+  // URL 길이 체크 - 너무 길면 일부 메신저/SNS에서 잘릴 수 있음
+  const URL_WARN_LENGTH = 2000;
   
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(url);
-      showShareHint('링크가 복사됐어요! 원하는 곳에 붙여넣기하세요.', 'success');
+      if (url.length > URL_WARN_LENGTH) {
+        showShareHint(`링크가 복사됐어요 (${url.length}자). 길이가 길어 일부 앱에서 잘릴 수 있으니 "이미지 저장"도 함께 사용하세요.`, 'success');
+      } else {
+        showShareHint('링크가 복사됐어요! 다른 곳에 붙여넣으면 결과 화면이 그대로 보여요.', 'success');
+      }
     } else {
       // 폴백: 임시 textarea
       const ta = document.createElement('textarea');
@@ -2779,6 +2964,26 @@ function goHome() {
   } else {
     window.location.href = 'index.html';
   }
+}
+
+// 공유 링크에서 접속한 사용자가 직접 시뮬레이션 시작
+function startFresh() {
+  // 상태 초기화
+  state.currentStep = 1;
+  state.career = null;
+  state.selections = {};
+  state.expandedSubjects.clear();
+  state.fromShare = false;
+  
+  // localStorage 초기화
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  
+  // URL의 공유 파라미터(s) 제거 (학교/시트ID는 유지)
+  const newUrl = window.location.origin + window.location.pathname 
+    + `?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}${IS_EMBED ? '&embed=1' : ''}`;
+  window.history.replaceState({}, '', newUrl);
+  
+  renderStep();
 }
 
 // ============================================
