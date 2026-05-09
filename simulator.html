@@ -70,20 +70,36 @@ body {
 }
 
 .progress-back {
-  background: transparent;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-family: inherit;
-  font-size: 0.85em;
-  color: var(--text-mid);
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.9em;
+  color: white;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: all 0.18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(74, 138, 184, 0.25);
 }
 .progress-back:hover {
-  background: #F9FAFB;
-  border-color: var(--sky-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 138, 184, 0.35);
+}
+.progress-back:active {
+  transform: translateY(0);
+}
+.progress-back svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .progress-info {
@@ -773,7 +789,10 @@ body {
 <!-- 진행률 바 -->
 <div class="progress-bar">
   <div class="progress-content">
-    <button class="progress-back" onclick="goHome()">← 홈으로</button>
+    <button class="progress-back" id="homeBackBtn" onclick="goHome()">
+      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      <span id="homeBackLabel">홈으로</span>
+    </button>
     <div class="progress-info">
       <div class="progress-text">
         <span><strong id="stepNum">1</strong> / 8 단계</span>
@@ -813,6 +832,7 @@ const GOOGLE_API_KEY = 'AIzaSyBC95kjuGRE0cgsHHWWco0-MnBt9XiPfCY';
 const urlParams = new URLSearchParams(window.location.search);
 const SCHOOL_NAME = urlParams.get('school') || '';
 const SHEET_ID = urlParams.get('sheetId') || '';
+const IS_EMBED = urlParams.get('embed') === '1';
 
 // 상태
 const state = {
@@ -862,12 +882,73 @@ const CAREERS = [
   },
 ];
 
-// 진로별 추천 과목 (간단한 키워드 기반)
+// 진로별 추천 과목 (과목명 직접 매칭 + 키워드)
+// 직접 매칭이 우선
 const CAREER_RECOMMEND = {
-  '인문': ['문학', '독서와 작문', '화법과 언어', '사회와 문화', '세계사', '한국사', '윤리', '제2외국어', '한문', '영어'],
-  '자연': ['미적분', '확률과 통계', '기하', '대수', '물리학', '화학', '생명과학', '지구과학', '인공지능 수학', '과학탐구'],
-  '예체능': ['음악', '미술', '체육', '연극', '디자인', '스포츠'],
-  '모르겠음': [],
+  '인문': {
+    exact: [
+      // 국어
+      '문학', '독서와 작문', '화법과 언어', '주제 탐구 독서', '문학과 영상',
+      '독서 토론과 글쓰기', '매체 의사소통', '언어생활 탐구', '직무 의사소통',
+      // 사회
+      '세계시민과 지리', '한국지리 탐구', '세계사', '동아시아 역사 기행',
+      '사회와 문화', '현대사회와 윤리', '윤리와 사상', '인문학과 윤리',
+      '국제 관계의 이해', '정치', '법과 사회', '경제', '도시의 미래 탐구',
+      '여행지리', '역사로 탐구하는 현대 세계', '사회문제 탐구', '윤리문제 탐구',
+      '금융과 경제생활', '기후변화와 지속가능한 세계',
+      // 영어
+      '영어Ⅰ', '영어Ⅱ', '영어 독해와 작문', '영어 발표와 토론',
+      '심화 영어', '심화 영어 독해와 작문', '영미 문학 읽기',
+      '실생활 영어 회화', '미디어 영어', '세계 문화와 영어',
+      // 제2외국어/한문
+      '독일어', '프랑스어', '스페인어', '중국어', '일본어', '러시아어',
+      '아랍어', '베트남어', '한문', '한문 고전 읽기', '언어생활과 한자',
+      // 교양
+      '인간과 철학', '논리와 사고', '인간과 심리', '교육의 이해',
+      '논술', '인간과 종교',
+    ],
+    keywords: ['문학', '독서', '작문', '언어', '사회', '역사', '세계', '윤리', '인문', '한국사',
+                '제2외국어', '독일어', '프랑스어', '중국어', '일본어', '한문', '영어', '철학', '심리'],
+  },
+  '자연': {
+    exact: [
+      // 수학
+      '공통수학1', '공통수학2', '대수', '미적분Ⅰ', '미적분Ⅱ', '확률과 통계',
+      '기하', '경제 수학', '인공지능 수학', '직무 수학', '실용 통계',
+      '수학과제 탐구', '미적분', '미적분 I', '미적분 II',
+      // 과학
+      '통합과학1', '통합과학2', '과학탐구실험1', '과학탐구실험2',
+      '물리학', '화학', '생명과학', '지구과학',
+      '역학과 에너지', '전자기와 양자', '물질과 에너지', '화학 반응의 세계',
+      '세포와 물질대사', '생물의 유전', '지구시스템과학', '행성우주과학',
+      '과학의 역사와 문화', '기후변화와 환경생태',
+      '융합과학 탐구', '과학과제 연구', '물리학 실험', '화학 실험',
+      // 정보
+      '정보', '인공지능 기초', '데이터 과학', '소프트웨어와 생활',
+      '정보과학', '프로그래밍',
+      // 기술/공학
+      '기술·가정', '기술', '공학 일반', '창의 공학 설계', '지식 재산 일반',
+    ],
+    keywords: ['수학', '과학', '물리', '화학', '생명', '지구', '통합과학',
+                '미적분', '확률', '통계', '기하', '대수', '인공지능',
+                '정보', '공학', '데이터', '프로그래밍', '기술', '가정'],
+  },
+  '예체능': {
+    exact: [
+      // 체육
+      '체육1', '체육2', '운동과 건강', '스포츠 문화', '스포츠 과학',
+      '스포츠 생활1', '스포츠 생활2',
+      // 예술
+      '음악', '미술', '연극',
+      '음악 연주와 창작', '음악 감상과 비평', '미술 창작', '미술 감상과 비평',
+      '음악과 미디어', '미술과 매체',
+    ],
+    keywords: ['체육', '스포츠', '운동', '음악', '미술', '연극', '예술', '디자인', '공연'],
+  },
+  '모르겠음': {
+    exact: [],
+    keywords: [],
+  },
 };
 
 // SVG 아이콘
@@ -896,6 +977,13 @@ async function init() {
   
   document.getElementById('schoolNameDisplay').textContent = `${SCHOOL_NAME}등학교`;
   document.title = `${SCHOOL_NAME}고 - 과목 선택 시뮬레이터`;
+  
+  // embed 모드: 홈 버튼 라벨을 "닫기"로 변경
+  if (IS_EMBED) {
+    document.getElementById('homeBackLabel').textContent = '닫기';
+    // 스크롤 시작 위치
+    document.body.style.background = 'transparent';
+  }
   
   // 이전 진행 상태 복원
   loadState();
@@ -1004,32 +1092,70 @@ async function loadCurriculum() {
     const baseCredit = parseFloat(row[COL.baseCredit]) || 0;
     const completion = (row[COL.completion] || '').toString().trim();
     
-    // 과목명 없으면 스킵
     if (!subject) continue;
     
-    // 합계 행 스킵 (학기별 ... 같은)
     if (/학기별|이수학점|이수\s*과목수|창의적|체험활동|소계|합계|총계/.test(sectionRaw)) continue;
     if (/학기별|이수학점|이수\s*과목수|창의적|체험활동|소계|합계|총계/.test(subject)) continue;
     
-    // 학교지정 vs 학생선택
     const isFixed = sectionRaw.includes('학교') && sectionRaw.includes('지정');
     
-    // 각 학기별로 처리
+    // === 학교지정 학기교차 처리 ===
+    // 예: "음악/미술" 학기교차 → 1-1에 음악, 1-2에 미술
+    // 조건: 학교지정 + 학기교차 + 과목명에 구분자(/, ·, 슬래시) + 두 학기 모두 값 있음
+    const splitChar = subject.match(/[\/·∙•・／]/);
+    const semValues = Object.entries(COL.sem).map(([key, col]) => ({
+      key, val: (row[col] || '').toString().trim()
+    }));
+    const filledSems = semValues.filter(s => s.val);
+    const allCrossSem = filledSems.every(s => s.val.includes('학기교차') || s.val.includes('교차'));
+    
+    if (isFixed && splitChar && filledSems.length === 2 && allCrossSem) {
+      // 학기교차 분리
+      const parts = subject.split(/[\/·∙•・／]/).map(s => s.trim()).filter(s => s);
+      if (parts.length === 2) {
+        // 첫 학기 = 첫 과목, 두 번째 학기 = 두 번째 과목
+        const [sem1, sem2] = filledSems;
+        const credit1 = parseFloat(sem1.val.match(/(\d+(?:\.\d+)?)/)?.[1]) || baseCredit;
+        const credit2 = parseFloat(sem2.val.match(/(\d+(?:\.\d+)?)/)?.[1]) || baseCredit;
+        
+        semesters[sem1.key].fixed.push({
+          name: parts[0],
+          area: area,
+          type: type,
+          credit: credit1,
+          baseCredit: baseCredit,
+          crossSem: false,  // 분리됐으니 false
+          crossSemPair: parts[1],  // 짝 정보
+          cellValue: sem1.val,
+        });
+        semesters[sem2.key].fixed.push({
+          name: parts[1],
+          area: area,
+          type: type,
+          credit: credit2,
+          baseCredit: baseCredit,
+          crossSem: false,
+          crossSemPair: parts[0],
+          cellValue: sem2.val,
+        });
+        continue;  // 이 행 처리 완료
+      }
+    }
+    
+    // 일반 처리
     for (const [semKey, semCol] of Object.entries(COL.sem)) {
       const cellVal = (row[semCol] || '').toString().trim();
-      if (!cellVal) continue;  // 이 학기에 안 함
+      if (!cellVal) continue;
       
-      // 학기교차 처리
       const isCrossSem = cellVal.includes('학기교차') || cellVal.includes('교차');
       
-      // 단위 추출
       const creditMatch = cellVal.match(/(\d+(?:\.\d+)?)/);
       const credit = creditMatch ? parseFloat(creditMatch[1]) : baseCredit;
       
       const subjInfo = {
         name: subject,
         area: area,
-        type: type,  // 공통/일반선택/진로선택/융합선택
+        type: type,
         credit: credit,
         baseCredit: baseCredit,
         crossSem: isCrossSem,
@@ -1037,12 +1163,9 @@ async function loadCurriculum() {
       };
       
       if (isFixed) {
-        // 학교지정 - 자동 선택
         semesters[semKey].fixed.push(subjInfo);
       } else {
-        // 학생선택
-        // completion에서 그룹 이름 추출 (예: "선택군A 택7")
-        let groupName = '선택';  // 기본
+        let groupName = '선택';
         let takeN = null;
         const groupMatch = completion.match(/(선택군\s*[A-Z\d]+|[A-Z]\s*그룹|선택\s*\w+)/);
         if (groupMatch) {
@@ -1075,8 +1198,27 @@ async function loadCurriculum() {
 // ============================================
 function isRecommended(subjectName) {
   if (!state.career || state.career === '모르겠음') return false;
-  const keywords = CAREER_RECOMMEND[state.career] || [];
-  return keywords.some(kw => subjectName.includes(kw));
+  const rec = CAREER_RECOMMEND[state.career];
+  if (!rec) return false;
+  
+  // 정규화 (공백, 로마 숫자 처리)
+  const normalize = (s) => s.replace(/\s/g, '')
+    .replace(/Ⅰ/g, '1').replace(/Ⅱ/g, '2').replace(/Ⅲ/g, '3')
+    .replace(/I+/g, m => m.length.toString());
+  
+  const normalizedName = normalize(subjectName);
+  
+  // 1) 정확한 과목명 매칭 (정규화 후)
+  for (const exact of rec.exact) {
+    if (normalize(exact) === normalizedName) return true;
+  }
+  
+  // 2) 키워드 매칭
+  for (const kw of rec.keywords) {
+    if (subjectName.includes(kw)) return true;
+  }
+  
+  return false;
 }
 
 // ============================================
@@ -1518,7 +1660,7 @@ function renderResultStep() {
       <div class="result-actions">
         <button id="printBtn">${ICONS.print} 인쇄하기</button>
         <button id="resetBtn">${ICONS.reset} 다시 시작</button>
-        <button id="homeBtn">${ICONS.home} 홈으로</button>
+        <button id="homeBtn">${ICONS.home} ${IS_EMBED ? '닫기' : '홈으로'}</button>
       </div>
       
       <div class="nav-buttons">
@@ -1557,9 +1699,23 @@ function bindResultEvents() {
 
 function goHome() {
   if (state.currentStep > 1 && Object.keys(state.selections).length > 0) {
-    if (!confirm('홈으로 돌아가면 지금까지의 선택이 사라질 수 있어요. 정말 돌아가시겠어요?')) return;
+    if (!confirm('나가면 지금까지의 선택이 사라질 수 있어요. 정말 나가시겠어요?')) return;
   }
-  window.location.href = 'index.html';
+  
+  // localStorage 초기화
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  
+  if (IS_EMBED && window.parent !== window) {
+    // 임베드 모달 - 부모창의 모달 닫기 호출
+    try {
+      window.parent.closeSimulatorModal();
+    } catch (e) {
+      // 같은 출처가 아니면 폴백
+      window.parent.postMessage({ action: 'closeSimulator' }, '*');
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
 }
 
 // ============================================

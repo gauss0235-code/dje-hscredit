@@ -319,10 +319,6 @@ h1, h2 {
   font-size: 9px;
   fill: var(--text-dark);
   pointer-events: none;
-  paint-order: stroke;
-  stroke: white;
-  stroke-width: 3;
-  stroke-linejoin: round;
 }
 
 .label-leader {
@@ -1264,6 +1260,24 @@ footer {
   </div>
 </div>
 
+<!-- 시뮬레이터 임베드 모달 -->
+<div class="embed-overlay" id="simulatorOverlay">
+  <div class="embed-container">
+    <div class="embed-header">
+      <span class="embed-title" id="simulatorTitle">과목 선택 시뮬레이터</span>
+      <button class="embed-close" onclick="closeSimulatorModal()" aria-label="닫기">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="embed-frame-wrap">
+      <iframe id="simulatorFrame" src="" style="width:100%; height:100%; border:none; display:block;"></iframe>
+    </div>
+  </div>
+</div>
+
 <footer>
   <p>Copyright © 대전광역시 고등학교 교육과정 지원단. All rights reserved.</p>
 </footer>
@@ -1422,7 +1436,7 @@ function showSchoolModal(school) {
        </button>`;
   
   // 2026 과목선택 버튼 처리
-  // 편성표 URL이 있으면 시뮬레이터 활성화 (시트 ID 추출해서 simulator.html로 연결)
+  // 편성표 URL이 있으면 시뮬레이터 활성화 (시트 ID 추출해서 임베드 모달로 열기)
   const curr2026UrlForSim = school.curriculum2026;
   let sheetIdForSim = '';
   if (curr2026UrlForSim) {
@@ -1430,10 +1444,9 @@ function showSchoolModal(school) {
     if (sheetMatch) sheetIdForSim = sheetMatch[1];
   }
   const subj2026Btn = sheetIdForSim
-    ? `<button class="year-btn subject" onclick="window.open('simulator.html?school=${encodeURIComponent(school.name)}&sheetId=${sheetIdForSim}', '_blank', 'noopener,noreferrer')">
+    ? `<button class="year-btn subject" onclick="openSimulatorEmbed('${school.name}', '${sheetIdForSim}')">
          <span class="icon">${SVG_SIMULATOR}</span>
          <span class="label">과목 선택 시뮬레이터</span>
-         <span class="badge-new">새 탭에서 열림</span>
        </button>`
     : `<button class="year-btn subject disabled" onclick="alert('${school.name}고등학교의 2026학년도 과목 선택 시뮬레이터는 아직 등록되지 않았습니다.')">
          <span class="icon">${SVG_SIMULATOR}</span>
@@ -1859,6 +1872,30 @@ function closeEmbedModal() {
   }, 300);
 }
 
+// 시뮬레이터 임베드 모달
+function openSimulatorEmbed(schoolName, sheetId) {
+  closeModal();
+  
+  const overlay = document.getElementById('simulatorOverlay');
+  const titleEl = document.getElementById('simulatorTitle');
+  const frame = document.getElementById('simulatorFrame');
+  
+  titleEl.textContent = `${schoolName}등학교 - 과목 선택 시뮬레이터`;
+  // iframe src 설정 - embed=1 파라미터로 헤더 숨김
+  frame.src = `simulator.html?school=${encodeURIComponent(schoolName)}&sheetId=${sheetId}&embed=1`;
+  
+  overlay.classList.add('active');
+}
+
+function closeSimulatorModal() {
+  const overlay = document.getElementById('simulatorOverlay');
+  overlay.classList.remove('active');
+  setTimeout(() => {
+    const frame = document.getElementById('simulatorFrame');
+    if (frame) frame.src = 'about:blank';
+  }, 300);
+}
+
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
 }
@@ -1867,15 +1904,29 @@ document.getElementById('modalOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'modalOverlay') closeModal();
 });
 
+// 시뮬레이터 iframe에서 보내는 메시지 받기
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.action === 'closeSimulator') {
+    closeSimulatorModal();
+  }
+});
+
 // 임베드 모달: 배경 클릭 시 닫기
 document.getElementById('embedOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'embedOverlay') closeEmbedModal();
 });
 
+// 시뮬레이터 모달: 배경 클릭 시 닫기
+document.getElementById('simulatorOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'simulatorOverlay') closeSimulatorModal();
+});
+
 // ESC 키로 모달 닫기
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (document.getElementById('embedOverlay').classList.contains('active')) {
+    if (document.getElementById('simulatorOverlay').classList.contains('active')) {
+      closeSimulatorModal();
+    } else if (document.getElementById('embedOverlay').classList.contains('active')) {
       closeEmbedModal();
     } else if (document.getElementById('modalOverlay').classList.contains('active')) {
       closeModal();
