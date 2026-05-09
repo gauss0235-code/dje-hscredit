@@ -1099,50 +1099,8 @@ async function loadCurriculum() {
     
     const isFixed = sectionRaw.includes('학교') && sectionRaw.includes('지정');
     
-    // === 학교지정 학기교차 처리 ===
-    // 예: "음악/미술" 학기교차 → 1-1에 음악, 1-2에 미술
-    // 조건: 학교지정 + 학기교차 + 과목명에 구분자(/, ·, 슬래시) + 두 학기 모두 값 있음
-    const splitChar = subject.match(/[\/·∙•・／]/);
-    const semValues = Object.entries(COL.sem).map(([key, col]) => ({
-      key, val: (row[col] || '').toString().trim()
-    }));
-    const filledSems = semValues.filter(s => s.val);
-    const allCrossSem = filledSems.every(s => s.val.includes('학기교차') || s.val.includes('교차'));
-    
-    if (isFixed && splitChar && filledSems.length === 2 && allCrossSem) {
-      // 학기교차 분리
-      const parts = subject.split(/[\/·∙•・／]/).map(s => s.trim()).filter(s => s);
-      if (parts.length === 2) {
-        // 첫 학기 = 첫 과목, 두 번째 학기 = 두 번째 과목
-        const [sem1, sem2] = filledSems;
-        const credit1 = parseFloat(sem1.val.match(/(\d+(?:\.\d+)?)/)?.[1]) || baseCredit;
-        const credit2 = parseFloat(sem2.val.match(/(\d+(?:\.\d+)?)/)?.[1]) || baseCredit;
-        
-        semesters[sem1.key].fixed.push({
-          name: parts[0],
-          area: area,
-          type: type,
-          credit: credit1,
-          baseCredit: baseCredit,
-          crossSem: false,  // 분리됐으니 false
-          crossSemPair: parts[1],  // 짝 정보
-          cellValue: sem1.val,
-        });
-        semesters[sem2.key].fixed.push({
-          name: parts[1],
-          area: area,
-          type: type,
-          credit: credit2,
-          baseCredit: baseCredit,
-          crossSem: false,
-          crossSemPair: parts[0],
-          cellValue: sem2.val,
-        });
-        continue;  // 이 행 처리 완료
-      }
-    }
-    
-    // 일반 처리
+    // 일반 처리: 모든 행을 학기별로 분배
+    // (학기교차 학교지정은 일단 두 학기 모두에 추가 → 후처리에서 페어링)
     for (const [semKey, semCol] of Object.entries(COL.sem)) {
       const cellVal = (row[semCol] || '').toString().trim();
       if (!cellVal) continue;
@@ -1160,6 +1118,7 @@ async function loadCurriculum() {
         baseCredit: baseCredit,
         crossSem: isCrossSem,
         cellValue: cellVal,
+        rowIndex: r,  // 페어링용 (시트의 원래 행 순서)
       };
       
       if (isFixed) {
@@ -1189,6 +1148,41 @@ async function loadCurriculum() {
       }
     }
   }
+  
+  // === 후처리: 학기교차 학교지정 과목 페어링 ===
+  // 같은 학년의 1학기/2학기에 모두 추가된 학기교차 학교지정 과목들을 순서대로 짝지음
+  // 짝수번째(0,2,4...)는 1학기, 홀수번째(1,3,5...)는 2학기에만 남김
+  function pairCrossSemFixed(sem1Key, sem2Key) {
+    const sem1Fixed = semesters[sem1Key].fixed;
+    const sem2Fixed = semesters[sem2Key].fixed;
+    
+    // 학기교차 학교지정 과목들 추출 (rowIndex로 정렬)
+    const sem1Cross = sem1Fixed.filter(s => s.crossSem).sort((a,b) => a.rowIndex - b.rowIndex);
+    const sem2Cross = sem2Fixed.filter(s => s.crossSem).sort((a,b) => a.rowIndex - b.rowIndex);
+    
+    // 시트에서 학기교차로 표시되어 두 학기 모두에 들어간 과목들
+    // (rowIndex가 sem1과 sem2 양쪽에 있는 것들)
+    const sem1RowIdx = new Set(sem1Cross.map(s => s.rowIndex));
+    const sem2RowIdx = new Set(sem2Cross.map(s => s.rowIndex));
+    const commonRowIdx = [...sem1RowIdx].filter(idx => sem2RowIdx.has(idx)).sort((a,b) => a - b);
+    
+    // 순서대로 페어링: 짝수번째는 1학기, 홀수번째는 2학기에만 남김
+    commonRowIdx.forEach((rowIdx, i) => {
+      if (i % 2 === 0) {
+        // 1학기에 남기고, 2학기에서 제거
+        const idx = semesters[sem2Key].fixed.findIndex(s => s.rowIndex === rowIdx);
+        if (idx >= 0) semesters[sem2Key].fixed.splice(idx, 1);
+      } else {
+        // 2학기에 남기고, 1학기에서 제거
+        const idx = semesters[sem1Key].fixed.findIndex(s => s.rowIndex === rowIdx);
+        if (idx >= 0) semesters[sem1Key].fixed.splice(idx, 1);
+      }
+    });
+  }
+  
+  pairCrossSemFixed('1-1', '1-2');
+  pairCrossSemFixed('2-1', '2-2');
+  pairCrossSemFixed('3-1', '3-2');
   
   return { semesters };
 }
@@ -1407,7 +1401,7 @@ function renderSemesterStep(sem) {
   const noChoicesHtml = choiceGroupNames.length === 0 ? `
     <div class="section-block">
       <div class="section-header">
-        <span class="section-badge fixed">정보</span>
+        <span class="section-badge fixed">참고</span>
         <span class="section-info">이 학기는 모두 학교지정 과목으로 채워져 있어요</span>
       </div>
     </div>
