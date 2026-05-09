@@ -59,9 +59,9 @@ body {
   top: 0;
   z-index: 100;
   background: white;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: none;
   padding: 14px 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: none;
 }
 
 .progress-content {
@@ -384,13 +384,15 @@ body {
 /* === 상단 고정 진행 상태 사이드바 === */
 .status-summary {
   position: sticky;
-  top: 78px;  /* progress-bar 높이만큼 */
-  z-index: 50;
+  top: 65px;  /* 진행률 바 바로 아래에 붙도록 */
+  z-index: 90;  /* 진행률 바보다 낮음 */
   background: linear-gradient(135deg, #F8FAFB 0%, #F0F4F8 100%);
+  border-top: 1px solid #E5E7EB;
   border-bottom: 1px solid #E5E7EB;
-  padding: 10px 16px;
+  padding: 10px 20px;
   font-size: 0.85em;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-top: -1px;  /* 진행률 바와 매끄럽게 */
 }
 .status-summary .status-content {
   max-width: 800px;
@@ -431,18 +433,25 @@ body {
 }
 .status-summary .status-quick {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   font-size: 0.92em;
   color: var(--text-mid);
+  align-items: center;
+  margin-top: 4px;
 }
 .status-summary .status-quick .item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 3px 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
 }
 .status-summary .status-quick .item .label {
   color: var(--text-mid);
+  font-size: 0.92em;
 }
 .status-summary .status-quick .item .value {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
@@ -1183,8 +1192,9 @@ body {
   .share-buttons { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .share-btn { padding: 12px 4px; font-size: 0.78em; }
   .share-btn svg { width: 20px; height: 20px; }
-  .status-summary { top: 70px; padding: 8px 12px; }
-  .status-summary .status-quick { gap: 8px; font-size: 0.84em; }
+  .status-summary { top: 56px; padding: 8px 14px; }
+  .status-summary .status-quick { gap: 6px; font-size: 0.82em; }
+  .status-summary .status-quick .item { padding: 2px 7px; gap: 3px; }
   .status-summary .area-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 }
 </style>
@@ -1211,7 +1221,7 @@ body {
 </div>
 
 <!-- 상단 고정 진행 상태 (학기 진행 중에만 표시) -->
-<div class="status-summary" id="statusSummary" style="display:none;">
+<div class="status-summary" id="statusSummary">
   <div class="status-content">
     <div class="status-toggle" id="statusToggle">
       <div class="status-toggle-label" id="statusToggleLabel">
@@ -1223,10 +1233,10 @@ body {
       </svg>
     </div>
     <div class="status-quick" id="statusQuick">
-      <!-- 빠른 요약 (총 학점, 국·수·영) -->
+      <!-- 빠른 요약 -->
     </div>
     <div class="status-detail" id="statusDetail">
-      <!-- 펼쳐진 상세 (교과군별) -->
+      <!-- 상세 -->
     </div>
   </div>
 </div>
@@ -1988,10 +1998,27 @@ function updateStatusSummary(stepNum) {
   const targets = state.curriculumData.semesterTargets;
   const totalTarget = Object.values(targets).reduce((a,b)=>a+b, 0);
   
-  // === 빠른 요약 ===
+  // === 빠른 요약 (항상 보임) ===
+  // 1) 총 교과 선택 학점
+  // 2) 국·수·영 합계 (상한과 비교)
+  // 3) 국어 필수 학점 채움 여부
+  // 4) 수학 필수 학점 채움 여부
+  
   const kme = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
   const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
   const kmeOver = kme > kmeMax;
+  
+  const isExcluded = state.curriculumData.schoolCategory === 'excluded';
+  const reqs = isExcluded ? null : getRequirements(state.curriculumData.schoolCategory);
+  
+  // 국어, 수학 필수 학점 채움
+  const koreanCurrent = stats.areaCredits['국어'] || 0;
+  const koreanRequired = reqs ? reqs['국어'] : 8;
+  const koreanComplete = koreanCurrent >= koreanRequired;
+  
+  const mathCurrent = stats.areaCredits['수학'] || 0;
+  const mathRequired = reqs ? reqs['수학'] : 8;
+  const mathComplete = mathCurrent >= mathRequired;
   
   const totalProgress = totalTarget > 0 ? `${stats.totalCredits}/${totalTarget}` : `${stats.totalCredits}`;
   
@@ -2002,21 +2029,29 @@ function updateStatusSummary(stepNum) {
     </div>
     <div class="item">
       <span class="label">국·수·영:</span>
-      <span class="value ${kmeOver ? 'over' : ''}">${kme} / ${kmeMax}${kmeOver ? ' ⚠' : ''}</span>
+      <span class="value ${kmeOver ? 'over' : ''}">${kme}/${kmeMax}${kmeOver ? ' ⚠' : ''}</span>
+    </div>
+    <div class="item">
+      <span class="label">국어:</span>
+      <span class="value ${koreanComplete ? 'ok' : ''}">${koreanCurrent}/${koreanRequired}${koreanComplete ? ' ✓' : ''}</span>
+    </div>
+    <div class="item">
+      <span class="label">수학:</span>
+      <span class="value ${mathComplete ? 'ok' : ''}">${mathCurrent}/${mathRequired}${mathComplete ? ' ✓' : ''}</span>
     </div>
   `;
   document.getElementById('statusQuick').innerHTML = quickHtml;
   
-  // === 상세 (펼쳐졌을 때) - 교과군별 ===
-  const isExcluded = state.curriculumData.schoolCategory === 'excluded';
+  // === 상세 (펼쳐졌을 때) - 나머지 교과군 ===
   let detailHtml = '';
   
   if (!isExcluded) {
-    const reqs = getRequirements(state.curriculumData.schoolCategory);
-    const areaItems = Object.entries(reqs).map(([area, required]) => {
+    // 국어, 수학은 위에 이미 보였으니 빼고 나머지만
+    const restAreas = Object.entries(reqs).filter(([area, _]) => area !== '국어' && area !== '수학');
+    const areaItems = restAreas.map(([area, required]) => {
       const current = stats.areaCredits[area] || 0;
       const isComplete = current >= required;
-      const cls = isComplete ? 'complete' : (current > 0 ? 'shortage' : 'shortage');
+      const cls = isComplete ? 'complete' : 'shortage';
       const mark = isComplete ? '✓' : '!';
       const displayName = area === '기술교양' ? '기술·가정 외' : area;
       return `
@@ -2029,7 +2064,7 @@ function updateStatusSummary(stepNum) {
     
     detailHtml = `
       <div class="status-section">
-        <div class="section-label">교과군별 필수 이수 학점</div>
+        <div class="section-label">그 외 교과군 필수 이수 학점</div>
         <div class="area-grid">${areaItems}</div>
       </div>
     `;
