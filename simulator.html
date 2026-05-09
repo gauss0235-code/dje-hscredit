@@ -1279,6 +1279,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const SCHOOL_NAME = urlParams.get('school') || '';
 const SHEET_ID = urlParams.get('sheetId') || '';
 const IS_EMBED = urlParams.get('embed') === '1';
+const IS_DEBUG = urlParams.get('debug') === '1';
 
 // 상태
 const state = {
@@ -1715,6 +1716,50 @@ async function loadCurriculum() {
   console.log('학기별 목표 학점:', semesterTargets);
   console.log('총 교과 이수 학점:', totalCurriculumCredits);
   
+  // === 디버그: 모든 과목의 area 분류 출력 (?debug=1) ===
+  if (IS_DEBUG) {
+    console.log('%c=== 디버그: 과목별 교과군 분류 ===', 'background: #FEF3C7; color: #92400E; font-weight: bold; padding: 4px 8px;');
+    console.log('학교 유형:', schoolTypeText, '→ 분류:', schoolCategory);
+    console.log('필수 이수 학점 기준:', schoolCategory === 'autonomous' 
+      ? '예술 5학점, 기술교양 12학점' 
+      : '예술 10학점, 기술교양 16학점');
+    
+    const allSubjects = [];
+    const areaSummary = { '국어': 0, '수학': 0, '영어': 0, '사회': 0, '과학': 0, '체육': 0, '예술': 0, '기술교양': 0, 'unknown': 0 };
+    
+    for (const [semKey, semData] of Object.entries(semesters)) {
+      // 학교지정
+      for (const subj of semData.fixed) {
+        const cat = classifyArea(subj.area);
+        allSubjects.push({ 학기: semKey, 영역: '학교지정', 과목명: subj.name, 시트area: subj.area, 분류: cat, 학점: subj.credit });
+        areaSummary[cat] += subj.credit;
+      }
+      // 학생선택
+      for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+        for (const subj of group.subjects) {
+          const cat = classifyArea(subj.area);
+          allSubjects.push({ 학기: semKey, 영역: `학생선택(${groupName})`, 과목명: subj.name, 시트area: subj.area, 분류: cat, 학점: subj.credit });
+          // 학생선택은 합계에 안 넣음 (선택 안 했을 수도 있으니)
+        }
+      }
+    }
+    
+    console.table(allSubjects);
+    console.log('%c학교지정만 합한 교과군별 학점 (참고):', 'color: #5392BE; font-weight: bold;', areaSummary);
+    
+    // unknown으로 분류된 과목들 따로 강조
+    const unknownSubjects = allSubjects.filter(s => s.분류 === 'unknown');
+    if (unknownSubjects.length > 0) {
+      console.warn('%c⚠ 분류되지 않은(unknown) 과목들:', 'background: #FEE2E2; color: #991B1B; font-weight: bold; padding: 2px 6px;');
+      console.table(unknownSubjects);
+    }
+    
+    // 기술교양으로 분류된 과목들 따로
+    const techSubjects = allSubjects.filter(s => s.분류 === '기술교양');
+    console.log('%c기술·가정/정보/제2외국어/한문/교양 분류된 과목들:', 'color: #15803D; font-weight: bold;');
+    console.table(techSubjects);
+  }
+  
   return { 
     semesters,
     schoolType: schoolTypeText,
@@ -1790,8 +1835,11 @@ function classifyArea(area) {
   if (a.includes('과학')) return '과학';
   if (a.includes('체육')) return '체육';
   if (a.includes('예술') || a.includes('음악') || a.includes('미술')) return '예술';
+  // 기술·가정/정보/제2외국어/한문/교양 통합 교과군
+  // "제2외국어"는 다양한 표기 가능: 제2외국어, 제 2 외국어, 2외국어 등
   if (a.includes('기술') || a.includes('가정') || a.includes('정보') 
-      || a.includes('제2외국어') || a.includes('한문') || a.includes('교양')) return '기술교양';
+      || a.includes('외국어') || a.includes('한문') || a.includes('교양')
+      || a.includes('제2') || a.includes('2외')) return '기술교양';
   return 'unknown';
 }
 
