@@ -848,6 +848,23 @@ h1, h2 {
   opacity: 0.85;
 }
 
+/* 병합된 학기 셀에 여러 값이 있는 경우 (예: "3 3 3") */
+.curriculum-table tbody td.semester.multi-value {
+  font-size: 0.95em;
+  line-height: 1.5;
+  padding: 8px 4px;
+}
+.curriculum-table tbody td.semester.multi-value div {
+  font-weight: 700;
+}
+
+.curriculum-table tbody td.completion-type {
+  font-size: 0.88em;
+  color: var(--text-dark);
+  font-weight: 600;
+  padding: 8px 6px;
+}
+
 .curriculum-table tbody td.total-credits {
   background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
   color: #15803D;
@@ -1387,7 +1404,7 @@ function showSchoolModal(school) {
 // Google Sheets API 키
 const GOOGLE_API_KEY = 'AIzaSyBC95kjuGRE0cgsHHWWco0-MnBt9XiPfCY';
 
-// 편성표 모달 열기 - API로 데이터 가져와서 표 그리기
+// 편성표 모달 열기 - API로 데이터 + 병합 정보 가져와서 표 그리기
 async function openCurriculumEmbed(schoolName, sheetUrl) {
   // 스프레드시트 ID 추출
   const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
@@ -1411,27 +1428,38 @@ async function openCurriculumEmbed(schoolName, sheetUrl) {
   embedOverlay.classList.add('active');
   
   try {
-    // Google Sheets API로 '편성표' 시트 데이터 가져오기
-    // 시트 이름이 '편성표'이므로 인코딩
+    // Google Sheets API: 셀 값 + 병합 정보까지 가져오기
+    // ranges: A1:M500, fields: 필요한 것만 (응답 크기 줄임)
     const sheetName = encodeURIComponent('편성표');
-    const range = `${sheetName}!A1:M500`;  // 충분히 넉넉하게 (학교당 과목 500개까지 대응)
-    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${GOOGLE_API_KEY}`;
+    const range = `${sheetName}!A1:M500`;
+    const fields = encodeURIComponent('sheets(properties.title,merges,data.rowData.values(formattedValue,effectiveValue))');
+    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?ranges=${range}&fields=${fields}`;
     
-    const response = await fetch(apiUrl);
+    const response = await fetch(`${apiUrl}&key=${GOOGLE_API_KEY}`);
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
       throw new Error(errData.error?.message || `${response.status} 오류`);
     }
     
     const data = await response.json();
-    const rows = data.values || [];
+    const sheet = (data.sheets || [])[0];
+    if (!sheet) throw new Error('편성표 시트를 찾을 수 없습니다.');
     
-    if (rows.length < 4) {
+    // 병합 정보
+    const merges = sheet.merges || [];
+    
+    // 셀 값들을 2D 배열로 변환
+    const rowData = (sheet.data && sheet.data[0] && sheet.data[0].rowData) || [];
+    const grid = rowData.map(r => 
+      (r.values || []).map(c => (c && c.formattedValue) || '')
+    );
+    
+    if (grid.length < 4) {
       throw new Error('편성표 데이터가 부족합니다.');
     }
     
     // 표 그리기
-    renderCurriculumTable(schoolName, rows, sheetUrl);
+    renderCurriculumTable(schoolName, grid, merges, sheetUrl);
     embedLoading.classList.add('hidden');
     
   } catch (err) {
@@ -1453,13 +1481,12 @@ async function openCurriculumEmbed(schoolName, sheetUrl) {
   }
 }
 
-// 데이터를 우리 디자인의 표로 그리기
-function renderCurriculumTable(schoolName, rows, sheetUrl) {
+// 데이터 + 병합 정보로 표 그리기 (시트 구조 100% 재현)
+function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
   const tableWrap = document.getElementById('curriculumTableWrap');
   
-  // 메타 정보 (2행: 학교명, 학교유형, 학년학급수, 교원수)
-  const metaRow = rows[1] || [];
-  // 스크린샷 기준: B=학교명, E=학교유형, H=학년학급수, K=교원수
+  // === 메타 정보 추출 (2행) ===
+  const metaRow = grid[1] || [];
   const meta = {
     schoolName: metaRow[1] || schoolName + '등학교',
     schoolType: metaRow[5] || '-',
@@ -1467,10 +1494,55 @@ function renderCurriculumTable(schoolName, rows, sheetUrl) {
     teacherCount: metaRow[12] || '-',
   };
   
-  // 데이터 행 (4행부터)
-  const dataRows = rows.slice(3);
+  // === 병합 정보를 2D 맵으로 정리 ===
+  // mergeMap[row][col] = { rowSpan, colSpan } : 병합 시작 셀에만 정보
+  // skipMap[row][col] = true : 병합으로 인해 그려지지 않을 셀
+  const mergeMap = {};
+  const skipMap = {};
   
-  // 표 HTML 생성
+  for (const m of merges) {
+    const startRow = m.startRowIndex;
+    const startCol = m.startColumnIndex;
+    const endRow = m.endRowIndex;  // exclusive
+    const endCol = m.endColumnIndex;  // exclusive
+    
+    const rowSpan = endRow - startRow;
+    const colSpan = endCol - startCol;
+    
+    if (!mergeMap[startRow]) mergeMap[startRow] = {};
+    mergeMap[startRow][startCol] = { rowSpan, colSpan };
+    
+    // 병합 영역의 나머지 셀들은 스킵
+    for (let r = startRow; r < endRow; r++) {
+      for (let c = startCol; c < endCol; c++) {
+        if (r === startRow && c === startCol) continue;
+        if (!skipMap[r]) skipMap[r] = {};
+        skipMap[r][c] = true;
+      }
+    }
+  }
+  
+  // === 데이터 행: 4행부터 (인덱스 3) ===
+  const dataStartRow = 3;
+  
+  // 빈 행 검사: 모든 셀이 비어있고 병합도 안 된 행
+  const isEmptyRow = (rowIdx) => {
+    const row = grid[rowIdx] || [];
+    // 이 행에 시작되는 병합이 있으면 비어있지 않음
+    if (mergeMap[rowIdx]) return false;
+    // 위에서 내려오는 병합 중인 셀이 있으면 비어있지 않음
+    if (skipMap[rowIdx]) return false;
+    // 모든 셀이 빈 문자열인지
+    return row.every(c => !(c || '').trim());
+  };
+  
+  // 마지막 데이터 행 찾기 (뒤쪽 빈 행 제외)
+  let lastDataRow = grid.length - 1;
+  while (lastDataRow >= dataStartRow && isEmptyRow(lastDataRow)) {
+    lastDataRow--;
+  }
+  
+  // === HTML 생성 ===
   let html = `
     <div class="curriculum-info">
       <div class="curriculum-info-item">
@@ -1502,7 +1574,7 @@ function renderCurriculumTable(schoolName, rows, sheetUrl) {
           <th rowspan="2" style="min-width:140px;">과목</th>
           <th rowspan="2" style="width:90px;">과목유형</th>
           <th rowspan="2" style="width:60px;">기본<br>학점</th>
-          <th rowspan="2" style="width:70px;">이수<br>구분</th>
+          <th rowspan="2" style="width:80px;">이수<br>구분</th>
           <th colspan="2" class="group-header">1학년</th>
           <th colspan="2" class="group-header">2학년</th>
           <th colspan="2" class="group-header">3학년</th>
@@ -1520,76 +1592,31 @@ function renderCurriculumTable(schoolName, rows, sheetUrl) {
       <tbody>
   `;
   
-  // 행별 처리: 병합 처리를 위한 추적
-  // A열(구분)은 병합셀이라 빈 값이 자주 등장 → 이전 값 유지
-  let lastSection = '';
-  let sectionRowCount = 0;  // 섹션별 rowspan 계산용
+  // 본문: 데이터 행마다 셀 그리기
+  const NUM_COLS = 13;
   
-  // 1단계: 섹션별로 그룹핑해서 rowspan 계산
-  const groups = [];
-  let currentGroup = null;
-  
-  for (const row of dataRows) {
-    if (!row || row.length === 0) continue;
-    const section = (row[0] || '').trim();
-    const subjectArea = (row[1] || '').trim();
+  for (let r = dataStartRow; r <= lastDataRow; r++) {
+    const row = grid[r] || [];
     
-    // 모든 데이터가 비어있으면 스킵
-    if (!section && !subjectArea && !(row[2] || '').trim()) continue;
+    // 행 전체가 비었으면(병합도 없음) 스킵
+    if (isEmptyRow(r)) continue;
     
-    if (section) {
-      lastSection = section;
-      currentGroup = { section: section, rows: [] };
-      groups.push(currentGroup);
+    html += '<tr>';
+    
+    for (let c = 0; c < NUM_COLS; c++) {
+      // 병합으로 가려진 셀은 그리지 않음
+      if (skipMap[r] && skipMap[r][c]) continue;
+      
+      const value = (row[c] || '').toString().trim();
+      const merge = mergeMap[r] && mergeMap[r][c];
+      const rowSpan = merge ? merge.rowSpan : 1;
+      const colSpan = merge ? merge.colSpan : 1;
+      const spanAttr = `${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}${colSpan > 1 ? ` colspan="${colSpan}"` : ''}`;
+      
+      html += renderCurriculumCell(c, value, spanAttr);
     }
     
-    if (currentGroup) {
-      currentGroup.rows.push(row);
-    }
-  }
-  
-  // 2단계: 표 본문 그리기
-  for (const group of groups) {
-    let firstInGroup = true;
-    for (const row of group.rows) {
-      const subjectArea = (row[1] || '').trim();
-      const subjectName = (row[2] || '').trim();
-      const subjectType = (row[3] || '').trim();
-      const baseCredit = (row[4] || '').trim();
-      const completionType = (row[5] || '').trim();
-      const sem11 = (row[6] || '').trim();
-      const sem12 = (row[7] || '').trim();
-      const sem21 = (row[8] || '').trim();
-      const sem22 = (row[9] || '').trim();
-      const sem31 = (row[10] || '').trim();
-      const sem32 = (row[11] || '').trim();
-      const totalCredit = (row[12] || '').trim();
-      
-      // 행이 거의 비었으면 스킵
-      if (!subjectName && !subjectArea) continue;
-      
-      html += '<tr>';
-      
-      // 첫 행이면 구분(섹션) 셀 표시 with rowspan
-      if (firstInGroup) {
-        html += `<td class="section" rowspan="${group.rows.length}">${group.section}</td>`;
-        firstInGroup = false;
-      }
-      
-      html += `<td class="subject-area">${subjectArea}</td>`;
-      html += `<td class="subject-name">${subjectName}</td>`;
-      html += `<td><span class="subject-type-tag ${subjectType}">${subjectType}</span></td>`;
-      html += `<td class="credits">${baseCredit}</td>`;
-      html += `<td>${completionType}</td>`;
-      
-      // 학기별 셀
-      for (const sem of [sem11, sem12, sem21, sem22, sem31, sem32]) {
-        html += renderSemesterCell(sem);
-      }
-      
-      html += `<td class="total-credits">${totalCredit}</td>`;
-      html += '</tr>';
-    }
+    html += '</tr>';
   }
   
   html += `
@@ -1600,22 +1627,73 @@ function renderCurriculumTable(schoolName, rows, sheetUrl) {
   tableWrap.innerHTML = html;
 }
 
-// 학기별 셀 렌더링 (학기교차 처리)
-function renderSemesterCell(value) {
+// 컬럼별 셀 렌더링 (열 인덱스에 따라 스타일 달리)
+function renderCurriculumCell(colIdx, value, spanAttr) {
+  // 0: 구분, 1: 교과(군), 2: 과목, 3: 과목유형, 4: 기본학점, 5: 이수구분
+  // 6~11: 학기별 (1-1, 1-2, 2-1, 2-2, 3-1, 3-2)
+  // 12: 운영학점
+  
+  if (colIdx === 0) {
+    // 구분 (학교지정/학생선택) - 세로쓰기
+    return `<td class="section"${spanAttr}>${value}</td>`;
+  }
+  if (colIdx === 1) {
+    // 교과(군)
+    return `<td class="subject-area"${spanAttr}>${value}</td>`;
+  }
+  if (colIdx === 2) {
+    // 과목명
+    return `<td class="subject-name"${spanAttr}>${value}</td>`;
+  }
+  if (colIdx === 3) {
+    // 과목유형 - 색상 배지
+    if (!value) return `<td${spanAttr}></td>`;
+    return `<td${spanAttr}><span class="subject-type-tag ${value}">${value}</span></td>`;
+  }
+  if (colIdx === 4) {
+    // 기본학점
+    return `<td class="credits"${spanAttr}>${value}</td>`;
+  }
+  if (colIdx === 5) {
+    // 이수구분
+    return `<td class="completion-type"${spanAttr}>${value}</td>`;
+  }
+  if (colIdx >= 6 && colIdx <= 11) {
+    // 학기별 단위
+    return renderSemesterCell(value, spanAttr);
+  }
+  if (colIdx === 12) {
+    // 운영학점
+    return `<td class="total-credits"${spanAttr}>${value}</td>`;
+  }
+  // 기본
+  return `<td${spanAttr}>${value}</td>`;
+}
+
+// 학기별 셀 렌더링 (학기교차 처리, 병합 대응)
+function renderSemesterCell(value, spanAttr = '') {
   if (!value) {
-    return '<td class="semester"></td>';
+    return `<td class="semester"${spanAttr}></td>`;
   }
   
   // "3 (학기교차)" 같은 표기 처리
   if (value.includes('학기교차') || value.includes('교차')) {
     const num = value.match(/^\d+/);
-    return `<td class="semester cross-semester has-value">
+    return `<td class="semester cross-semester has-value"${spanAttr}>
       ${num ? num[0] : value}
       <span class="cross-mark">학기교차</span>
     </td>`;
   }
   
-  return `<td class="semester has-value">${value}</td>`;
+  // 줄바꿈이 있는 다중 값 (병합셀의 "3 3 3 / 3 3 3 / 3" 같은 경우)
+  if (value.includes('\n')) {
+    const lines = value.split('\n').map(l => l.trim()).filter(l => l);
+    return `<td class="semester multi-value has-value"${spanAttr}>
+      ${lines.map(l => `<div>${l}</div>`).join('')}
+    </td>`;
+  }
+  
+  return `<td class="semester has-value"${spanAttr}>${value}</td>`;
 }
 
 function closeEmbedModal() {
