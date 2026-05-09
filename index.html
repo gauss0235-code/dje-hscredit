@@ -741,15 +741,16 @@ h1, h2 {
 }
 
 .curriculum-table thead th {
-  background: var(--sky-blue-dark);
-  color: white;
+  background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
+  color: var(--text-brown);
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-weight: 700;
   padding: 12px 8px;
   text-align: center;
-  font-size: 0.95em;
+  font-size: 1em;
   letter-spacing: -0.02em;
-  border-right: 1px solid rgba(255,255,255,0.2);
+  border-right: 1px solid #E8C896;
+  border-bottom: 2px solid #E8C896;
   position: sticky;
   top: 0;
   z-index: 5;
@@ -760,9 +761,11 @@ h1, h2 {
 }
 
 .curriculum-table thead .group-header {
-  background: #2C3E50;
-  font-size: 0.85em;
-  padding: 8px;
+  background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
+  color: var(--text-brown);
+  font-size: 1em;
+  padding: 10px;
+  border-bottom: 1px solid #E8C896;
 }
 
 .curriculum-table tbody td {
@@ -774,8 +777,8 @@ h1, h2 {
   background: white;
   transition: background 0.15s;
   font-family: 'Pretendard', sans-serif;
-  font-weight: 400;
-  font-size: 0.92em;
+  font-weight: 700;
+  font-size: 1em;
   color: var(--text-dark);
 }
 
@@ -792,7 +795,7 @@ h1, h2 {
   background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-weight: 700;
-  font-size: 0.95em;
+  font-size: 1em;
   color: var(--text-brown);
   vertical-align: middle;
   border-right: 2px solid #E8C896;
@@ -811,13 +814,14 @@ h1, h2 {
 .curriculum-table tbody td.section.horizontal {
   writing-mode: horizontal-tb;
   letter-spacing: -0.02em;
-  font-size: 0.88em;
+  font-size: 0.95em;
   padding: 10px 6px;
 }
 
 .curriculum-table tbody td.subject-area {
   background: #F0F9FF;
-  font-weight: 400;
+  font-weight: 700;
+  font-size: 1em;
   color: var(--text-dark);
   text-align: center;
   width: 60px;
@@ -826,21 +830,24 @@ h1, h2 {
 .curriculum-table tbody td.subject-name {
   text-align: left;
   padding-left: 12px;
-  font-weight: 400;
+  font-weight: 700;
+  font-size: 1em;
   color: var(--text-dark);
   width: 110px;
   min-width: 110px;
 }
 
 .curriculum-table tbody td.credits {
-  font-weight: 400;
+  font-weight: 700;
+  font-size: 1em;
   color: var(--text-dark);
   width: 50px;
 }
 
 .curriculum-table tbody td.semester {
   width: 56px;
-  font-weight: 400;
+  font-weight: 700;
+  font-size: 1em;
   color: var(--sky-blue-dark);
   position: relative;
 }
@@ -854,13 +861,13 @@ h1, h2 {
 .curriculum-table tbody td.semester.cross-semester {
   background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
   color: #78350F;
-  font-size: 0.85em;
+  font-size: 0.9em;
   font-weight: 700;
 }
 
 .curriculum-table tbody td.semester.cross-semester .cross-mark {
   display: block;
-  font-size: 0.7em;
+  font-size: 0.75em;
   font-weight: 600;
   margin-top: 1px;
   color: #78350F;
@@ -869,7 +876,7 @@ h1, h2 {
 
 /* 병합된 학기 셀에 여러 값이 있는 경우 (예: "3 3 3") */
 .curriculum-table tbody td.semester.multi-value {
-  font-size: 0.95em;
+  font-size: 1em;
   line-height: 1.5;
   padding: 8px 4px;
   font-weight: 700;
@@ -879,33 +886,30 @@ h1, h2 {
 }
 
 .curriculum-table tbody td.completion-type {
-  font-size: 0.88em;
+  font-size: 1em;
   color: var(--text-dark);
-  font-weight: 400;
+  font-weight: 700;
   padding: 8px 6px;
+  white-space: pre-line;
+  line-height: 1.5;
 }
 
 .curriculum-table tbody td.total-credits {
   background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
   color: #15803D;
   font-weight: 700;
+  font-size: 1em;
   width: 60px;
 }
 
-/* 과목유형별 색상 (왼쪽 작은 배지) */
-.subject-type-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 0.72em;
+/* 과목유형 - 일반 텍스트, 과목명과 동일 */
+.curriculum-table tbody td.subject-type {
+  font-family: 'Pretendard', sans-serif;
   font-weight: 700;
-  margin-right: 6px;
-  vertical-align: middle;
+  font-size: 1em;
+  color: var(--text-dark);
+  width: 80px;
 }
-.subject-type-tag.공통과목 { background: #DBEAFE; color: #1E40AF; }
-.subject-type-tag.일반선택 { background: #D1FAE5; color: #065F46; }
-.subject-type-tag.진로선택 { background: #FEF3C7; color: #92400E; }
-.subject-type-tag.융합선택 { background: #FCE7F3; color: #9F1239; }
 
 /* 에러/안내 메시지 */
 .curriculum-message {
@@ -1506,13 +1510,38 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
   const tableWrap = document.getElementById('curriculumTableWrap');
   
   // === 메타 정보 추출 (2행) ===
+  // 시트 구조: [학교명] [값] [학교 유형] [값] [학년 학급수] [값] [교원수] [값]
+  // 병합 셀 때문에 인덱스가 학교마다 다를 수 있어서 라벨 기반으로 매칭
   const metaRow = grid[1] || [];
-  const meta = {
-    schoolName: metaRow[1] || schoolName + '등학교',
-    schoolType: metaRow[5] || '-',
-    classCount: metaRow[8] || '-',
-    teacherCount: metaRow[12] || '-',
+  console.log('메타 행 (디버그):', metaRow);  // 콘솔에서 확인 가능
+  
+  const findMetaValue = (labels) => {
+    // labels: 찾을 라벨들의 배열 (예: ['학년 학급수', '학년학급수', '학급수'])
+    for (let i = 0; i < metaRow.length; i++) {
+      const cell = (metaRow[i] || '').toString().trim();
+      // 공백 제거해서 비교
+      const normalized = cell.replace(/\s/g, '');
+      for (const label of labels) {
+        if (normalized === label.replace(/\s/g, '')) {
+          // 라벨 다음 셀들 중 첫 번째 비어있지 않은 값을 반환
+          for (let j = i + 1; j < metaRow.length; j++) {
+            const next = (metaRow[j] || '').toString().trim();
+            if (next) return next;
+          }
+        }
+      }
+    }
+    return null;
   };
+  
+  const meta = {
+    schoolName: findMetaValue(['학교명']) || schoolName + '등학교',
+    schoolType: findMetaValue(['학교 유형', '학교유형']) || '-',
+    classCount: findMetaValue(['학년 학급수', '학년학급수', '학급수']) || '-',
+    teacherCount: findMetaValue(['교원수', '교원 수']) || '-',
+  };
+  
+  console.log('메타 정보 (추출 결과):', meta);  // 콘솔에서 확인 가능
   
   // === 병합 정보를 2D 맵으로 정리 ===
   // mergeMap[row][col] = { rowSpan, colSpan } : 병합 시작 셀에만 정보
@@ -1601,12 +1630,12 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
           <th rowspan="2" style="width:60px;">운영<br>학점</th>
         </tr>
         <tr>
-          <th style="width:56px; background:#3B5F7F;">1학기</th>
-          <th style="width:56px; background:#3B5F7F;">2학기</th>
-          <th style="width:56px; background:#3B5F7F;">1학기</th>
-          <th style="width:56px; background:#3B5F7F;">2학기</th>
-          <th style="width:56px; background:#3B5F7F;">1학기</th>
-          <th style="width:56px; background:#3B5F7F;">2학기</th>
+          <th style="width:56px;">1학기</th>
+          <th style="width:56px;">2학기</th>
+          <th style="width:56px;">1학기</th>
+          <th style="width:56px;">2학기</th>
+          <th style="width:56px;">1학기</th>
+          <th style="width:56px;">2학기</th>
         </tr>
       </thead>
       <tbody>
@@ -1686,17 +1715,23 @@ function renderCurriculumCell(colIdx, value, spanAttr) {
     return `<td class="subject-name"${spanAttr}>${value}</td>`;
   }
   if (colIdx === 3) {
-    // 과목유형 - 색상 배지
-    if (!value) return `<td${spanAttr}></td>`;
-    return `<td${spanAttr}><span class="subject-type-tag ${value}">${value}</span></td>`;
+    // 과목유형 - 일반 텍스트 (배지 아님, 과목명과 동일한 폰트/크기)
+    return `<td class="subject-type"${spanAttr}>${value}</td>`;
   }
   if (colIdx === 4) {
     // 기본학점
     return `<td class="credits"${spanAttr}>${value}</td>`;
   }
   if (colIdx === 5) {
-    // 이수구분
-    return `<td class="completion-type"${spanAttr}>${value}</td>`;
+    // 이수구분 - "선택군A 택7" 같은 경우 공백을 줄바꿈으로
+    // 이미 \n이 있으면 그대로, 없고 공백이 있으면 첫 공백을 줄바꿈으로
+    let display = value;
+    if (!display.includes('\n') && /\s/.test(display)) {
+      // "선택군A 택7" → "선택군A\n택7"
+      display = display.replace(/\s+/, '\n');
+    }
+    // pre-line CSS로 \n이 줄바꿈으로 표시됨
+    return `<td class="completion-type"${spanAttr}>${display}</td>`;
   }
   if (colIdx >= 6 && colIdx <= 11) {
     // 학기별 단위
