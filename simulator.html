@@ -346,6 +346,166 @@ body {
   margin-top: 4px;
 }
 
+/* === 한도 초과 토스트 알림 === */
+.toast-alert {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: white;
+  padding: 14px 22px;
+  border-radius: 14px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.95em;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 90vw;
+  text-align: center;
+  pointer-events: none;
+}
+.toast-alert.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 흔들림 효과 (한도 초과 시 그룹 강조) */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.choice-group.shake {
+  animation: shake-x 0.3s ease-in-out 2;
+}
+
+/* === 상단 고정 진행 상태 사이드바 === */
+.status-summary {
+  position: sticky;
+  top: 78px;  /* progress-bar 높이만큼 */
+  z-index: 50;
+  background: linear-gradient(135deg, #F8FAFB 0%, #F0F4F8 100%);
+  border-bottom: 1px solid #E5E7EB;
+  padding: 10px 16px;
+  font-size: 0.85em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.status-summary .status-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.status-summary .status-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+.status-summary .status-toggle-label {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  color: var(--sky-blue-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-summary .status-toggle-label svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.status-summary .status-toggle-arrow {
+  transition: transform 0.25s;
+  width: 18px;
+  height: 18px;
+  color: var(--sky-blue-dark);
+}
+.status-summary .status-toggle-arrow.open {
+  transform: rotate(180deg);
+}
+.status-summary .status-quick {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.92em;
+  color: var(--text-mid);
+}
+.status-summary .status-quick .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-summary .status-quick .item .label {
+  color: var(--text-mid);
+}
+.status-summary .status-quick .item .value {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  color: var(--sky-blue-dark);
+}
+.status-summary .status-quick .item .value.over {
+  color: var(--red-text);
+}
+.status-summary .status-quick .item .value.ok {
+  color: var(--green-text);
+}
+.status-summary .status-detail {
+  margin-top: 10px;
+  display: none;
+  padding-top: 10px;
+  border-top: 1px solid #E5E7EB;
+}
+.status-summary .status-detail.open {
+  display: block;
+}
+.status-summary .status-section {
+  margin-bottom: 8px;
+}
+.status-summary .status-section:last-child {
+  margin-bottom: 0;
+}
+.status-summary .status-section .section-label {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  color: var(--text-dark);
+  font-size: 0.92em;
+  margin-bottom: 4px;
+}
+.status-summary .area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 4px 12px;
+  font-size: 0.86em;
+}
+.status-summary .area-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.status-summary .area-item .area-name {
+  color: var(--text-mid);
+}
+.status-summary .area-item .area-value {
+  font-weight: 700;
+  color: var(--sky-blue-dark);
+}
+.status-summary .area-item.complete .area-value {
+  color: var(--green-text);
+}
+.status-summary .area-item.shortage .area-value {
+  color: var(--orange-text);
+}
+.status-summary .area-item .check-mark {
+  margin-left: 4px;
+  font-size: 0.92em;
+}
+.status-summary .area-item.complete .check-mark { color: var(--green-text); }
+.status-summary .area-item.shortage .check-mark { color: var(--orange-text); }
+
 /* 학교지정 영역 */
 .section-block {
   margin-bottom: 28px;
@@ -1023,6 +1183,9 @@ body {
   .share-buttons { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .share-btn { padding: 12px 4px; font-size: 0.78em; }
   .share-btn svg { width: 20px; height: 20px; }
+  .status-summary { top: 70px; padding: 8px 12px; }
+  .status-summary .status-quick { gap: 8px; font-size: 0.84em; }
+  .status-summary .area-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 }
 </style>
 </head>
@@ -1047,6 +1210,27 @@ body {
   </div>
 </div>
 
+<!-- 상단 고정 진행 상태 (학기 진행 중에만 표시) -->
+<div class="status-summary" id="statusSummary" style="display:none;">
+  <div class="status-content">
+    <div class="status-toggle" id="statusToggle">
+      <div class="status-toggle-label" id="statusToggleLabel">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>진행 상태</span>
+      </div>
+      <svg class="status-toggle-arrow" id="statusToggleArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+    <div class="status-quick" id="statusQuick">
+      <!-- 빠른 요약 (총 학점, 국·수·영) -->
+    </div>
+    <div class="status-detail" id="statusDetail">
+      <!-- 펼쳐진 상세 (교과군별) -->
+    </div>
+  </div>
+</div>
+
 <!-- 메인 컨테이너 -->
 <div class="main">
   <div class="school-header">
@@ -1063,6 +1247,9 @@ body {
     </div>
   </div>
 </div>
+
+<!-- 토스트 알림 -->
+<div class="toast-alert" id="toastAlert"></div>
 
 <script>
 // ============================================
@@ -1752,7 +1939,7 @@ function getSubjectDescription(subjectName) {
 // ============================================
 // 단계별 렌더링
 // ============================================
-function renderStep() {
+function renderStep(scrollToTop = true) {
   // 진행률 업데이트
   const stepNum = state.currentStep;
   document.getElementById('stepNum').textContent = stepNum;
@@ -1777,7 +1964,126 @@ function renderStep() {
     bindResultEvents();
   }
   
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 상단 고정 사이드바 업데이트 (학기 진행 중에만 표시)
+  updateStatusSummary(stepNum);
+  
+  if (scrollToTop) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+// ============================================
+// 상단 고정 사이드바 업데이트
+// ============================================
+function updateStatusSummary(stepNum) {
+  const wrap = document.getElementById('statusSummary');
+  // 진로 선택(1) / 결과(8)에선 숨김
+  if (stepNum < 2 || stepNum > 7 || !state.curriculumData) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  
+  const stats = computeStats(state, state.curriculumData);
+  const targets = state.curriculumData.semesterTargets;
+  const totalTarget = Object.values(targets).reduce((a,b)=>a+b, 0);
+  
+  // === 빠른 요약 ===
+  const kme = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
+  const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
+  const kmeOver = kme > kmeMax;
+  
+  const totalProgress = totalTarget > 0 ? `${stats.totalCredits}/${totalTarget}` : `${stats.totalCredits}`;
+  
+  const quickHtml = `
+    <div class="item">
+      <span class="label">총 학점:</span>
+      <span class="value">${totalProgress}</span>
+    </div>
+    <div class="item">
+      <span class="label">국·수·영:</span>
+      <span class="value ${kmeOver ? 'over' : ''}">${kme} / ${kmeMax}${kmeOver ? ' ⚠' : ''}</span>
+    </div>
+  `;
+  document.getElementById('statusQuick').innerHTML = quickHtml;
+  
+  // === 상세 (펼쳐졌을 때) - 교과군별 ===
+  const isExcluded = state.curriculumData.schoolCategory === 'excluded';
+  let detailHtml = '';
+  
+  if (!isExcluded) {
+    const reqs = getRequirements(state.curriculumData.schoolCategory);
+    const areaItems = Object.entries(reqs).map(([area, required]) => {
+      const current = stats.areaCredits[area] || 0;
+      const isComplete = current >= required;
+      const cls = isComplete ? 'complete' : (current > 0 ? 'shortage' : 'shortage');
+      const mark = isComplete ? '✓' : '!';
+      const displayName = area === '기술교양' ? '기술·가정 외' : area;
+      return `
+        <div class="area-item ${cls}">
+          <span class="area-name">${displayName}</span>
+          <span class="area-value">${current}/${required}<span class="check-mark">${mark}</span></span>
+        </div>
+      `;
+    }).join('');
+    
+    detailHtml = `
+      <div class="status-section">
+        <div class="section-label">교과군별 필수 이수 학점</div>
+        <div class="area-grid">${areaItems}</div>
+      </div>
+    `;
+  } else {
+    detailHtml = `
+      <div class="status-section">
+        <div class="section-label" style="color: var(--text-mid); font-size: 0.85em;">
+          이 학교 유형은 별도 학점 배당 기준이 적용돼요
+        </div>
+      </div>
+    `;
+  }
+  
+  document.getElementById('statusDetail').innerHTML = detailHtml;
+  
+  // 토글 이벤트 (한 번만 등록)
+  const toggle = document.getElementById('statusToggle');
+  if (toggle && !toggle.dataset.bound) {
+    toggle.dataset.bound = '1';
+    toggle.addEventListener('click', () => {
+      const detail = document.getElementById('statusDetail');
+      const arrow = document.getElementById('statusToggleArrow');
+      detail.classList.toggle('open');
+      arrow.classList.toggle('open');
+    });
+  }
+}
+
+// ============================================
+// 토스트 알림
+// ============================================
+let toastTimer = null;
+function showToast(message) {
+  const el = document.getElementById('toastAlert');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 2400);
+}
+
+// 한도 초과 알림
+function showLimitAlert(groupName, takeN) {
+  showToast(`${groupName}는 ${takeN}과목까지만 선택할 수 있어요`);
+  // 해당 그룹에 흔들림 효과
+  document.querySelectorAll('.choice-group').forEach(g => {
+    const title = g.querySelector('.choice-group-title');
+    if (title && title.textContent.includes(groupName)) {
+      g.classList.add('shake');
+      setTimeout(() => g.classList.remove('shake'), 700);
+    }
+  });
 }
 
 // === Step 1: 진로 선택 ===
@@ -2042,12 +2348,20 @@ function bindSemesterEvents(sem) {
       if (idx >= 0) {
         choices.splice(idx, 1);
       } else {
+        // === 3번 기능: 선택군 한도 초과 차단 ===
+        const semData = state.curriculumData.semesters[sem.key];
+        const group = semData.choiceGroups[groupName];
+        if (group && group.takeN !== null && choices.length >= group.takeN) {
+          // 이미 한도까지 선택됨 - 추가 선택 차단
+          showLimitAlert(groupName, group.takeN);
+          return;
+        }
         choices.push(subjectName);
       }
       
-      // 저장 + 다시 렌더
+      // 저장 + 다시 렌더 (스크롤 위치 보존)
       saveState();
-      renderStep();
+      renderStep(false);
     });
   });
   
@@ -2232,7 +2546,7 @@ function renderResultStep() {
         </div>
         
         <div class="share-watermark">
-          대전광역시 고등학교 교육과정 안내 · djhs-curriculum.kro.kr
+          대전광역시 고등학교 교육과정 과목 선택 시뮬레이터
         </div>
       </div>
       
