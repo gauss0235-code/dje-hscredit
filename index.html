@@ -665,8 +665,10 @@ h1, h2 {
 
 .embed-frame-wrap {
   flex: 1;
+  min-height: 0;
   background: #F9FAFB;
   position: relative;
+  overflow: hidden;
 }
 
 .embed-frame-wrap iframe {
@@ -685,6 +687,7 @@ h1, h2 {
   overflow: auto;
   padding: 24px;
   background: #FAFBFC;
+  -webkit-overflow-scrolling: touch;
 }
 
 .curriculum-info {
@@ -1411,7 +1414,7 @@ async function openCurriculumEmbed(schoolName, sheetUrl) {
     // Google Sheets API로 '편성표' 시트 데이터 가져오기
     // 시트 이름이 '편성표'이므로 인코딩
     const sheetName = encodeURIComponent('편성표');
-    const range = `${sheetName}!A1:M100`;  // 충분히 넉넉하게
+    const range = `${sheetName}!A1:M500`;  // 충분히 넉넉하게 (학교당 과목 500개까지 대응)
     const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${GOOGLE_API_KEY}`;
     
     const response = await fetch(apiUrl);
