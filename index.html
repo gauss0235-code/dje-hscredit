@@ -1422,9 +1422,15 @@ function showSchoolModal(school) {
        </button>`;
   
   // 2026 과목선택 버튼 처리
-  const subj2026Url = school.subject2026;
-  const subj2026Btn = subj2026Url
-    ? `<button class="year-btn subject" onclick="window.open('${subj2026Url}', '_blank', 'noopener,noreferrer')">
+  // 편성표 URL이 있으면 시뮬레이터 활성화 (시트 ID 추출해서 simulator.html로 연결)
+  const curr2026UrlForSim = school.curriculum2026;
+  let sheetIdForSim = '';
+  if (curr2026UrlForSim) {
+    const sheetMatch = curr2026UrlForSim.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (sheetMatch) sheetIdForSim = sheetMatch[1];
+  }
+  const subj2026Btn = sheetIdForSim
+    ? `<button class="year-btn subject" onclick="window.open('simulator.html?school=${encodeURIComponent(school.name)}&sheetId=${sheetIdForSim}', '_blank', 'noopener,noreferrer')">
          <span class="icon">${SVG_SIMULATOR}</span>
          <span class="label">과목 선택 시뮬레이터</span>
          <span class="badge-new">새 탭에서 열림</span>

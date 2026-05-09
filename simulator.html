@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="대전광역시 고등학교 과목 선택 시뮬레이터 - 학생들이 직접 3년치 교육과정을 설계해보는 도구">
+<title>과목 선택 시뮬레이터</title>
+
+<!-- 폰트 -->
+<style>
+@font-face {
+  font-family: 'YeogiOttaeJalnanGothic';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+</style>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+
+<style>
+:root {
+  --sky-blue-dark: #4A8AB8;
+  --sky-blue: #87BAD7;
+  --beige: #FFF8E7;
+  --beige-deep: #FFE9B3;
+  --text-dark: #2C3E50;
+  --text-mid: #6B7280;
+  --text-brown: #6B4423;
+  --green-bg: #DCFCE7;
+  --green-text: #15803D;
+  --orange-bg: #FEF3C7;
+  --orange-text: #B45309;
+  --red-bg: #FEE2E2;
+  --red-text: #B91C1C;
+  --gradient-blue: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  --gradient-beige: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Pretendard', sans-serif;
+  background: linear-gradient(180deg, #E0F2FE 0%, #FFFFFF 30%);
+  color: var(--text-dark);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ============ 진행률 바 (상단 고정) ============ */
+.progress-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 14px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.progress-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-back {
+  background: transparent;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.85em;
+  color: var(--text-mid);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.progress-back:hover {
+  background: #F9FAFB;
+  border-color: var(--sky-blue);
+}
+
+.progress-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85em;
+  color: var(--text-mid);
+}
+
+.progress-text strong {
+  color: var(--sky-blue-dark);
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.progress-track {
+  height: 6px;
+  background: #F0F4F8;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-blue);
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ 메인 컨테이너 ============ */
+.main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px 20px 60px;
+}
+
+.school-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.school-name {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.5em;
+  color: var(--sky-blue-dark);
+  margin-bottom: 4px;
+}
+
+.school-sub {
+  font-size: 0.92em;
+  color: var(--text-mid);
+}
+
+/* ============ 단계 카드 ============ */
+.step-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(74, 138, 184, 0.08);
+  border: 1px solid #F0F4F8;
+}
+
+.step-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.6em;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-icon-wrap {
+  width: 36px;
+  height: 36px;
+  background: var(--gradient-blue);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+  stroke: white;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.step-desc {
+  font-size: 0.95em;
+  color: var(--text-mid);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+/* ============ 진로 선택 (Step 1) ============ */
+.career-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.career-card {
+  padding: 24px 18px;
+  border: 2px solid #E5E7EB;
+  border-radius: 16px;
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-family: inherit;
+  font-size: 1em;
+  color: var(--text-dark);
+}
+
+.career-card:hover {
+  border-color: var(--sky-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(74, 138, 184, 0.15);
+}
+
+.career-card.selected {
+  border-color: var(--sky-blue-dark);
+  background: linear-gradient(135deg, #E0F2FE 0%, #DBEAFE 100%);
+  box-shadow: 0 6px 20px rgba(74, 138, 184, 0.2);
+}
+
+.career-card .career-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.career-card .career-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: var(--sky-blue-dark);
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.career-card .career-name {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+  color: var(--sky-blue-dark);
+}
+
+.career-card .career-desc {
+  font-size: 0.82em;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+
+/* ============ 학기 단계 (Step 2~7) ============ */
+.semester-summary {
+  background: var(--gradient-beige);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92em;
+  color: var(--text-brown);
+  border: 1px solid #E8C896;
+}
+.semester-summary .credit-status {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+}
+.semester-summary .credit-status.complete {
+  color: var(--green-text);
+}
+
+/* 학교지정 영역 */
+.section-block {
+  margin-bottom: 28px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.05em;
+  color: var(--text-dark);
+}
+
+.section-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78em;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+.section-badge.fixed {
+  background: var(--gradient-beige);
+  color: var(--text-brown);
+  border: 1px solid #E8C896;
+}
+.section-badge.choice {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  border: 1px solid #F59E0B;
+}
+
+.section-info {
+  font-size: 0.85em;
+  color: var(--text-mid);
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 400;
+}
+
+/* 과목 카드 리스트 */
+.subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subject-card {
+  border: 2px solid #F0F4F8;
+  border-radius: 12px;
+  background: white;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+
+.subject-card.fixed {
+  background: linear-gradient(180deg, #FFFCF5 0%, #FFFAEC 100%);
+  border-color: #F0E6D0;
+}
+
+.subject-card.selected:not(.fixed) {
+  border-color: var(--sky-blue-dark);
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+}
+
+.subject-card.recommended {
+  position: relative;
+}
+.subject-card.recommended::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #F59E0B 0%, #EA580C 100%);
+}
+
+.subject-main {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.subject-checkbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #D1D5DB;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  background: white;
+}
+
+.subject-card.selected .subject-checkbox {
+  background: var(--sky-blue-dark);
+  border-color: var(--sky-blue-dark);
+}
+
+.subject-checkbox svg {
+  width: 14px;
+  height: 14px;
+  stroke: white;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.subject-card.selected .subject-checkbox svg {
+  opacity: 1;
+}
+
+.subject-card.fixed .subject-checkbox {
+  background: var(--text-brown);
+  border-color: var(--text-brown);
+  cursor: not-allowed;
+}
+.subject-card.fixed .subject-checkbox svg {
+  opacity: 1;
+}
+
+.subject-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.subject-row1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.subject-name {
+  font-weight: 700;
+  font-size: 1em;
+  color: var(--text-dark);
+}
+
+.subject-recommend-mark {
+  display: inline-block;
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+
+.subject-row2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82em;
+  color: var(--text-mid);
+}
+
+.subject-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  background: #F3F4F6;
+  color: var(--text-mid);
+}
+
+.subject-tag.공통 { background: #DBEAFE; color: #1E40AF; }
+.subject-tag.일반 { background: #D1FAE5; color: #065F46; }
+.subject-tag.진로 { background: #FEF3C7; color: #92400E; }
+.subject-tag.융합 { background: #FCE7F3; color: #9F1239; }
+
+.subject-credits {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.92em;
+  color: var(--sky-blue-dark);
+  flex-shrink: 0;
+}
+
+.subject-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.subject-toggle.open {
+  transform: rotate(180deg);
+}
+.subject-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* 과목 설명 (펼쳐졌을 때) */
+.subject-detail {
+  border-top: 1px solid #F0F4F8;
+  padding: 14px 16px;
+  font-size: 0.88em;
+  color: var(--text-mid);
+  line-height: 1.65;
+  background: rgba(248, 250, 252, 0.6);
+  display: none;
+}
+.subject-detail.open {
+  display: block;
+}
+
+.subject-detail-empty {
+  color: #9CA3AF;
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+/* 선택 그룹 (선택군 A, B...) */
+.choice-group {
+  background: #FAFBFC;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.choice-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice-group-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1em;
+  color: var(--text-dark);
+}
+
+.choice-group-status {
+  font-size: 0.85em;
+  color: var(--text-mid);
+}
+.choice-group-status .selected-count {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+  color: var(--sky-blue-dark);
+}
+.choice-group-status.complete .selected-count {
+  color: var(--green-text);
+}
+.choice-group-status.over .selected-count {
+  color: var(--red-text);
+}
+
+/* ============ 네비게이션 버튼 ============ */
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nav-btn.prev {
+  background: white;
+  color: var(--text-dark);
+  border: 2px solid #E5E7EB;
+}
+.nav-btn.prev:not(:disabled):hover {
+  border-color: var(--sky-blue);
+  background: #F9FAFB;
+}
+
+.nav-btn.next {
+  background: var(--gradient-blue);
+  color: white;
+  flex: 2;
+}
+.nav-btn.next:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(74, 138, 184, 0.35);
+}
+
+.nav-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============ 결과 화면 ============ */
+.result-summary {
+  background: var(--gradient-beige);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 24px;
+  border: 1px solid #E8C896;
+  text-align: center;
+}
+.result-summary h2 {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.6em;
+  color: var(--text-brown);
+  margin-bottom: 4px;
+}
+.result-summary .total-credit {
+  font-size: 0.95em;
+  color: var(--text-brown);
+}
+.result-summary .total-credit strong {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.3em;
+  color: var(--sky-blue-dark);
+}
+
+.result-table-wrap {
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88em;
+  min-width: 540px;
+}
+
+.result-table th {
+  background: var(--gradient-blue);
+  color: white;
+  padding: 10px 6px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-weight: 700;
+}
+
+.result-table td {
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid #F0F4F8;
+  background: white;
+  font-weight: 700;
+}
+
+.result-table td.semester-cell {
+  font-family: 'Pretendard', sans-serif;
+}
+
+.result-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.result-actions button {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid #E5E7EB;
+  background: white;
+  font-family: inherit;
+  font-size: 0.92em;
+  font-weight: 700;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.result-actions button:hover {
+  border-color: var(--sky-blue);
+  background: #F9FAFB;
+}
+.result-actions button svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============ 로딩/에러 ============ */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+.loading-screen .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #F0F4F8;
+  border-top-color: var(--sky-blue-dark);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-screen p {
+  color: var(--text-mid);
+  font-size: 0.95em;
+}
+
+.error-screen {
+  text-align: center;
+  padding: 60px 20px;
+}
+.error-screen .icon { font-size: 3em; margin-bottom: 12px; }
+.error-screen h2 {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  margin-bottom: 8px;
+  color: var(--text-dark);
+}
+.error-screen p {
+  color: var(--text-mid);
+  margin-bottom: 20px;
+}
+.error-screen a {
+  display: inline-block;
+  padding: 10px 20px;
+  background: var(--gradient-blue);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+
+/* ============ 모바일 반응형 ============ */
+@media (max-width: 600px) {
+  .main { padding: 20px 14px 50px; }
+  .step-card { padding: 22px 18px; border-radius: 16px; }
+  .step-title { font-size: 1.3em; }
+  .career-grid { grid-template-columns: 1fr; gap: 10px; }
+  .career-card { padding: 18px 14px; flex-direction: row; text-align: left; }
+  .career-card .career-icon { width: 40px; height: 40px; }
+  .nav-btn { font-size: 1em; padding: 14px; }
+  .progress-bar { padding: 10px 14px; }
+  .progress-content { gap: 10px; }
+  .progress-back { font-size: 0.78em; padding: 5px 9px; }
+  .school-name { font-size: 1.25em; }
+  .subject-name { font-size: 0.94em; }
+  .result-table { font-size: 0.78em; min-width: 480px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 진행률 바 -->
+<div class="progress-bar">
+  <div class="progress-content">
+    <button class="progress-back" onclick="goHome()">← 홈으로</button>
+    <div class="progress-info">
+      <div class="progress-text">
+        <span><strong id="stepNum">1</strong> / 8 단계</span>
+        <span id="stepLabel">진로 선택</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 12.5%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 컨테이너 -->
+<div class="main">
+  <div class="school-header">
+    <div class="school-name" id="schoolNameDisplay">학교명 로딩 중...</div>
+    <div class="school-sub">2026학년도 입학생 과목 선택 시뮬레이터</div>
+  </div>
+
+  <!-- 단계 콘텐츠 영역 -->
+  <div id="stepContent">
+    <!-- 동적으로 생성됨 -->
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p>편성표를 불러오는 중...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// 시뮬레이터 메인 로직
+// ============================================
+const GOOGLE_API_KEY = 'AIzaSyBC95kjuGRE0cgsHHWWco0-MnBt9XiPfCY';
+
+// URL 파라미터
+const urlParams = new URLSearchParams(window.location.search);
+const SCHOOL_NAME = urlParams.get('school') || '';
+const SHEET_ID = urlParams.get('sheetId') || '';
+
+// 상태
+const state = {
+  currentStep: 1,  // 1: 진로 선택, 2~7: 학기, 8: 결과
+  career: null,    // '인문', '자연', '예체능', '모르겠음'
+  selections: {},  // {semesterKey: [subjectName, ...]}
+  curriculumData: null,  // 편성표 분석 결과
+  subjectLookup: null,    // PDF에서 추출한 과목 설명
+  expandedSubjects: new Set(),  // 펼쳐진 과목들
+};
+
+// 학기 정의
+const SEMESTERS = [
+  { key: '1-1', grade: 1, term: 1, label: '1학년 1학기', step: 2 },
+  { key: '1-2', grade: 1, term: 2, label: '1학년 2학기', step: 3 },
+  { key: '2-1', grade: 2, term: 1, label: '2학년 1학기', step: 4 },
+  { key: '2-2', grade: 2, term: 2, label: '2학년 2학기', step: 5 },
+  { key: '3-1', grade: 3, term: 1, label: '3학년 1학기', step: 6 },
+  { key: '3-2', grade: 3, term: 2, label: '3학년 2학기', step: 7 },
+];
+
+// 진로 옵션
+const CAREERS = [
+  {
+    key: '인문',
+    name: '인문 · 사회 계열',
+    desc: '국어/사회/외국어 중심',
+    iconSvg: '<svg viewBox="0 0 24 24"><path d="M2 4v15l5-3 5 3V4"/><path d="M12 4v15l5-3 5 3V4"/></svg>',
+  },
+  {
+    key: '자연',
+    name: '자연 · 공학 계열',
+    desc: '수학/과학 중심',
+    iconSvg: '<svg viewBox="0 0 24 24"><path d="M9 4H5a2 2 0 0 0-2 2v3"/><path d="M9 20H5a2 2 0 0 1-2-2v-3"/><path d="M15 4h4a2 2 0 0 1 2 2v3"/><path d="M15 20h4a2 2 0 0 0 2-2v-3"/><circle cx="12" cy="12" r="3"/><path d="M12 9v6M9 12h6"/></svg>',
+  },
+  {
+    key: '예체능',
+    name: '예체능 계열',
+    desc: '음악/미술/체육 중심',
+    iconSvg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h4M18 12h4M12 2v4M12 18v4"/><circle cx="12" cy="12" r="3"/></svg>',
+  },
+  {
+    key: '모르겠음',
+    name: '아직 잘 모르겠어요',
+    desc: '두루두루 추천받기',
+    iconSvg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  },
+];
+
+// 진로별 추천 과목 (간단한 키워드 기반)
+const CAREER_RECOMMEND = {
+  '인문': ['문학', '독서와 작문', '화법과 언어', '사회와 문화', '세계사', '한국사', '윤리', '제2외국어', '한문', '영어'],
+  '자연': ['미적분', '확률과 통계', '기하', '대수', '물리학', '화학', '생명과학', '지구과학', '인공지능 수학', '과학탐구'],
+  '예체능': ['음악', '미술', '체육', '연극', '디자인', '스포츠'],
+  '모르겠음': [],
+};
+
+// SVG 아이콘
+const ICONS = {
+  career: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  semester: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  result: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>',
+  arrowRight: '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+  arrowLeft: '<svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 19 5"/></svg>',
+  download: '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  print: '<svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  reset: '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+  home: '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+};
+
+// ============================================
+// 초기화
+// ============================================
+async function init() {
+  if (!SCHOOL_NAME || !SHEET_ID) {
+    showError('학교 정보가 없어요', 'URL이 잘못되었습니다. 메인 페이지에서 다시 시도해주세요.');
+    return;
+  }
+  
+  document.getElementById('schoolNameDisplay').textContent = `${SCHOOL_NAME}등학교`;
+  document.title = `${SCHOOL_NAME}고 - 과목 선택 시뮬레이터`;
+  
+  // 이전 진행 상태 복원
+  loadState();
+  
+  try {
+    // 1. PDF 과목 설명 데이터 로드 (선택적)
+    try {
+      const lookupRes = await fetch('subject_lookup.json');
+      if (lookupRes.ok) {
+        state.subjectLookup = await lookupRes.json();
+      }
+    } catch (e) {
+      console.log('과목 설명 데이터 없음 (선택적)');
+      state.subjectLookup = {};
+    }
+    
+    // 2. 편성표 데이터 로드
+    state.curriculumData = await loadCurriculum();
+    
+    // 3. 첫 단계 (진로 선택) 표시
+    renderStep();
+  } catch (err) {
+    showError('편성표를 불러올 수 없어요', err.message || '오류가 발생했습니다.');
+  }
+}
+
+// ============================================
+// 편성표 로드 + 분석
+// ============================================
+async function loadCurriculum() {
+  const sheetName = encodeURIComponent('편성표');
+  const range = `${sheetName}!A1:M500`;
+  const fields = encodeURIComponent('sheets(merges,data.rowData.values(formattedValue))');
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?ranges=${range}&fields=${fields}&key=${GOOGLE_API_KEY}`;
+  
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `${res.status} 오류`);
+  }
+  
+  const data = await res.json();
+  const sheet = data.sheets[0];
+  const merges = sheet.merges || [];
+  const rowData = sheet.data[0]?.rowData || [];
+  
+  // 그리드
+  const grid = rowData.map(r => 
+    (r.values || []).map(c => (c && c.formattedValue) || '')
+  );
+  
+  // 병합 맵 (병합 시작 셀의 값을 영역 전체에 복사)
+  // expand: 병합 영역을 모두 같은 값으로 채움
+  const expandedGrid = grid.map(r => [...r]);
+  for (const m of merges) {
+    const startVal = (grid[m.startRowIndex] || [])[m.startColumnIndex] || '';
+    for (let r = m.startRowIndex; r < m.endRowIndex; r++) {
+      for (let c = m.startColumnIndex; c < m.endColumnIndex; c++) {
+        if (!expandedGrid[r]) expandedGrid[r] = [];
+        expandedGrid[r][c] = startVal;
+      }
+    }
+  }
+  
+  // 데이터 행 (4행부터, 인덱스 3)
+  const dataStartRow = 3;
+  
+  // 컬럼 매핑 (이전에 분석한대로)
+  const COL = {
+    section: 0,    // 학교지정/학생선택
+    area: 1,       // 교과(군)
+    subject: 2,    // 과목
+    type: 3,       // 과목유형 (공통/일반선택/진로선택/융합선택)
+    baseCredit: 4, // 기본학점
+    completion: 5, // 이수구분 (지정 / 선택군A 택7 등)
+    sem: { '1-1': 6, '1-2': 7, '2-1': 8, '2-2': 9, '3-1': 10, '3-2': 11 },
+    totalCredit: 12,
+  };
+  
+  // "편성 조건 점검" 행 이후는 무시
+  let endRow = expandedGrid.length;
+  for (let r = dataStartRow; r < expandedGrid.length; r++) {
+    const text = (expandedGrid[r] || []).join(' ');
+    if (text.includes('편성 조건') && text.includes('점검')) {
+      endRow = r;
+      break;
+    }
+  }
+  
+  // 학기별로 과목 정리
+  // 각 학기마다: { fixed: [...], choices: [{groupName, takeN, subjects: [...]}] }
+  const semesters = {};
+  for (const sem of Object.keys(COL.sem)) {
+    semesters[sem] = {
+      fixed: [],
+      choiceGroups: {},  // groupName → { takeN, subjects }
+    };
+  }
+  
+  for (let r = dataStartRow; r < endRow; r++) {
+    const row = expandedGrid[r] || [];
+    const sectionRaw = (row[COL.section] || '').toString().trim();
+    const area = (row[COL.area] || '').toString().trim();
+    const subject = (row[COL.subject] || '').toString().trim();
+    const type = (row[COL.type] || '').toString().trim();
+    const baseCredit = parseFloat(row[COL.baseCredit]) || 0;
+    const completion = (row[COL.completion] || '').toString().trim();
+    
+    // 과목명 없으면 스킵
+    if (!subject) continue;
+    
+    // 합계 행 스킵 (학기별 ... 같은)
+    if (/학기별|이수학점|이수\s*과목수|창의적|체험활동|소계|합계|총계/.test(sectionRaw)) continue;
+    if (/학기별|이수학점|이수\s*과목수|창의적|체험활동|소계|합계|총계/.test(subject)) continue;
+    
+    // 학교지정 vs 학생선택
+    const isFixed = sectionRaw.includes('학교') && sectionRaw.includes('지정');
+    
+    // 각 학기별로 처리
+    for (const [semKey, semCol] of Object.entries(COL.sem)) {
+      const cellVal = (row[semCol] || '').toString().trim();
+      if (!cellVal) continue;  // 이 학기에 안 함
+      
+      // 학기교차 처리
+      const isCrossSem = cellVal.includes('학기교차') || cellVal.includes('교차');
+      
+      // 단위 추출
+      const creditMatch = cellVal.match(/(\d+(?:\.\d+)?)/);
+      const credit = creditMatch ? parseFloat(creditMatch[1]) : baseCredit;
+      
+      const subjInfo = {
+        name: subject,
+        area: area,
+        type: type,  // 공통/일반선택/진로선택/융합선택
+        credit: credit,
+        baseCredit: baseCredit,
+        crossSem: isCrossSem,
+        cellValue: cellVal,
+      };
+      
+      if (isFixed) {
+        // 학교지정 - 자동 선택
+        semesters[semKey].fixed.push(subjInfo);
+      } else {
+        // 학생선택
+        // completion에서 그룹 이름 추출 (예: "선택군A 택7")
+        let groupName = '선택';  // 기본
+        let takeN = null;
+        const groupMatch = completion.match(/(선택군\s*[A-Z\d]+|[A-Z]\s*그룹|선택\s*\w+)/);
+        if (groupMatch) {
+          groupName = groupMatch[1].replace(/\s+/g, '');
+        }
+        const takeMatch = completion.match(/택\s*(\d+)/);
+        if (takeMatch) {
+          takeN = parseInt(takeMatch[1]);
+        }
+        
+        if (!semesters[semKey].choiceGroups[groupName]) {
+          semesters[semKey].choiceGroups[groupName] = {
+            name: groupName,
+            takeN: takeN,
+            subjects: [],
+          };
+        } else if (takeN !== null && semesters[semKey].choiceGroups[groupName].takeN === null) {
+          semesters[semKey].choiceGroups[groupName].takeN = takeN;
+        }
+        semesters[semKey].choiceGroups[groupName].subjects.push(subjInfo);
+      }
+    }
+  }
+  
+  return { semesters };
+}
+
+// ============================================
+// 진로 추천 검사
+// ============================================
+function isRecommended(subjectName) {
+  if (!state.career || state.career === '모르겠음') return false;
+  const keywords = CAREER_RECOMMEND[state.career] || [];
+  return keywords.some(kw => subjectName.includes(kw));
+}
+
+// ============================================
+// 과목 설명 가져오기
+// ============================================
+function getSubjectDescription(subjectName) {
+  if (!state.subjectLookup) return null;
+  
+  // 직접 매칭
+  if (state.subjectLookup[subjectName]) {
+    return state.subjectLookup[subjectName].description;
+  }
+  
+  // 정규화 매칭 (공백 제거 + Ⅰ/Ⅱ 변환)
+  const normalize = (s) => s.replace(/\s/g, '').replace(/Ⅰ/g, '1').replace(/Ⅱ/g, '2').replace(/Ⅲ/g, '3');
+  const normalized = normalize(subjectName);
+  if (state.subjectLookup[normalized]) {
+    return state.subjectLookup[normalized].description;
+  }
+  
+  // 부분 매칭
+  for (const [key, val] of Object.entries(state.subjectLookup)) {
+    if (normalize(key) === normalized) {
+      return val.description;
+    }
+  }
+  
+  return null;
+}
+
+// ============================================
+// 단계별 렌더링
+// ============================================
+function renderStep() {
+  // 진행률 업데이트
+  const stepNum = state.currentStep;
+  document.getElementById('stepNum').textContent = stepNum;
+  document.getElementById('progressFill').style.width = `${(stepNum / 8) * 100}%`;
+  
+  const stepLabels = ['진로 선택', '1학년 1학기', '1학년 2학기', '2학년 1학기', '2학년 2학기', '3학년 1학기', '3학년 2학기', '결과 확인'];
+  document.getElementById('stepLabel').textContent = stepLabels[stepNum - 1] || '';
+  
+  // 콘텐츠 렌더
+  const content = document.getElementById('stepContent');
+  
+  if (stepNum === 1) {
+    content.innerHTML = renderCareerStep();
+    bindCareerCardEvents();
+  } else if (stepNum >= 2 && stepNum <= 7) {
+    const semesterIdx = stepNum - 2;
+    const sem = SEMESTERS[semesterIdx];
+    content.innerHTML = renderSemesterStep(sem);
+    bindSemesterEvents(sem);
+  } else if (stepNum === 8) {
+    content.innerHTML = renderResultStep();
+    bindResultEvents();
+  }
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// === Step 1: 진로 선택 ===
+function renderCareerStep() {
+  const careerCards = CAREERS.map(c => `
+    <button class="career-card${state.career === c.key ? ' selected' : ''}" data-career="${c.key}">
+      <div class="career-icon">${c.iconSvg}</div>
+      <div>
+        <div class="career-name">${c.name}</div>
+        <div class="career-desc">${c.desc}</div>
+      </div>
+    </button>
+  `).join('');
+  
+  return `
+    <div class="step-card">
+      <div class="step-title">
+        <div class="step-icon-wrap">${ICONS.career}</div>
+        <span>어떤 진로를 생각하고 있나요?</span>
+      </div>
+      <div class="step-desc">
+        진로에 따라 추천 과목이 달라져요. 아직 모른다면 "잘 모르겠어요"를 선택해도 괜찮아요.
+      </div>
+      
+      <div class="career-grid">${careerCards}</div>
+      
+      <div class="nav-buttons">
+        <button class="nav-btn next" id="nextBtn" ${state.career ? '' : 'disabled'}>
+          다음 단계로 ${ICONS.arrowRight}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindCareerCardEvents() {
+  document.querySelectorAll('.career-card').forEach(card => {
+    card.addEventListener('click', () => {
+      state.career = card.dataset.career;
+      document.querySelectorAll('.career-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      document.getElementById('nextBtn').disabled = false;
+    });
+  });
+  
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if (!state.career) return;
+    state.currentStep++;
+    saveState();
+    renderStep();
+  });
+}
+
+// === Step 2~7: 학기 선택 ===
+function renderSemesterStep(sem) {
+  const semData = state.curriculumData.semesters[sem.key];
+  if (!semData) {
+    return '<div class="error-screen"><h2>이 학기 데이터가 없어요</h2></div>';
+  }
+  
+  // 자동 선택 초기화 (학교지정은 자동 체크)
+  if (!state.selections[sem.key]) {
+    state.selections[sem.key] = {
+      fixed: semData.fixed.map(s => s.name),
+      choices: {},  // groupName → [subjectName, ...]
+    };
+    for (const groupName of Object.keys(semData.choiceGroups)) {
+      state.selections[sem.key].choices[groupName] = [];
+    }
+  }
+  
+  // 학교지정 영역
+  const fixedHtml = semData.fixed.length > 0 ? `
+    <div class="section-block">
+      <div class="section-header">
+        <span class="section-badge fixed">학교 지정</span>
+        <span class="section-info">자동으로 들어가는 필수 과목이에요</span>
+      </div>
+      <div class="subject-list">
+        ${semData.fixed.map(s => renderSubjectCard(s, true, sem.key)).join('')}
+      </div>
+    </div>
+  ` : '';
+  
+  // 학생선택 영역 (그룹별)
+  const choiceGroupNames = Object.keys(semData.choiceGroups);
+  const choicesHtml = choiceGroupNames.map(groupName => {
+    const group = semData.choiceGroups[groupName];
+    const selected = state.selections[sem.key].choices[groupName] || [];
+    const takeN = group.takeN;
+    
+    let statusClass = '';
+    let statusText = '';
+    if (takeN !== null) {
+      if (selected.length === takeN) {
+        statusClass = 'complete';
+        statusText = '✓ 완료';
+      } else if (selected.length > takeN) {
+        statusClass = 'over';
+        statusText = '⚠ 너무 많이 선택';
+      }
+    }
+    
+    return `
+      <div class="choice-group">
+        <div class="choice-group-header">
+          <div class="choice-group-title">
+            <span class="section-badge choice">${groupName}</span>
+            ${takeN !== null ? `${takeN}과목을 골라주세요` : '원하는 과목을 골라주세요'}
+          </div>
+          <div class="choice-group-status ${statusClass}">
+            <span class="selected-count">${selected.length}</span>
+            ${takeN !== null ? `/${takeN}` : ''} 선택됨 ${statusText}
+          </div>
+        </div>
+        <div class="subject-list">
+          ${group.subjects.map(s => renderSubjectCard(s, false, sem.key, groupName)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // 총 학점 계산
+  const totalCredit = calculateSemesterCredit(sem.key);
+  
+  // 학생선택 영역이 없으면
+  const noChoicesHtml = choiceGroupNames.length === 0 ? `
+    <div class="section-block">
+      <div class="section-header">
+        <span class="section-badge fixed">정보</span>
+        <span class="section-info">이 학기는 모두 학교지정 과목으로 채워져 있어요</span>
+      </div>
+    </div>
+  ` : '';
+  
+  return `
+    <div class="step-card">
+      <div class="step-title">
+        <div class="step-icon-wrap">${ICONS.semester}</div>
+        <span>${sem.label}을 채워볼까요?</span>
+      </div>
+      <div class="step-desc">
+        ${semData.fixed.length > 0 ? '학교지정 과목은 자동으로 체크되어 있어요. ' : ''}
+        ${choiceGroupNames.length > 0 ? '학생선택 영역에서 원하는 과목을 골라주세요.' : ''}
+      </div>
+      
+      <div class="semester-summary">
+        <div>현재 ${sem.label} 학점</div>
+        <div class="credit-status">${totalCredit} 학점</div>
+      </div>
+      
+      ${fixedHtml}
+      ${choicesHtml}
+      ${noChoicesHtml}
+      
+      <div class="nav-buttons">
+        <button class="nav-btn prev" id="prevBtn">
+          ${ICONS.arrowLeft} 이전
+        </button>
+        <button class="nav-btn next" id="nextBtn">
+          ${state.currentStep === 7 ? '결과 보기' : '다음 학기로'} ${ICONS.arrowRight}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
+  const recommended = isRecommended(subj.name);
+  const description = getSubjectDescription(subj.name);
+  const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
+  const isSelected = isFixed || (groupName && (state.selections[semKey]?.choices[groupName] || []).includes(subj.name));
+  
+  const typeShort = subj.type.replace('과목', '').replace('선택', '').trim();
+  const typeClass = subj.type.includes('공통') ? '공통' : 
+                    subj.type.includes('진로') ? '진로' :
+                    subj.type.includes('융합') ? '융합' : '일반';
+  
+  return `
+    <div class="subject-card ${isFixed ? 'fixed' : ''} ${isSelected ? 'selected' : ''} ${recommended ? 'recommended' : ''}" 
+         data-subject="${subj.name}" 
+         data-group="${groupName || ''}" 
+         data-fixed="${isFixed}">
+      <div class="subject-main">
+        <div class="subject-checkbox">${ICONS.check}</div>
+        <div class="subject-info">
+          <div class="subject-row1">
+            <span class="subject-name">${subj.name}</span>
+            ${recommended ? '<span class="subject-recommend-mark">⭐ 추천</span>' : ''}
+          </div>
+          <div class="subject-row2">
+            ${subj.area ? `<span class="subject-tag">${subj.area}</span>` : ''}
+            ${subj.type ? `<span class="subject-tag ${typeClass}">${subj.type}</span>` : ''}
+            ${subj.crossSem ? '<span class="subject-tag">학기교차</span>' : ''}
+          </div>
+        </div>
+        <div class="subject-credits">${subj.credit}학점</div>
+        ${description !== null || true ? `
+          <button class="subject-toggle ${isExpanded ? 'open' : ''}" data-toggle="${semKey}-${subj.name}">
+            ${ICONS.chevron}
+          </button>
+        ` : ''}
+      </div>
+      <div class="subject-detail ${isExpanded ? 'open' : ''}">
+        ${description ? description : '<span class="subject-detail-empty">이 과목의 상세 설명이 아직 등록되지 않았어요.</span>'}
+      </div>
+    </div>
+  `;
+}
+
+function bindSemesterEvents(sem) {
+  // 과목 카드 클릭 (체크/언체크)
+  document.querySelectorAll('.subject-card').forEach(card => {
+    const main = card.querySelector('.subject-main');
+    const isFixed = card.dataset.fixed === 'true';
+    const subjectName = card.dataset.subject;
+    const groupName = card.dataset.group;
+    
+    main.addEventListener('click', (e) => {
+      // 토글 버튼 클릭은 제외
+      if (e.target.closest('.subject-toggle')) return;
+      
+      if (isFixed) return;  // 학교지정은 토글 불가
+      if (!groupName) return;
+      
+      const choices = state.selections[sem.key].choices[groupName];
+      const idx = choices.indexOf(subjectName);
+      if (idx >= 0) {
+        choices.splice(idx, 1);
+      } else {
+        choices.push(subjectName);
+      }
+      
+      // 저장 + 다시 렌더
+      saveState();
+      renderStep();
+    });
+  });
+  
+  // 설명 토글 버튼
+  document.querySelectorAll('.subject-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.dataset.toggle;
+      if (state.expandedSubjects.has(key)) {
+        state.expandedSubjects.delete(key);
+        btn.classList.remove('open');
+        btn.closest('.subject-card').querySelector('.subject-detail').classList.remove('open');
+      } else {
+        state.expandedSubjects.add(key);
+        btn.classList.add('open');
+        btn.closest('.subject-card').querySelector('.subject-detail').classList.add('open');
+      }
+    });
+  });
+  
+  // 이전 버튼
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    state.currentStep--;
+    saveState();
+    renderStep();
+  });
+  
+  // 다음 버튼
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    state.currentStep++;
+    saveState();
+    renderStep();
+  });
+}
+
+function calculateSemesterCredit(semKey) {
+  const sel = state.selections[semKey];
+  if (!sel) return 0;
+  
+  const semData = state.curriculumData.semesters[semKey];
+  let total = 0;
+  
+  // 학교지정
+  for (const subj of semData.fixed) {
+    total += subj.credit;
+  }
+  
+  // 학생선택
+  for (const [groupName, selectedNames] of Object.entries(sel.choices)) {
+    const group = semData.choiceGroups[groupName];
+    if (!group) continue;
+    for (const name of selectedNames) {
+      const subj = group.subjects.find(s => s.name === name);
+      if (subj) total += subj.credit;
+    }
+  }
+  
+  return total;
+}
+
+// === Step 8: 결과 ===
+function renderResultStep() {
+  // 모든 학기의 선택 과목 정리
+  const allSelections = [];
+  let totalCredit = 0;
+  
+  for (const sem of SEMESTERS) {
+    const sel = state.selections[sem.key];
+    if (!sel) continue;
+    const semData = state.curriculumData.semesters[sem.key];
+    
+    // 학교지정
+    for (const subj of semData.fixed) {
+      allSelections.push({ ...subj, semester: sem.key, isFixed: true });
+      totalCredit += subj.credit;
+    }
+    // 학생선택
+    for (const [groupName, names] of Object.entries(sel.choices)) {
+      const group = semData.choiceGroups[groupName];
+      if (!group) continue;
+      for (const name of names) {
+        const subj = group.subjects.find(s => s.name === name);
+        if (subj) {
+          allSelections.push({ ...subj, semester: sem.key, isFixed: false, groupName });
+          totalCredit += subj.credit;
+        }
+      }
+    }
+  }
+  
+  // 학기별 그룹화
+  const bySem = {};
+  for (const s of allSelections) {
+    if (!bySem[s.semester]) bySem[s.semester] = [];
+    bySem[s.semester].push(s);
+  }
+  
+  // 학기별 학점
+  const semCredits = {};
+  for (const sem of SEMESTERS) {
+    semCredits[sem.key] = (bySem[sem.key] || []).reduce((s, x) => s + x.credit, 0);
+  }
+  
+  return `
+    <div class="step-card">
+      <div class="step-title">
+        <div class="step-icon-wrap">${ICONS.result}</div>
+        <span>완성! 나의 3년 교육과정</span>
+      </div>
+      
+      <div class="result-summary">
+        <h2>🎉 시뮬레이션 완료!</h2>
+        <div class="total-credit">
+          진로: <strong style="color: var(--text-brown);">${state.career}</strong> · 
+          총 <strong>${totalCredit}</strong> 학점
+        </div>
+      </div>
+      
+      <div class="result-table-wrap">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>학기</th>
+              <th>과목</th>
+              <th>학점</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${SEMESTERS.map(sem => {
+              const items = bySem[sem.key] || [];
+              if (items.length === 0) return '';
+              return items.map((item, i) => `
+                <tr>
+                  ${i === 0 ? `<td rowspan="${items.length}" class="semester-cell"><strong>${sem.label}</strong><br><small>${semCredits[sem.key]}학점</small></td>` : ''}
+                  <td style="text-align: left; padding-left: 10px;">${item.name} ${item.isFixed ? '<span class="subject-tag" style="font-size: 0.7em;">지정</span>' : ''}</td>
+                  <td>${item.credit}</td>
+                </tr>
+              `).join('');
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="result-actions">
+        <button id="printBtn">${ICONS.print} 인쇄하기</button>
+        <button id="resetBtn">${ICONS.reset} 다시 시작</button>
+        <button id="homeBtn">${ICONS.home} 홈으로</button>
+      </div>
+      
+      <div class="nav-buttons">
+        <button class="nav-btn prev" id="prevBtn">
+          ${ICONS.arrowLeft} 수정하러 가기
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindResultEvents() {
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    state.currentStep--;
+    saveState();
+    renderStep();
+  });
+  
+  document.getElementById('printBtn').addEventListener('click', () => {
+    window.print();
+  });
+  
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('지금까지의 선택을 모두 초기화하고 처음부터 다시 시작할까요?')) {
+      state.currentStep = 1;
+      state.career = null;
+      state.selections = {};
+      state.expandedSubjects.clear();
+      saveState();
+      renderStep();
+    }
+  });
+  
+  document.getElementById('homeBtn').addEventListener('click', goHome);
+}
+
+function goHome() {
+  if (state.currentStep > 1 && Object.keys(state.selections).length > 0) {
+    if (!confirm('홈으로 돌아가면 지금까지의 선택이 사라질 수 있어요. 정말 돌아가시겠어요?')) return;
+  }
+  window.location.href = 'index.html';
+}
+
+// ============================================
+// localStorage 저장/복원
+// ============================================
+const STORAGE_KEY = `simulator-${SCHOOL_NAME}`;
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      career: state.career,
+      selections: state.selections,
+      currentStep: state.currentStep,
+    }));
+  } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    state.career = data.career;
+    state.selections = data.selections || {};
+    state.currentStep = data.currentStep || 1;
+  } catch (e) {}
+}
+
+// ============================================
+// 에러 화면
+// ============================================
+function showError(title, msg) {
+  document.getElementById('stepContent').innerHTML = `
+    <div class="error-screen">
+      <div class="icon">⚠️</div>
+      <h2>${title}</h2>
+      <p>${msg}</p>
+      <a href="index.html">메인으로 돌아가기</a>
+    </div>
+  `;
+}
+
+// ============================================
+// 시작
+// ============================================
+init();
+</script>
+
+</body>
+</html>
