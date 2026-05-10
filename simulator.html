@@ -1644,8 +1644,31 @@ async function loadCurriculum() {
       const isCrossSem = cellVal.includes('학기교차') || cellVal.includes('교차');
       const isOptional = cellVal.includes('희망자만') || cellVal.includes('희망자');
       
+      // === 학기 셀에서 학점 추출 ===
+      // 일반: 학기 셀에 4, 3 같은 숫자 = 그 과목의 학점
+      // 이문고 패턴: 학기 셀에 26 같은 큰 숫자 = 그룹 합계 (과목 학점은 다른 곳)
       const creditMatch = cellVal.match(/(\d+(?:\.\d+)?)/);
-      const credit = creditMatch ? parseFloat(creditMatch[1]) : baseCredit;
+      let cellCredit = creditMatch ? parseFloat(creditMatch[1]) : null;
+      
+      // 학기 셀의 숫자가 baseCredit보다 비정상적으로 크면 (= 그룹 합계로 추정)
+      // 그 과목의 실제 학점은 운영학점(rowTotalCredit) 또는 baseCredit에서 가져옴
+      let cellHasGroupTotal = false;
+      let credit;
+      if (cellCredit !== null && baseCredit > 0 && cellCredit > baseCredit * 1.5) {
+        // 학기 셀에 그룹 합계가 들어있는 경우 (예: 26)
+        // 실제 과목 학점: 운영학점 우선, 없으면 baseCredit
+        cellHasGroupTotal = true;
+        credit = (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1) 
+          ? rowTotalCredit 
+          : baseCredit;
+      } else if (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1 && rowTotalCredit > 0) {
+        // 일반: 운영학점이 baseCredit과 비슷하면 그것 사용
+        credit = rowTotalCredit;
+      } else if (cellCredit !== null) {
+        credit = cellCredit;
+      } else {
+        credit = baseCredit;
+      }
       
       const subjInfo = {
         name: subject,
@@ -1656,6 +1679,8 @@ async function loadCurriculum() {
         crossSem: isCrossSem,
         optional: isOptional,
         cellValue: cellVal,
+        cellHasGroupTotal: cellHasGroupTotal,
+        groupTotalFromCell: cellHasGroupTotal ? cellCredit : null,
         rowIndex: r,  // 페어링용 (시트의 원래 행 순서)
       };
       
@@ -1681,22 +1706,24 @@ async function loadCurriculum() {
           
           // === 그룹 합계 학점 추출 (이문고 선택군C/D = 26학점) ===
           // 우선순위:
-          // 1순위: 이수구분 셀의 끝에 큰 숫자 ("선택군C 택7~8 26")
-          //         takeMax보다 큰 숫자만 합계로 인정 (작으면 학점 표기로 잘못 해석)
-          // 2순위: 운영학점 셀의 값이 takeMax보다 클 때만 (그룹 합계로 보고)
-          // 3순위: 미설정 (학점 합계 검증 안 함)
+          // 1순위: 학기 셀에 그룹 합계가 들어있는 경우 (이문고 패턴: 학기셀=26, baseCredit=4)
+          // 2순위: 이수구분 셀의 끝에 큰 숫자 ("선택군C 택7~8 26")
+          // 3순위: 운영학점 셀의 값이 takeMax보다 클 때
           
-          // 이수구분 셀에서 "택N~M" 뒤에 나오는 모든 숫자 중 가장 큰 것 추출
-          const allNumsInCompletion = [...completion.matchAll(/(\d+)/g)].map(m => parseInt(m[1]));
-          // takeMin, takeMax 자체도 포함되니 그것보다 큰 것만 필터
-          const candidatesFromCompletion = allNumsInCompletion.filter(n => n > takeMax);
-          if (candidatesFromCompletion.length > 0) {
-            takeCredit = Math.max(...candidatesFromCompletion);
-          } else if (rowTotalCredit !== null && rowTotalCredit > takeMax) {
-            // 운영학점 셀이 takeMax(8)보다 크면 그룹 합계로 해석 (예: 26)
-            takeCredit = rowTotalCredit;
+          if (cellHasGroupTotal && cellCredit > takeMax) {
+            // 이문고 패턴: 학기 셀에 26이 들어있음
+            takeCredit = cellCredit;
+          } else {
+            // 이수구분 셀에서 takeMax보다 큰 숫자 찾기
+            const allNumsInCompletion = [...completion.matchAll(/(\d+)/g)].map(m => parseInt(m[1]));
+            const candidatesFromCompletion = allNumsInCompletion.filter(n => n > takeMax);
+            if (candidatesFromCompletion.length > 0) {
+              takeCredit = Math.max(...candidatesFromCompletion);
+            } else if (rowTotalCredit !== null && rowTotalCredit > takeMax) {
+              takeCredit = rowTotalCredit;
+            }
           }
-          // 만약 두 곳 어디에도 합계가 없으면 takeCredit은 null로 남음
+          // 만약 어디에도 합계가 없으면 takeCredit은 null로 남음
         } else {
           // 일반 "택N" 표기
           const takeMatch = completion.match(/택\s*(\d+)/);
