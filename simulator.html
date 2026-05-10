@@ -2031,7 +2031,7 @@ function validateSemester(semKey, state, curriculumData) {
     if (current < target) {
       errors.push({
         type: 'semester_credit_under',
-        message: `이 학기 학점이 부족해요 (${current}/${target}학점). ${target - current}학점 더 선택해주세요.`,
+        message: `현재까지 ${current}학점까지만 선택했어요. ${target - current}학점 더 선택해주세요.`,
       });
     } else {
       errors.push({
