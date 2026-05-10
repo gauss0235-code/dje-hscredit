@@ -685,6 +685,30 @@ body {
   font-weight: 600;
 }
 
+/* "추가 과목 선택 안함" 가상 옵션 (선택군D/I 같은 희망자만 그룹 전용) */
+.subject-tag.tag-skip {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #D1D5DB;
+  font-weight: 600;
+}
+.subject-card.skip-option {
+  background: #FAFAF9;
+  border: 1px dashed #D6D3D1;
+}
+.subject-card.skip-option .subject-name {
+  color: #57534E;
+  font-style: italic;
+}
+.subject-card.skip-option.selected {
+  background: #F0FDF4;
+  border-color: #86EFAC;
+  border-style: solid;
+}
+.subject-card.skip-option.selected .subject-name {
+  color: #166534;
+}
+
 .subject-credits {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-size: 0.92em;
@@ -2191,9 +2215,23 @@ function validateSemester(semKey, state, curriculumData) {
   if (semData && semData.choiceGroups) {
     const sel = state.selections[semKey];
     if (sel && sel.choices) {
+      const SKIP_KEY = '__SKIP__';
       for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
-        const choices = sel.choices[groupName] || [];
-        if (choices.length === 0) continue;  // 선택 안 했으면 패스
+        const allChoices = sel.choices[groupName] || [];
+        const isSkipped = allChoices.includes(SKIP_KEY);
+        const choices = allChoices.filter(n => n !== SKIP_KEY);  // 가상 옵션 제외
+        
+        // 그룹의 모든 과목이 "희망자만"인지 확인
+        const allOptional = group.subjects.length > 0 && group.subjects.every(s => s.optional);
+        const isOptIn = allOptional;
+        
+        // 희망자만 그룹: "선택 안함" 선택 → 검증 통과
+        if (isOptIn && isSkipped) continue;
+        
+        // 희망자만 그룹: 아무것도 선택 안 함 → 검증 통과 (일반 선택)
+        if (isOptIn && choices.length === 0) continue;
+        
+        if (choices.length === 0) continue;  // 일반 그룹: 선택 안 했으면 패스
         
         const selectedCredits = choices.reduce((sum, name) => {
           const s = group.subjects.find(x => x.name === name);
@@ -2600,8 +2638,20 @@ function renderSemesterStep(sem) {
     const takeMax = group.takeMax;
     const takeCredit = group.takeCredit;
     
+    // 그룹의 모든 과목이 "희망자만"인지 확인 (송촌고 선택군D, I 패턴)
+    // "선택 안함" 가상 옵션 활성화 조건
+    const allOptional = group.subjects.length > 0 && group.subjects.every(s => s.optional);
+    const isOptIn = allOptional;  // 선택적 그룹 (선택 안 해도 됨)
+    
+    // "선택 안함" 가상 옵션 선택 여부
+    const SKIP_KEY = '__SKIP__';
+    const isSkipped = selected.includes(SKIP_KEY);
+    
+    // 실제 선택된 과목 (가상 옵션 제외)
+    const realSelected = selected.filter(name => name !== SKIP_KEY);
+    
     // 선택된 과목들의 학점 합계
-    const selectedCredits = selected.reduce((sum, name) => {
+    const selectedCredits = realSelected.reduce((sum, name) => {
       const s = group.subjects.find(x => x.name === name);
       return sum + (s ? s.credit : 0);
     }, 0);
@@ -2611,6 +2661,11 @@ function renderSemesterStep(sem) {
     if (takeMin !== null && takeMax !== null && takeCredit !== null) {
       // 패턴 3: 이문고 선택군C/D - 범위 + 학점 합계
       groupGuide = `${takeMin}~${takeMax}과목을 골라 학점 합계가 정확히 ${takeCredit}학점이 되도록 해주세요`;
+    } else if (isOptIn) {
+      // 송촌고 패턴: 희망자만 - 선택해도 되고 안 해도 됨
+      groupGuide = takeN !== null 
+        ? `원하는 학생만 ${takeN}과목을 골라주세요 (선택 안 해도 돼요)`
+        : '원하는 학생만 골라주세요 (선택 안 해도 돼요)';
     } else if (takeN !== null) {
       groupGuide = `${takeN}과목을 골라주세요`;
     } else {
@@ -2622,12 +2677,17 @@ function renderSemesterStep(sem) {
     let statusText = '';
     let statusDetail = '';
     
-    if (takeMin !== null && takeMax !== null && takeCredit !== null) {
+    if (isOptIn && isSkipped) {
+      // 선택 안함 선택
+      statusClass = 'complete';
+      statusText = '✓ 선택 안 함';
+      statusDetail = `<span class="selected-count">선택 안 함</span> ${statusText}`;
+    } else if (takeMin !== null && takeMax !== null && takeCredit !== null) {
       // 이문고 패턴: 개수 + 학점 합계 둘 다 만족
-      const countOk = selected.length >= takeMin && selected.length <= takeMax;
+      const countOk = realSelected.length >= takeMin && realSelected.length <= takeMax;
       const creditOk = selectedCredits === takeCredit;
       
-      if (selected.length > takeMax) {
+      if (realSelected.length > takeMax) {
         statusClass = 'over';
         statusText = '⚠ 너무 많이 선택';
       } else if (countOk && creditOk) {
@@ -2641,22 +2701,47 @@ function renderSemesterStep(sem) {
         statusText = `학점 ${takeCredit - selectedCredits} 부족`;
       }
       
-      statusDetail = `<span class="selected-count">${selected.length}</span>과목 / ${selectedCredits}학점 (목표: ${takeMin}~${takeMax}과목 ${takeCredit}학점)`;
+      statusDetail = `<span class="selected-count">${realSelected.length}</span>과목 / ${selectedCredits}학점 (목표: ${takeMin}~${takeMax}과목 ${takeCredit}학점)`;
     } else if (takeN !== null) {
-      if (selected.length === takeN) {
+      if (realSelected.length === takeN) {
         statusClass = 'complete';
         statusText = '✓ 완료';
-      } else if (selected.length > takeN) {
+      } else if (realSelected.length > takeN) {
         statusClass = 'over';
         statusText = '⚠ 너무 많이 선택';
+      } else if (isOptIn && realSelected.length === 0) {
+        statusText = '미선택';
       }
-      statusDetail = `<span class="selected-count">${selected.length}</span>/${takeN} 선택됨 ${statusText}`;
+      statusDetail = `<span class="selected-count">${realSelected.length}</span>/${takeN} 선택됨 ${statusText}`;
     } else {
-      statusDetail = `<span class="selected-count">${selected.length}</span>개 선택됨`;
+      statusDetail = `<span class="selected-count">${realSelected.length}</span>개 선택됨`;
     }
     
+    // 가상 옵션: "추가 과목 선택 안함" (선택군D/I 같은 희망자만 그룹에서만 표시)
+    const skipOptionHtml = isOptIn ? `
+      <div class="subject-card skip-option ${isSkipped ? 'selected' : ''}"
+           data-subject="${SKIP_KEY}"
+           data-group="${groupName}"
+           data-fixed="false"
+           data-area=""
+           data-credit="0">
+        <div class="subject-main">
+          <div class="subject-checkbox">${ICONS.check}</div>
+          <div class="subject-info">
+            <div class="subject-row1">
+              <span class="subject-name">추가 과목 선택 안함</span>
+            </div>
+            <div class="subject-row2">
+              <span class="subject-tag tag-skip">선택 안 함</span>
+            </div>
+          </div>
+          <div class="subject-credits">0학점</div>
+        </div>
+      </div>
+    ` : '';
+    
     return `
-      <div class="choice-group">
+      <div class="choice-group${isOptIn ? ' opt-in-group' : ''}">
         <div class="choice-group-header">
           <div class="choice-group-title">
             <span class="section-badge choice">${groupName}</span>
@@ -2667,6 +2752,7 @@ function renderSemesterStep(sem) {
           </div>
         </div>
         <div class="subject-list">
+          ${skipOptionHtml}
           ${group.subjects.map(s => renderSubjectCard(s, false, sem.key, groupName)).join('')}
         </div>
       </div>
@@ -2813,25 +2899,47 @@ function bindSemesterEvents(sem) {
       if (isFixed) return;  // 학교지정은 토글 불가
       if (!groupName) return;
       
+      const SKIP_KEY = '__SKIP__';
       const choices = state.selections[sem.key].choices[groupName];
       const idx = choices.indexOf(subjectName);
-      if (idx >= 0) {
+      
+      if (subjectName === SKIP_KEY) {
+        // === "선택 안함" 가상 옵션 클릭 ===
+        if (idx >= 0) {
+          // 이미 선택됨 → 해제
+          choices.splice(idx, 1);
+        } else {
+          // 새로 선택 → 그 그룹의 다른 모든 선택 해제 + SKIP_KEY 추가
+          choices.length = 0;
+          choices.push(SKIP_KEY);
+        }
+      } else if (idx >= 0) {
+        // 일반 과목 해제
         choices.splice(idx, 1);
       } else {
+        // === 일반 과목 선택 ===
+        // SKIP_KEY가 선택되어 있으면 자동 해제
+        const skipIdx = choices.indexOf(SKIP_KEY);
+        if (skipIdx >= 0) {
+          choices.splice(skipIdx, 1);
+        }
+        
         // === 선택군 한도 초과 차단 ===
         const semData = state.curriculumData.semesters[sem.key];
         const group = semData.choiceGroups[groupName];
         const subjectCredit = parseFloat(card.dataset.credit) || 0;
+        const realChoiceCount = choices.filter(n => n !== SKIP_KEY).length;
         
         if (group) {
           // 패턴 3 (이문고): takeMax + takeCredit 둘 다 체크
-          if (group.takeMax !== null && group.takeMax !== undefined && choices.length >= group.takeMax) {
+          if (group.takeMax !== null && group.takeMax !== undefined && realChoiceCount >= group.takeMax) {
             showLimitAlert(groupName, group.takeMax);
             return;
           }
           // 학점 합계 초과 차단 (이문고 선택군C/D)
           if (group.takeCredit !== null && group.takeCredit !== undefined) {
             const currentCredits = choices.reduce((sum, name) => {
+              if (name === SKIP_KEY) return sum;
               const s = group.subjects.find(x => x.name === name);
               return sum + (s ? s.credit : 0);
             }, 0);
@@ -2842,7 +2950,7 @@ function bindSemesterEvents(sem) {
           }
           // 패턴 1: 단순 takeN 체크 (takeMax 없는 경우)
           if (group.takeN !== null && (group.takeMax === null || group.takeMax === undefined) 
-              && choices.length >= group.takeN) {
+              && realChoiceCount >= group.takeN) {
             showLimitAlert(groupName, group.takeN);
             return;
           }
