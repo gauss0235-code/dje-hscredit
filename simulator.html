@@ -1631,6 +1631,12 @@ async function loadCurriculum() {
     
     // 일반 처리: 모든 행을 학기별로 분배
     // (학기교차 학교지정은 일단 두 학기 모두에 추가 → 후처리에서 페어링)
+    
+    // === 운영학점 셀 별도 추출 (그룹 합계용, 학기 셀과 절대 섞이면 안 됨) ===
+    const totalCreditCell = (row[COL.totalCredit] || '').toString().trim();
+    const totalCreditMatch = totalCreditCell.match(/(\d+(?:\.\d+)?)/);
+    const rowTotalCredit = totalCreditMatch ? parseFloat(totalCreditMatch[1]) : null;
+    
     for (const [semKey, semCol] of Object.entries(COL.sem)) {
       const cellVal = (row[semCol] || '').toString().trim();
       if (!cellVal) continue;
@@ -1673,11 +1679,17 @@ async function loadCurriculum() {
           takeMax = parseInt(rangeMatch[2]);
           takeN = takeMax;  // 호환성: 기존 takeN은 최대값으로
           
-          // 범위 표기와 함께 운영학점 컬럼에서 학점 합계 가져옴
-          const totalCellRaw = (row[COL.totalCredit] || '').toString().trim();
-          const totalCreditMatch = totalCellRaw.match(/(\d+(?:\.\d+)?)/);
-          if (totalCreditMatch) {
-            takeCredit = parseFloat(totalCreditMatch[1]);
+          // 범위 표기와 함께 그룹 합계 학점 추출
+          // 1순위: 운영학점 셀 (그룹 첫 행에만 있음)
+          // 2순위: 이수구분 셀에 합쳐져 있는 경우 ("선택군C 택7~8 26")
+          if (rowTotalCredit !== null) {
+            takeCredit = rowTotalCredit;
+          } else {
+            // 이수구분 셀 끝에 학점 숫자 있는지 (예: "선택군C 택7~8 26")
+            const creditInCompletion = completion.match(/택\s*\d+\s*[~∼\-–]\s*\d+\s+(\d+)/);
+            if (creditInCompletion) {
+              takeCredit = parseInt(creditInCompletion[1]);
+            }
           }
         } else {
           // 일반 "택N" 표기
@@ -1772,6 +1784,39 @@ async function loadCurriculum() {
   
   console.log('학기별 목표 학점:', semesterTargets);
   console.log('총 교과 이수 학점:', totalCurriculumCredits);
+  
+  // === 선택군 학점 합계(takeCredit) 진단 ===
+  // 이문고 선택군C/D 같은 패턴 확인
+  const groupsWithCredit = [];
+  for (const [semKey, semData] of Object.entries(semesters)) {
+    for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+      if (group.takeCredit !== null && group.takeCredit !== undefined) {
+        // 첫 5개 과목의 학점 표시 (학점 잘 들어왔는지 확인)
+        const first5 = group.subjects.slice(0, 5).map(s => ({
+          과목명: s.name,
+          학점: s.credit,
+          기본학점: s.baseCredit,
+          시트셀: s.cellValue,
+        }));
+        groupsWithCredit.push({
+          학기: semKey,
+          그룹명: groupName,
+          'takeMin~Max': `${group.takeMin}~${group.takeMax}`,
+          목표학점: group.takeCredit,
+          전체과목수: group.subjects.length,
+          첫5과목: first5,
+        });
+      }
+    }
+  }
+  
+  if (groupsWithCredit.length > 0) {
+    console.log('%c[선택군 진단] 학점 합계 패턴 그룹 (이문고 선택군C/D 등):', 'background: #FEF3C7; color: #92400E; font-weight: bold; padding: 4px 8px;');
+    for (const g of groupsWithCredit) {
+      console.log(`📌 ${g.학기} ${g.그룹명}: 택${g['takeMin~Max']} 목표${g.목표학점}학점 (총 ${g.전체과목수}과목)`);
+      console.table(g.첫5과목);
+    }
+  }
   
   // === 통합교과군(기술·가정/정보/제2외국어/한문/교양) 분류 진단 ===
   // 이건 디버그 모드 아니어도 항상 출력 (이슈 진단용)
