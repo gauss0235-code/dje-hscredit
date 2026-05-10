@@ -1586,30 +1586,33 @@ function showSchoolModal(school) {
   const buildButtonPair = (label, schoolName, curriculumUrl) => {
     const sheetId = extractSheetId(curriculumUrl);
     const escapedSchool = schoolName.replace(/'/g, "\\'");
-    const escapedLabel = label ? label.replace(/'/g, "\\'") : '';
     // 시뮬레이터에 학과 정보 포함하여 식별
     const simSchoolName = label ? `${schoolName}_${label}` : schoolName;
     const escapedSimSchool = simSchoolName.replace(/'/g, "\\'");
     
+    // 라벨: 학과 있으면 "영어과 편성표" / 없으면 "교육과정 편성표"
+    const currLabel = label ? `${label} 편성표` : '교육과정 편성표';
+    const simLabel = label ? `${label} 시뮬레이터` : '과목 선택 시뮬레이터';
+    
     const currBtn = curriculumUrl
       ? `<button class="year-btn curriculum" onclick="openCurriculumEmbed('${escapedSimSchool}', '${curriculumUrl}')">
            <span class="icon">${SVG_CLIPBOARD}</span>
-           <span class="label">${label ? `${label} ` : ''}편성표</span>
+           <span class="label">${currLabel}</span>
          </button>`
       : `<button class="year-btn curriculum disabled" onclick="alert('${escapedSchool}고등학교의 2026학년도 편성표는 아직 등록되지 않았습니다.')">
            <span class="icon">${SVG_CLIPBOARD}</span>
-           <span class="label">${label ? `${label} ` : ''}편성표</span>
+           <span class="label">${currLabel}</span>
            <span class="status">준비 중</span>
          </button>`;
     
     const simBtn = sheetId
       ? `<button class="year-btn subject" onclick="openSimulatorEmbed('${escapedSimSchool}', '${sheetId}')">
            <span class="icon">${SVG_SIMULATOR}</span>
-           <span class="label">${label ? `${label} ` : ''}시뮬레이터</span>
+           <span class="label">${simLabel}</span>
          </button>`
       : `<button class="year-btn subject disabled" onclick="alert('${escapedSchool}고등학교의 2026학년도 과목 선택 시뮬레이터는 아직 등록되지 않았습니다.')">
            <span class="icon">${SVG_SIMULATOR}</span>
-           <span class="label">${label ? `${label} ` : ''}시뮬레이터</span>
+           <span class="label">${simLabel}</span>
            <span class="status">준비 중</span>
          </button>`;
     
