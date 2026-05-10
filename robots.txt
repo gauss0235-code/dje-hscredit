@@ -1,0 +1,8 @@
+# 대전광역시 고등학교 교육과정 사이트
+# 모든 검색 엔진의 크롤링 허용
+
+User-agent: *
+Allow: /
+
+# 사이트맵 위치
+Sitemap: https://djhs-curriculum.kro.kr/sitemap.xml
