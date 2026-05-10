@@ -677,6 +677,14 @@ body {
 .subject-tag.진로 { background: #FEF3C7; color: #92400E; }
 .subject-tag.융합 { background: #FCE7F3; color: #9F1239; }
 
+/* 희망자만 태그 - 보라색 (다른 태그와 구분) */
+.subject-tag.tag-optional {
+  background: #EDE9FE;
+  color: #6D28D9;
+  border: 1px solid #C4B5FD;
+  font-weight: 600;
+}
+
 .subject-credits {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-size: 0.92em;
@@ -765,6 +773,12 @@ body {
 }
 .choice-group-status.over .selected-count {
   color: var(--red-text);
+}
+.choice-group-status.partial .selected-count {
+  color: var(--orange-text);
+}
+.choice-group-status.partial {
+  color: var(--orange-text);
 }
 
 /* ============ 네비게이션 버튼 ============ */
@@ -1427,8 +1441,21 @@ async function init() {
     return;
   }
   
-  document.getElementById('schoolNameDisplay').textContent = `${SCHOOL_NAME}등학교`;
-  document.title = `${SCHOOL_NAME}고 - 과목 선택 시뮬레이터`;
+  // 학교명에 "_학과" 형식이 포함되면 분리 표시 (예: "대전외국어고_영어과")
+  let displaySchoolName = SCHOOL_NAME;
+  let displayDept = '';
+  if (SCHOOL_NAME.includes('_')) {
+    const parts = SCHOOL_NAME.split('_');
+    displaySchoolName = parts[0];
+    displayDept = parts.slice(1).join(' ');
+  }
+  
+  document.getElementById('schoolNameDisplay').textContent = displayDept 
+    ? `${displaySchoolName}등학교 (${displayDept})`
+    : `${displaySchoolName}등학교`;
+  document.title = displayDept
+    ? `${displaySchoolName}고 ${displayDept} - 과목 선택 시뮬레이터`
+    : `${displaySchoolName}고 - 과목 선택 시뮬레이터`;
   
   // embed 모드: 홈 버튼 라벨을 "닫기"로 변경
   if (IS_EMBED) {
@@ -1609,6 +1636,7 @@ async function loadCurriculum() {
       if (!cellVal) continue;
       
       const isCrossSem = cellVal.includes('학기교차') || cellVal.includes('교차');
+      const isOptional = cellVal.includes('희망자만') || cellVal.includes('희망자');
       
       const creditMatch = cellVal.match(/(\d+(?:\.\d+)?)/);
       const credit = creditMatch ? parseFloat(creditMatch[1]) : baseCredit;
@@ -1620,6 +1648,7 @@ async function loadCurriculum() {
         credit: credit,
         baseCredit: baseCredit,
         crossSem: isCrossSem,
+        optional: isOptional,
         cellValue: cellVal,
         rowIndex: r,  // 페어링용 (시트의 원래 행 순서)
       };
@@ -1629,23 +1658,51 @@ async function loadCurriculum() {
       } else {
         let groupName = '선택';
         let takeN = null;
+        let takeMin = null;
+        let takeMax = null;
+        let takeCredit = null;  // 학점 합계 목표 (이문고 선택군C/D 패턴)
         const groupMatch = completion.match(/(선택군\s*[A-Z\d]+|[A-Z]\s*그룹|선택\s*\w+)/);
         if (groupMatch) {
           groupName = groupMatch[1].replace(/\s+/g, '');
         }
-        const takeMatch = completion.match(/택\s*(\d+)/);
-        if (takeMatch) {
-          takeN = parseInt(takeMatch[1]);
+        
+        // "택7~8" 또는 "택 7 ~ 8" 같은 범위 표기 우선 체크
+        const rangeMatch = completion.match(/택\s*(\d+)\s*[~∼\-–]\s*(\d+)/);
+        if (rangeMatch) {
+          takeMin = parseInt(rangeMatch[1]);
+          takeMax = parseInt(rangeMatch[2]);
+          takeN = takeMax;  // 호환성: 기존 takeN은 최대값으로
+          
+          // 범위 표기와 함께 운영학점 컬럼에서 학점 합계 가져옴
+          const totalCellRaw = (row[COL.totalCredit] || '').toString().trim();
+          const totalCreditMatch = totalCellRaw.match(/(\d+(?:\.\d+)?)/);
+          if (totalCreditMatch) {
+            takeCredit = parseFloat(totalCreditMatch[1]);
+          }
+        } else {
+          // 일반 "택N" 표기
+          const takeMatch = completion.match(/택\s*(\d+)/);
+          if (takeMatch) {
+            takeN = parseInt(takeMatch[1]);
+          }
         }
         
         if (!semesters[semKey].choiceGroups[groupName]) {
           semesters[semKey].choiceGroups[groupName] = {
             name: groupName,
             takeN: takeN,
+            takeMin: takeMin,
+            takeMax: takeMax,
+            takeCredit: takeCredit,
             subjects: [],
           };
-        } else if (takeN !== null && semesters[semKey].choiceGroups[groupName].takeN === null) {
-          semesters[semKey].choiceGroups[groupName].takeN = takeN;
+        } else {
+          // 기존 그룹에 추가 정보 보강 (시트의 첫 행에만 정보가 있고 나머지 행은 비어있음)
+          const existing = semesters[semKey].choiceGroups[groupName];
+          if (takeN !== null && existing.takeN === null) existing.takeN = takeN;
+          if (takeMin !== null && existing.takeMin === null) existing.takeMin = takeMin;
+          if (takeMax !== null && existing.takeMax === null) existing.takeMax = takeMax;
+          if (takeCredit !== null && existing.takeCredit === null) existing.takeCredit = takeCredit;
         }
         semesters[semKey].choiceGroups[groupName].subjects.push(subjInfo);
       }
@@ -2051,6 +2108,68 @@ function validateSemester(semKey, state, curriculumData) {
     });
   }
   
+  // (3) 선택군별 점검 (개수 + 학점 합계)
+  const semData = curriculumData.semesters[semKey];
+  if (semData && semData.choiceGroups) {
+    const sel = state.selections[semKey];
+    if (sel && sel.choices) {
+      for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+        const choices = sel.choices[groupName] || [];
+        if (choices.length === 0) continue;  // 선택 안 했으면 패스
+        
+        const selectedCredits = choices.reduce((sum, name) => {
+          const s = group.subjects.find(x => x.name === name);
+          return sum + (s ? s.credit : 0);
+        }, 0);
+        
+        // 패턴 3 (이문고): 범위 + 학점 합계
+        if (group.takeMin !== null && group.takeMin !== undefined 
+            && group.takeMax !== null && group.takeMax !== undefined
+            && group.takeCredit !== null && group.takeCredit !== undefined) {
+          
+          if (choices.length < group.takeMin) {
+            errors.push({
+              type: 'group_count_under',
+              message: `${groupName}는 ${group.takeMin}~${group.takeMax}과목을 선택해야 해요 (현재 ${choices.length}과목).`,
+            });
+          } else if (choices.length > group.takeMax) {
+            errors.push({
+              type: 'group_count_over',
+              message: `${groupName}는 ${group.takeMin}~${group.takeMax}과목을 선택해야 해요 (현재 ${choices.length}과목).`,
+            });
+          }
+          
+          if (selectedCredits !== group.takeCredit) {
+            const diff = group.takeCredit - selectedCredits;
+            if (diff > 0) {
+              errors.push({
+                type: 'group_credit_under',
+                message: `${groupName}의 학점 합계가 ${selectedCredits}학점이에요. 정확히 ${group.takeCredit}학점이 되도록 ${diff}학점을 더 선택하거나 다른 조합으로 바꿔주세요.`,
+              });
+            } else {
+              errors.push({
+                type: 'group_credit_over',
+                message: `${groupName}의 학점 합계가 ${selectedCredits}학점이에요. 정확히 ${group.takeCredit}학점이 되도록 다른 조합으로 바꿔주세요.`,
+              });
+            }
+          }
+        }
+        // 패턴 1: 단순 takeN (이미 takeMax 체크 안 했고 takeN만 있는 경우)
+        else if (group.takeN !== null && group.takeN !== undefined) {
+          if (choices.length !== group.takeN) {
+            if (choices.length < group.takeN) {
+              errors.push({
+                type: 'group_count_under',
+                message: `${groupName}는 ${group.takeN}과목을 선택해야 해요 (현재 ${choices.length}과목).`,
+              });
+            }
+            // 초과는 클릭 차단으로 막혀서 발생 안 함
+          }
+        }
+      }
+    }
+  }
+  
   return { ok: errors.length === 0, errors, stats };
 }
 
@@ -2302,6 +2421,15 @@ function showKMEAlert(card, attemptedTotal, kmeMax) {
   }
 }
 
+// 선택군 학점 합계 초과 알림 (이문고 선택군C/D 패턴)
+function showCreditLimitAlert(card, groupName, attemptedTotal, targetCredit) {
+  showToast(`${groupName}는 정확히 ${targetCredit}학점이 되도록 선택해야 해요. 이 과목을 추가하면 ${attemptedTotal}학점이 돼서 초과해요`);
+  if (card) {
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 700);
+  }
+}
+
 // === Step 1: 진로 선택 ===
 function renderCareerStep() {
   const careerCards = CAREERS.map(c => `
@@ -2390,10 +2518,53 @@ function renderSemesterStep(sem) {
     const group = semData.choiceGroups[groupName];
     const selected = state.selections[sem.key].choices[groupName] || [];
     const takeN = group.takeN;
+    const takeMin = group.takeMin;
+    const takeMax = group.takeMax;
+    const takeCredit = group.takeCredit;
     
+    // 선택된 과목들의 학점 합계
+    const selectedCredits = selected.reduce((sum, name) => {
+      const s = group.subjects.find(x => x.name === name);
+      return sum + (s ? s.credit : 0);
+    }, 0);
+    
+    // 그룹 안내 문구
+    let groupGuide = '';
+    if (takeMin !== null && takeMax !== null && takeCredit !== null) {
+      // 패턴 3: 이문고 선택군C/D - 범위 + 학점 합계
+      groupGuide = `${takeMin}~${takeMax}과목을 골라 학점 합계가 정확히 ${takeCredit}학점이 되도록 해주세요`;
+    } else if (takeN !== null) {
+      groupGuide = `${takeN}과목을 골라주세요`;
+    } else {
+      groupGuide = '원하는 과목을 골라주세요';
+    }
+    
+    // 상태 계산
     let statusClass = '';
     let statusText = '';
-    if (takeN !== null) {
+    let statusDetail = '';
+    
+    if (takeMin !== null && takeMax !== null && takeCredit !== null) {
+      // 이문고 패턴: 개수 + 학점 합계 둘 다 만족
+      const countOk = selected.length >= takeMin && selected.length <= takeMax;
+      const creditOk = selectedCredits === takeCredit;
+      
+      if (selected.length > takeMax) {
+        statusClass = 'over';
+        statusText = '⚠ 너무 많이 선택';
+      } else if (countOk && creditOk) {
+        statusClass = 'complete';
+        statusText = '✓ 완료';
+      } else if (countOk && selectedCredits > takeCredit) {
+        statusClass = 'over';
+        statusText = `⚠ 학점 초과`;
+      } else if (countOk && selectedCredits < takeCredit) {
+        statusClass = 'partial';
+        statusText = `학점 ${takeCredit - selectedCredits} 부족`;
+      }
+      
+      statusDetail = `<span class="selected-count">${selected.length}</span>과목 / ${selectedCredits}학점 (목표: ${takeMin}~${takeMax}과목 ${takeCredit}학점)`;
+    } else if (takeN !== null) {
       if (selected.length === takeN) {
         statusClass = 'complete';
         statusText = '✓ 완료';
@@ -2401,6 +2572,9 @@ function renderSemesterStep(sem) {
         statusClass = 'over';
         statusText = '⚠ 너무 많이 선택';
       }
+      statusDetail = `<span class="selected-count">${selected.length}</span>/${takeN} 선택됨 ${statusText}`;
+    } else {
+      statusDetail = `<span class="selected-count">${selected.length}</span>개 선택됨`;
     }
     
     return `
@@ -2408,11 +2582,10 @@ function renderSemesterStep(sem) {
         <div class="choice-group-header">
           <div class="choice-group-title">
             <span class="section-badge choice">${groupName}</span>
-            ${takeN !== null ? `${takeN}과목을 골라주세요` : '원하는 과목을 골라주세요'}
+            ${groupGuide}
           </div>
           <div class="choice-group-status ${statusClass}">
-            <span class="selected-count">${selected.length}</span>
-            ${takeN !== null ? `/${takeN}` : ''} 선택됨 ${statusText}
+            ${statusDetail}
           </div>
         </div>
         <div class="subject-list">
@@ -2530,6 +2703,7 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
             ${subj.area ? `<span class="subject-tag">${subj.area}</span>` : ''}
             ${subj.type ? `<span class="subject-tag ${typeClass}">${subj.type}</span>` : ''}
             ${subj.crossSem ? '<span class="subject-tag">학기교차</span>' : ''}
+            ${subj.optional ? '<span class="subject-tag tag-optional">희망자만</span>' : ''}
           </div>
         </div>
         <div class="subject-credits">${subj.credit}학점</div>
@@ -2569,14 +2743,35 @@ function bindSemesterEvents(sem) {
         // === 선택군 한도 초과 차단 ===
         const semData = state.curriculumData.semesters[sem.key];
         const group = semData.choiceGroups[groupName];
-        if (group && group.takeN !== null && choices.length >= group.takeN) {
-          showLimitAlert(groupName, group.takeN);
-          return;
+        const subjectCredit = parseFloat(card.dataset.credit) || 0;
+        
+        if (group) {
+          // 패턴 3 (이문고): takeMax + takeCredit 둘 다 체크
+          if (group.takeMax !== null && group.takeMax !== undefined && choices.length >= group.takeMax) {
+            showLimitAlert(groupName, group.takeMax);
+            return;
+          }
+          // 학점 합계 초과 차단 (이문고 선택군C/D)
+          if (group.takeCredit !== null && group.takeCredit !== undefined) {
+            const currentCredits = choices.reduce((sum, name) => {
+              const s = group.subjects.find(x => x.name === name);
+              return sum + (s ? s.credit : 0);
+            }, 0);
+            if (currentCredits + subjectCredit > group.takeCredit) {
+              showCreditLimitAlert(card, groupName, currentCredits + subjectCredit, group.takeCredit);
+              return;
+            }
+          }
+          // 패턴 1: 단순 takeN 체크 (takeMax 없는 경우)
+          if (group.takeN !== null && (group.takeMax === null || group.takeMax === undefined) 
+              && choices.length >= group.takeN) {
+            showLimitAlert(groupName, group.takeN);
+            return;
+          }
         }
         
         // === 국·수·영 상한 초과 차단 ===
         const subjectArea = card.dataset.area;
-        const subjectCredit = parseFloat(card.dataset.credit) || 0;
         if (subjectArea === '국어' || subjectArea === '수학' || subjectArea === '영어') {
           const stats = computeStats(state, state.curriculumData);
           const currentKME = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
