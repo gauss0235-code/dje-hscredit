@@ -1955,8 +1955,10 @@ async function loadCurriculum() {
     semesters,
     schoolType: schoolTypeText,
     schoolCategory,  // 'general' | 'autonomous' | 'excluded'
-    semesterTargets,  // {1-1: 28, 1-2: 28, ...}
-    totalCurriculumCredits,  // 174 또는 그 이상
+    semesterTargets,  // {1-1: 28, 1-2: 28, ...} (기본값 - 희망자만 미선택 기준)
+    totalCurriculumCredits,  // 174 또는 그 이상 (기본값)
+    baseSemesterTargets: { ...semesterTargets },  // 변경 안 되는 원본
+    baseTotalCurriculumCredits: totalCurriculumCredits,  // 변경 안 되는 원본
   };
 }
 
@@ -2113,6 +2115,55 @@ function getRequirements(schoolCategory) {
   return base;
 }
 
+// 학생이 희망자만 그룹에서 선택한 추가 학점을 학기별로 계산
+// (시트의 기본 학기 학점에 더해질 추가량)
+function computeOptionalExtra(state, curriculumData) {
+  const SKIP_KEY = '__SKIP__';
+  const extra = { '1-1': 0, '1-2': 0, '2-1': 0, '2-2': 0, '3-1': 0, '3-2': 0 };
+  
+  for (const [semKey, semData] of Object.entries(curriculumData.semesters)) {
+    const sel = state.selections[semKey];
+    if (!sel || !sel.choices) continue;
+    
+    for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+      // 그룹 전체가 희망자만이어야 추가 학점으로 계산
+      const allOptional = group.subjects.length > 0 && group.subjects.every(s => s.optional);
+      if (!allOptional) continue;
+      
+      const choices = sel.choices[groupName] || [];
+      for (const name of choices) {
+        if (name === SKIP_KEY) continue;
+        const subj = group.subjects.find(s => s.name === name);
+        if (subj) extra[semKey] += subj.credit;
+      }
+    }
+  }
+  
+  return extra;
+}
+
+// 동적으로 변경되는 학기 목표 + 총 교과 학점 계산
+// 기본값(시트) + 희망자만 그룹에서 선택한 추가 학점
+function getEffectiveTargets(state, curriculumData) {
+  const extra = computeOptionalExtra(state, curriculumData);
+  const base = curriculumData.baseSemesterTargets || curriculumData.semesterTargets;
+  const baseTotal = curriculumData.baseTotalCurriculumCredits || curriculumData.totalCurriculumCredits;
+  
+  const effectiveSemesterTargets = {};
+  let totalExtra = 0;
+  for (const [semKey, val] of Object.entries(base)) {
+    effectiveSemesterTargets[semKey] = val + (extra[semKey] || 0);
+    totalExtra += (extra[semKey] || 0);
+  }
+  const effectiveTotal = baseTotal + totalExtra;
+  
+  return {
+    semesterTargets: effectiveSemesterTargets,
+    totalCurriculumCredits: effectiveTotal,
+    extra,  // 학기별 추가 학점 (디버깅용)
+  };
+}
+
 // 현재 선택 상태 기반으로 학기별 학점/교과군별 학점 계산
 function computeStats(state, curriculumData) {
   const semCredits = { '1-1': 0, '1-2': 0, '2-1': 0, '2-2': 0, '3-1': 0, '3-2': 0 };
@@ -2182,9 +2233,10 @@ function calcKMECapacity(totalCurriculumCredits) {
 function validateSemester(semKey, state, curriculumData) {
   const errors = [];
   const stats = computeStats(state, curriculumData);
+  const effective = getEffectiveTargets(state, curriculumData);
   
   // (1) 학기별 학점이 목표와 일치하는지 (이 학기 기준)
-  const target = curriculumData.semesterTargets[semKey];
+  const target = effective.semesterTargets[semKey];
   const current = stats.semCredits[semKey];
   if (target > 0 && current !== target) {
     if (current < target) {
@@ -2202,7 +2254,7 @@ function validateSemester(semKey, state, curriculumData) {
   
   // (2) 국·수·영 상한 (실시간 누적 점검)
   const kmeTotal = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
-  const kmeMax = calcKMECapacity(curriculumData.totalCurriculumCredits);
+  const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
   if (kmeTotal > kmeMax) {
     errors.push({
       type: 'kme_over',
@@ -2293,11 +2345,12 @@ function validateSemester(semKey, state, curriculumData) {
 // 반환: {passed[], failed[], stats}
 function validateAll(state, curriculumData) {
   const stats = computeStats(state, curriculumData);
+  const effective = getEffectiveTargets(state, curriculumData);
   const checks = [];
   
   // (1) 각 학기별 학점 일치
   for (const sem of SEMESTERS) {
-    const target = curriculumData.semesterTargets[sem.key];
+    const target = effective.semesterTargets[sem.key];
     const current = stats.semCredits[sem.key];
     if (target > 0) {
       checks.push({
@@ -2310,12 +2363,12 @@ function validateAll(state, curriculumData) {
   
   // (2) 국·수·영 상한
   const kmeTotal = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
-  const kmeMax = calcKMECapacity(curriculumData.totalCurriculumCredits);
+  const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
   checks.push({
     title: `국·수·영 ${kmeMax}학점 이내`,
     passed: kmeTotal <= kmeMax,
     detail: `현재 ${kmeTotal}학점 / 상한 ${kmeMax}학점` 
-            + (curriculumData.totalCurriculumCredits > 174 ? ` (총 ${curriculumData.totalCurriculumCredits}학점이라 상한 ${kmeMax}로 완화)` : ''),
+            + (effective.totalCurriculumCredits > 174 ? ` (총 ${effective.totalCurriculumCredits}학점이라 상한 ${kmeMax}로 완화)` : ''),
   });
   
   // (3) 교과군별 필수 이수 학점
@@ -2430,12 +2483,13 @@ function updateStatusSummary(stepNum) {
   wrap.style.display = 'block';
   
   const stats = computeStats(state, state.curriculumData);
-  const targets = state.curriculumData.semesterTargets;
-  const totalTarget = Object.values(targets).reduce((a,b)=>a+b, 0);
+  const effective = getEffectiveTargets(state, state.curriculumData);
+  const targets = effective.semesterTargets;
+  const totalTarget = effective.totalCurriculumCredits;
   
   // 국·수·영 합계와 상한
   const kme = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
-  const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
+  const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
   const kmeOver = kme > kmeMax;
   
   const isExcluded = state.curriculumData.schoolCategory === 'excluded';
@@ -2764,7 +2818,8 @@ function renderSemesterStep(sem) {
   
   // === 실시간 검증 ===
   const validation = validateSemester(sem.key, state, state.curriculumData);
-  const target = state.curriculumData.semesterTargets[sem.key] || 0;
+  const effective = getEffectiveTargets(state, state.curriculumData);
+  const target = effective.semesterTargets[sem.key] || 0;
   const hasViolation = !validation.ok;
   
   // 학기 학점 상태 표시
@@ -2960,8 +3015,9 @@ function bindSemesterEvents(sem) {
         const subjectArea = card.dataset.area;
         if (subjectArea === '국어' || subjectArea === '수학' || subjectArea === '영어') {
           const stats = computeStats(state, state.curriculumData);
+          const effective = getEffectiveTargets(state, state.curriculumData);
           const currentKME = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
-          const kmeMax = calcKMECapacity(state.curriculumData.totalCurriculumCredits);
+          const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
           if (currentKME + subjectCredit > kmeMax) {
             showKMEAlert(card, currentKME + subjectCredit, kmeMax);
             return;
