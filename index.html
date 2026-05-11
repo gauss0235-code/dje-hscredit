@@ -1831,6 +1831,14 @@ backBtn.addEventListener('click', zoomOut);
 function showSchoolModal(school) {
   const modal = document.getElementById('modalContent');
   
+  // 📊 GA4 이벤트: 학교 클릭 추적
+  if (typeof gtag === 'function') {
+    gtag('event', 'school_click', {
+      'school_name': school.name,
+      'district': school.district || '미분류'
+    });
+  }
+  
   // SVG 아이콘 정의 (Lucide 스타일 라인 아트)
   const SVG_STUDENTS = `<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><circle cx="16" cy="8" r="2.5"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 14a3.5 3.5 0 0 1 3.5 3.5V19"/></svg>`;
   
@@ -2413,6 +2421,12 @@ searchInput.addEventListener('input', function() {
   ).slice(0, 8);
   
   if (matches.length === 0) {
+    // 📊 GA4 이벤트: 검색 결과 없음 (3자 이상일 때만)
+    if (typeof gtag === 'function' && q.length >= 3) {
+      gtag('event', 'search_no_result', {
+        'search_query': q
+      });
+    }
     searchResults.innerHTML = '<div class="search-result-item" style="cursor:default; color:#9CA3AF;">검색 결과가 없습니다</div>';
     searchResults.classList.add('active');
     return;
@@ -2431,6 +2445,14 @@ searchInput.addEventListener('input', function() {
     el.addEventListener('click', function() {
       const name = this.dataset.name;
       const district = this.dataset.district;
+      
+      // 📊 GA4 이벤트: 검색을 통한 학교 클릭
+      if (typeof gtag === 'function') {
+        gtag('event', 'search_to_school', {
+          'search_query': q,
+          'school_clicked': name
+        });
+      }
       
       searchResults.classList.remove('active');
       searchInput.value = '';

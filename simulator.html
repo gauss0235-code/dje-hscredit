@@ -2455,6 +2455,16 @@ function renderStep(scrollToTop = true) {
   const stepLabels = ['진로 선택', '1학년 1학기', '1학년 2학기', '2학년 1학기', '2학년 2학기', '3학년 1학기', '3학년 2학기', '결과 확인'];
   document.getElementById('stepLabel').textContent = stepLabels[stepNum - 1] || '';
   
+  // 📊 GA4 이벤트: 시뮬레이터 단계 진입 (이탈 분석용)
+  if (typeof gtag === 'function') {
+    gtag('event', 'simulator_step', {
+      'step_number': stepNum,
+      'step_name': stepLabels[stepNum - 1] || '',
+      'school_name': SCHOOL_NAME || '미지정',
+      'career': state.career || '미선택'
+    });
+  }
+  
   // 콘텐츠 렌더
   const content = document.getElementById('stepContent');
   
@@ -2649,6 +2659,14 @@ function bindCareerCardEvents() {
       document.querySelectorAll('.career-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       document.getElementById('nextBtn').disabled = false;
+      
+      // 📊 GA4 이벤트: 진로 선택
+      if (typeof gtag === 'function') {
+        gtag('event', 'career_selected', {
+          'career': state.career,
+          'school_name': SCHOOL_NAME || '미지정'
+        });
+      }
     });
   });
   
@@ -3104,6 +3122,14 @@ function renderResultStep() {
   // 모든 학기의 선택 과목 정리
   const allSelections = [];
   let totalCredit = 0;
+  
+  // 📊 GA4 이벤트: 시뮬레이터 완료 (8단계 도달, 핵심 지표!)
+  if (typeof gtag === 'function') {
+    gtag('event', 'simulator_completed', {
+      'school_name': SCHOOL_NAME || '미지정',
+      'career': state.career || '미선택'
+    });
+  }
   
   for (const sem of SEMESTERS) {
     const sel = state.selections[sem.key];
