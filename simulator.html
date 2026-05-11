@@ -664,6 +664,29 @@ body {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
 }
 
+/* 다른 학기에 같은 과목이 있을 때 (중복 차단 안내) */
+.subject-duplicate-mark {
+  display: inline-block;
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
+  color: #9A3412;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+}
+.subject-card.duplicate {
+  background: #F9FAFB;
+  border-color: #E5E7EB;
+  opacity: 0.85;
+}
+.subject-card.duplicate .subject-name {
+  color: var(--text-mid);
+}
+.subject-card.duplicate:hover {
+  background: #F3F4F6;
+  border-color: #FBBF77;
+}
+
 .subject-row2 {
   display: flex;
   align-items: center;
@@ -2619,6 +2642,49 @@ function showCreditLimitAlert(card, groupName, attemptedTotal, targetCredit) {
   }
 }
 
+// === 동일 과목 중복 선택 차단 ===
+// 다른 학기에 이미 같은 이름의 과목이 선택되어 있는지 확인
+// (학교지정 과목 + 학생선택 과목 모두 포함, 단 현재 학기는 제외)
+function findDuplicateSemester(subjectName, currentSemKey) {
+  const SEMESTER_LABELS = { '1-1': '1학년 1학기', '1-2': '1학년 2학기',
+                            '2-1': '2학년 1학기', '2-2': '2학년 2학기',
+                            '3-1': '3학년 1학기', '3-2': '3학년 2학기' };
+  
+  if (!state.curriculumData || !state.curriculumData.semesters) return null;
+  
+  for (const [semKey, semData] of Object.entries(state.curriculumData.semesters)) {
+    if (semKey === currentSemKey) continue;  // 현재 학기는 제외
+    
+    // 학교지정 과목 검사 (학생이 클릭 안 했어도 이미 듣게 되어있음)
+    if (semData.fixed && semData.fixed.some(s => s.name === subjectName)) {
+      return { semKey, semLabel: SEMESTER_LABELS[semKey] || semKey, source: 'fixed' };
+    }
+    
+    // 학생이 다른 학기에서 선택한 과목 검사
+    const sel = state.selections[semKey];
+    if (sel && sel.choices) {
+      for (const choices of Object.values(sel.choices)) {
+        if (choices.includes(subjectName)) {
+          return { semKey, semLabel: SEMESTER_LABELS[semKey] || semKey, source: 'chosen' };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// 중복 선택 시 경고
+function showDuplicateAlert(card, subjectName, dupInfo) {
+  const sourceText = dupInfo.source === 'fixed' 
+    ? `${dupInfo.semLabel}에 학교지정으로 이미 편성되어 있어요`
+    : `${dupInfo.semLabel}에서 이미 선택했어요`;
+  showToast(`「${subjectName}」 과목은 ${sourceText}. 같은 과목을 두 번 선택할 수는 없어요.`);
+  if (card) {
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 700);
+  }
+}
+
 // === Step 1: 진로 선택 ===
 function renderCareerStep() {
   const careerCards = CAREERS.map(c => `
@@ -2925,13 +2991,17 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
   const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
   const isSelected = isFixed || (groupName && (state.selections[semKey]?.choices[groupName] || []).includes(subj.name));
   
+  // 다른 학기에 같은 이름의 과목이 있는지 (학교지정 또는 학생선택)
+  // 학생선택 과목 중 이미 선택된 게 아닐 때만 검사 (현재 카드 본인은 제외)
+  const dupInfo = (!isFixed && !isSelected) ? findDuplicateSemester(subj.name, semKey) : null;
+  
   const typeShort = subj.type.replace('과목', '').replace('선택', '').trim();
   const typeClass = subj.type.includes('공통') ? '공통' : 
                     subj.type.includes('진로') ? '진로' :
                     subj.type.includes('융합') ? '융합' : '일반';
   
   return `
-    <div class="subject-card ${isFixed ? 'fixed' : ''} ${isSelected ? 'selected' : ''} ${recommended ? 'recommended' : ''}" 
+    <div class="subject-card ${isFixed ? 'fixed' : ''} ${isSelected ? 'selected' : ''} ${recommended ? 'recommended' : ''} ${dupInfo ? 'duplicate' : ''}" 
          data-subject="${subj.name}" 
          data-group="${groupName || ''}" 
          data-fixed="${isFixed}"
@@ -2944,6 +3014,7 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
             <span class="subject-name">${subj.name}</span>
             ${suneung ? '<span class="subject-suneung-mark">📝 수능출제과목</span>' : ''}
             ${recommended ? '<span class="subject-recommend-mark">⭐ 추천</span>' : ''}
+            ${dupInfo ? `<span class="subject-duplicate-mark">⚠️ ${dupInfo.semLabel}에 ${dupInfo.source === 'fixed' ? '편성됨' : '선택함'}</span>` : ''}
           </div>
           <div class="subject-row2">
             ${subj.area ? `<span class="subject-tag">${subj.area}</span>` : ''}
@@ -3004,6 +3075,14 @@ function bindSemesterEvents(sem) {
         const skipIdx = choices.indexOf(SKIP_KEY);
         if (skipIdx >= 0) {
           choices.splice(skipIdx, 1);
+        }
+        
+        // === 동일 과목 중복 선택 차단 ===
+        // (다른 학기에 같은 이름의 과목이 학교지정/학생선택으로 있는지)
+        const dupInfo = findDuplicateSemester(subjectName, sem.key);
+        if (dupInfo) {
+          showDuplicateAlert(card, subjectName, dupInfo);
+          return;
         }
         
         // === 선택군 한도 초과 차단 ===
