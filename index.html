@@ -1765,8 +1765,11 @@ function renderAllMarkers() {
       
       g.addEventListener('click', (e) => {
         e.stopPropagation();
-        // overview 상태에선 학교 클릭 차단 (이중 안전장치)
+        // overview 상태에선 학교 클릭 차단
         if (currentState === 'overview') return;
+        // 줌인 상태에선 현재 확대된 구의 학교만 클릭 허용
+        // (다른 구의 hitarea를 우연히 클릭하는 것 방지)
+        if (currentState === 'zoomed' && district !== currentDistrict) return;
         showSchoolModal(s);
       });
       
@@ -1812,7 +1815,14 @@ function zoomToDistrict(district) {
     g.classList.toggle('zoomed-active', g.dataset.district === district);
   });
   document.querySelectorAll('.school-marker').forEach(m => {
-    m.classList.toggle('active', m.dataset.district === district);
+    const isActive = m.dataset.district === district;
+    m.classList.toggle('active', isActive);
+    // 인라인 pointer-events 속성으로 hitarea까지 확실하게 차단
+    // (CSS의 pointer-events:none이 SVG 인라인 속성을 못 이길 수 있어서 둘 다 처리)
+    const hitarea = m.querySelector('.school-hitarea');
+    if (hitarea) {
+      hitarea.setAttribute('pointer-events', isActive ? 'all' : 'none');
+    }
   });
   
   backBtn.classList.add('visible');
@@ -1840,6 +1850,11 @@ function zoomOut() {
     m.classList.remove('search-highlight');
     const pin = m.querySelector('.school-pin');
     if (pin) pin.removeAttribute('filter');
+    // hitarea도 원래대로 복원 (overview 상태에선 어차피 클릭 핸들러에서 차단)
+    const hitarea = m.querySelector('.school-hitarea');
+    if (hitarea) {
+      hitarea.setAttribute('pointer-events', 'all');
+    }
   });
   backBtn.classList.remove('visible');
   currentState = 'overview';
