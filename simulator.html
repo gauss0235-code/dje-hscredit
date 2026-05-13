@@ -1416,15 +1416,11 @@ const CAREERS = [
 const CAREER_RECOMMEND = {
   '인문': {
     // 인문·사회 계열 → 국어, 영어, 사회, 제2외국어, 한문
-    // (제2외국어/한문은 classifyArea에서 '기술교양'으로 묶이지만,
-    //  원본 area에 '제2외국어' 또는 '한문'이 들어있을 때만 인문으로 인정)
     areas: ['국어', '영어', '사회'],
     rawAreaIncludes: ['제2외국어', '한문', '제2', '2외'],
   },
   '자연': {
     // 자연·공학 계열 → 수학, 과학, 기술·가정
-    // (기술·가정은 '기술교양'으로 묶이지만,
-    //  원본 area에 '기술' 또는 '가정'이 들어있을 때만 자연으로 인정)
     areas: ['수학', '과학'],
     rawAreaIncludes: ['기술', '가정', '정보'],
   },
@@ -1438,6 +1434,45 @@ const CAREER_RECOMMEND = {
     rawAreaIncludes: [],
   },
 };
+
+// ============================================
+// 학교별 추천 예외 규칙
+// ============================================
+// 기본 교과군 기반 추천에 예외를 적용하는 학교별/진로별/학기별 규칙
+// - add: 기본은 추천 안 되지만 추천으로 표시할 과목
+// - remove: 기본은 추천이지만 추천에서 빼야 할 과목
+// 키: 학교명 (SCHOOL_NAME 그대로, 학과 있는 경우 "학교명_학과")
+const SCHOOL_RECOMMEND_OVERRIDES = {
+  '대전둔산여자고': {
+    '인문': {
+      add: {
+        '2-2': ['경제 수학'],
+      },
+      remove: {
+        '2-2': ['한문'],
+      },
+    },
+    '자연': {
+      add: {
+        '2-2': ['한문'],
+      },
+      remove: {
+        '2-1': ['인공지능 기초'],
+        '2-2': ['경제 수학', '프로그래밍'],
+        '3-1': ['식품 과학', '데이터 과학', '사물 인터넷과 센서 제어', '컴퓨터 시스템 일반'],
+        '3-2': ['정보과학', '창의 공학 설계', '소프트웨어와 생활'],
+      },
+    },
+  },
+};
+
+// 학교별 예외 규칙에서 매칭되는지 확인 (과목명 공백/기호 차이 무관)
+function matchesOverride(subjectName, list) {
+  if (!list || list.length === 0) return false;
+  const normalize = (s) => s.replace(/\s/g, '').replace(/·/g, '');
+  const norm = normalize(subjectName);
+  return list.some(item => normalize(item) === norm);
+}
 
 // SVG 아이콘
 const ICONS = {
@@ -1977,12 +2012,37 @@ async function loadCurriculum() {
 // ============================================
 // 진로 추천 검사
 // ============================================
-// 추천 여부 - 시트의 교과(군) 컬럼 기반
-// 인자: subjectName(과목명, 디버깅용), subjectArea(시트의 "교과(군)" 원본 값)
-function isRecommended(subjectName, subjectArea) {
+// 추천 여부 - 시트의 교과(군) 컬럼 기반 + 학교별 예외 규칙
+// 인자: subjectName(과목명), subjectArea(시트의 "교과(군)" 원본 값), semKey(학기, 예외 규칙용)
+function isRecommended(subjectName, subjectArea, semKey) {
   if (!state.career || state.career === '모르겠음') return false;
   const rec = CAREER_RECOMMEND[state.career];
   if (!rec) return false;
+  
+  // === 학교별 예외 규칙 먼저 검사 ===
+  // SCHOOL_NAME은 "대전둔산여자고" 또는 "학교명_학과" 형식일 수 있어
+  // 학과 부분 제거하여 학교명만으로 매칭
+  const schoolKey = SCHOOL_NAME.split('_')[0];
+  const schoolOverride = SCHOOL_RECOMMEND_OVERRIDES[schoolKey];
+  if (schoolOverride && schoolOverride[state.career] && semKey) {
+    const careerOverride = schoolOverride[state.career];
+    
+    // remove 규칙: 기본은 추천이지만 빼야 할 과목 → 무조건 false
+    if (careerOverride.remove && careerOverride.remove[semKey]) {
+      if (matchesOverride(subjectName, careerOverride.remove[semKey])) {
+        return false;
+      }
+    }
+    
+    // add 규칙: 기본은 추천 안 되지만 추가로 추천할 과목 → 무조건 true
+    if (careerOverride.add && careerOverride.add[semKey]) {
+      if (matchesOverride(subjectName, careerOverride.add[semKey])) {
+        return true;
+      }
+    }
+  }
+  
+  // === 기본 교과군 기반 추천 ===
   if (!subjectArea) return false;
   
   // classifyArea로 정규화된 교과군 (예: '국어', '수학', '기술교양' 등)
@@ -1992,11 +2052,7 @@ function isRecommended(subjectName, subjectArea) {
   if (rec.areas && rec.areas.includes(classified)) return true;
   
   // 2) 통합교과군('기술교양')의 경우, 원본 area 텍스트에 특정 단어가 있는지 추가 검사
-  //    - 인문: '제2외국어', '한문' 등 → 인문 추천
-  //    - 자연: '기술', '가정', '정보' 등 → 자연 추천
-  //    (이렇게 하지 않으면 "제2외국어"가 인문이 아닌 기술교양으로 묶여 인문 추천이 안 됨)
   if (rec.rawAreaIncludes && rec.rawAreaIncludes.length > 0) {
-    // area 원본 텍스트 정규화 (공백, 가운뎃점 제거)
     const rawArea = subjectArea.replace(/\s/g, '').replace(/·/g, '');
     for (const keyword of rec.rawAreaIncludes) {
       if (rawArea.includes(keyword)) return true;
@@ -2969,7 +3025,7 @@ function renderSemesterStep(sem) {
 }
 
 function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
-  const recommended = isRecommended(subj.name, subj.area);
+  const recommended = isRecommended(subj.name, subj.area, semKey);
   const suneung = isSuneung(subj.name);
   const description = getSubjectDescription(subj.name);
   const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
