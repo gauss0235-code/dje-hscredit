@@ -1402,70 +1402,40 @@ const CAREERS = [
 
 // 진로별 추천 과목 (과목명 직접 매칭 + 키워드)
 // 직접 매칭이 우선
+// ============================================
+// 진로별 추천 교과군
+// ============================================
+// 키워드/과목명 기반이 아닌 "교과(군)" 기반으로 추천
+// → 시트의 "교과(군)" 컬럼 → classifyArea() 결과와 비교
+//
+// classifyArea가 반환하는 값:
+//   '국어', '수학', '영어', '사회', '과학', '체육', '예술', '기술교양'
+//   - '사회': 사회, 역사, 도덕 포함
+//   - '예술': 예술, 음악, 미술 포함
+//   - '기술교양': 기술·가정, 정보, 제2외국어, 한문, 교양 통합
 const CAREER_RECOMMEND = {
   '인문': {
-    exact: [
-      // 국어
-      '문학', '독서와 작문', '화법과 언어', '주제 탐구 독서', '문학과 영상',
-      '독서 토론과 글쓰기', '매체 의사소통', '언어생활 탐구', '직무 의사소통',
-      // 사회
-      '세계시민과 지리', '한국지리 탐구', '세계사', '동아시아 역사 기행',
-      '사회와 문화', '현대사회와 윤리', '윤리와 사상', '인문학과 윤리',
-      '국제 관계의 이해', '정치', '법과 사회', '경제', '도시의 미래 탐구',
-      '여행지리', '역사로 탐구하는 현대 세계', '사회문제 탐구', '윤리문제 탐구',
-      '금융과 경제생활', '기후변화와 지속가능한 세계',
-      // 영어
-      '영어Ⅰ', '영어Ⅱ', '영어 독해와 작문', '영어 발표와 토론',
-      '심화 영어', '심화 영어 독해와 작문', '영미 문학 읽기',
-      '실생활 영어 회화', '미디어 영어', '세계 문화와 영어',
-      // 제2외국어/한문
-      '독일어', '프랑스어', '스페인어', '중국어', '일본어', '러시아어',
-      '아랍어', '베트남어', '한문', '한문 고전 읽기', '언어생활과 한자',
-      // 교양
-      '인간과 철학', '논리와 사고', '인간과 심리', '교육의 이해',
-      '논술', '인간과 종교',
-    ],
-    keywords: ['문학', '독서', '작문', '언어', '사회', '역사', '세계', '윤리', '인문', '한국사',
-                '제2외국어', '독일어', '프랑스어', '중국어', '일본어', '한문', '영어', '철학', '심리'],
+    // 인문·사회 계열 → 국어, 영어, 사회, 제2외국어, 한문
+    // (제2외국어/한문은 classifyArea에서 '기술교양'으로 묶이지만,
+    //  원본 area에 '제2외국어' 또는 '한문'이 들어있을 때만 인문으로 인정)
+    areas: ['국어', '영어', '사회'],
+    rawAreaIncludes: ['제2외국어', '한문', '제2', '2외'],
   },
   '자연': {
-    exact: [
-      // 수학
-      '공통수학1', '공통수학2', '대수', '미적분Ⅰ', '미적분Ⅱ', '확률과 통계',
-      '기하', '경제 수학', '인공지능 수학', '직무 수학', '실용 통계',
-      '수학과제 탐구', '미적분', '미적분 I', '미적분 II',
-      // 과학
-      '통합과학1', '통합과학2', '과학탐구실험1', '과학탐구실험2',
-      '물리학', '화학', '생명과학', '지구과학',
-      '역학과 에너지', '전자기와 양자', '물질과 에너지', '화학 반응의 세계',
-      '세포와 물질대사', '생물의 유전', '지구시스템과학', '행성우주과학',
-      '과학의 역사와 문화', '기후변화와 환경생태',
-      '융합과학 탐구', '과학과제 연구', '물리학 실험', '화학 실험',
-      // 정보
-      '정보', '인공지능 기초', '데이터 과학', '소프트웨어와 생활',
-      '정보과학', '프로그래밍',
-      // 기술/공학
-      '기술·가정', '기술', '공학 일반', '창의 공학 설계', '지식 재산 일반',
-    ],
-    keywords: ['수학', '과학', '물리', '화학', '생명', '지구', '통합과학',
-                '미적분', '확률', '통계', '기하', '대수', '인공지능',
-                '정보', '공학', '데이터', '프로그래밍', '기술', '가정'],
+    // 자연·공학 계열 → 수학, 과학, 기술·가정
+    // (기술·가정은 '기술교양'으로 묶이지만,
+    //  원본 area에 '기술' 또는 '가정'이 들어있을 때만 자연으로 인정)
+    areas: ['수학', '과학'],
+    rawAreaIncludes: ['기술', '가정', '정보'],
   },
   '예체능': {
-    exact: [
-      // 체육
-      '체육1', '체육2', '운동과 건강', '스포츠 문화', '스포츠 과학',
-      '스포츠 생활1', '스포츠 생활2',
-      // 예술
-      '음악', '미술', '연극',
-      '음악 연주와 창작', '음악 감상과 비평', '미술 창작', '미술 감상과 비평',
-      '음악과 미디어', '미술과 매체',
-    ],
-    keywords: ['체육', '스포츠', '운동', '음악', '미술', '연극', '예술', '디자인', '공연'],
+    // 예체능 계열 → 예술, 체육
+    areas: ['예술', '체육'],
+    rawAreaIncludes: [],
   },
   '모르겠음': {
-    exact: [],
-    keywords: [],
+    areas: [],
+    rawAreaIncludes: [],
   },
 };
 
@@ -2007,26 +1977,30 @@ async function loadCurriculum() {
 // ============================================
 // 진로 추천 검사
 // ============================================
-function isRecommended(subjectName) {
+// 추천 여부 - 시트의 교과(군) 컬럼 기반
+// 인자: subjectName(과목명, 디버깅용), subjectArea(시트의 "교과(군)" 원본 값)
+function isRecommended(subjectName, subjectArea) {
   if (!state.career || state.career === '모르겠음') return false;
   const rec = CAREER_RECOMMEND[state.career];
   if (!rec) return false;
+  if (!subjectArea) return false;
   
-  // 정규화 (공백, 로마 숫자 처리)
-  const normalize = (s) => s.replace(/\s/g, '')
-    .replace(/Ⅰ/g, '1').replace(/Ⅱ/g, '2').replace(/Ⅲ/g, '3')
-    .replace(/I+/g, m => m.length.toString());
+  // classifyArea로 정규화된 교과군 (예: '국어', '수학', '기술교양' 등)
+  const classified = classifyArea(subjectArea);
   
-  const normalizedName = normalize(subjectName);
+  // 1) 분류된 교과군이 추천 areas에 들어있으면 추천
+  if (rec.areas && rec.areas.includes(classified)) return true;
   
-  // 1) 정확한 과목명 매칭 (정규화 후)
-  for (const exact of rec.exact) {
-    if (normalize(exact) === normalizedName) return true;
-  }
-  
-  // 2) 키워드 매칭
-  for (const kw of rec.keywords) {
-    if (subjectName.includes(kw)) return true;
+  // 2) 통합교과군('기술교양')의 경우, 원본 area 텍스트에 특정 단어가 있는지 추가 검사
+  //    - 인문: '제2외국어', '한문' 등 → 인문 추천
+  //    - 자연: '기술', '가정', '정보' 등 → 자연 추천
+  //    (이렇게 하지 않으면 "제2외국어"가 인문이 아닌 기술교양으로 묶여 인문 추천이 안 됨)
+  if (rec.rawAreaIncludes && rec.rawAreaIncludes.length > 0) {
+    // area 원본 텍스트 정규화 (공백, 가운뎃점 제거)
+    const rawArea = subjectArea.replace(/\s/g, '').replace(/·/g, '');
+    for (const keyword of rec.rawAreaIncludes) {
+      if (rawArea.includes(keyword)) return true;
+    }
   }
   
   return false;
@@ -2087,10 +2061,10 @@ function classifyArea(area) {
   // === 2단계: 단일 교과군 정확 매칭 ===
   // area가 정확히 해당 교과군명과 일치하는 경우
   
-  // 사회 교과군 (역사, 도덕 포함)
-  if (a === '사회' || a === '역사' || a === '도덕'
+  // 사회 교과군 (역사, 도덕, 한국사 포함)
+  if (a === '사회' || a === '역사' || a === '도덕' || a === '한국사'
       || a === '사회역사도덕' || a === '사회/역사/도덕'.replace(/\//g, '')
-      || /^(사회|역사|도덕)/.test(a)) return '사회';
+      || /^(사회|역사|도덕|한국사)/.test(a)) return '사회';
   
   // 국어
   if (a === '국어' || /^국어/.test(a)) return '국어';
@@ -2130,7 +2104,7 @@ function classifyArea(area) {
   if (a.includes('국어')) return '국어';
   if (a.includes('수학')) return '수학';
   if (a.includes('영어')) return '영어';
-  if (a.includes('사회') || a.includes('역사') || a.includes('도덕')) return '사회';
+  if (a.includes('사회') || a.includes('역사') || a.includes('도덕') || a.includes('한국사')) return '사회';
   if (a.includes('과학')) return '과학';
   if (a.includes('체육')) return '체육';
   if (a.includes('예술') || a.includes('음악') || a.includes('미술')) return '예술';
@@ -2995,7 +2969,7 @@ function renderSemesterStep(sem) {
 }
 
 function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
-  const recommended = isRecommended(subj.name);
+  const recommended = isRecommended(subj.name, subj.area);
   const suneung = isSuneung(subj.name);
   const description = getSubjectDescription(subj.name);
   const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
