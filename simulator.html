@@ -1717,8 +1717,13 @@ async function loadCurriculum() {
         credit = (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1) 
           ? rowTotalCredit 
           : baseCredit;
+      } else if (isCrossSem && cellCredit !== null && cellCredit > 0) {
+        // 학기교차 과목: 학기 셀에 명시된 학점을 무조건 신뢰
+        // (한 학기당 학점이 적혀 있음 - 만년고 음악/미술, 중일고 생태와환경/보건, 확률과통계/정보 등)
+        // 운영학점(rowTotalCredit)은 두 학기 합계라 사용하면 안 됨
+        credit = cellCredit;
       } else if (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1 && rowTotalCredit > 0) {
-        // 일반: 운영학점이 baseCredit과 비슷하면 그것 사용
+        // 일반(비학기교차): 운영학점이 baseCredit과 비슷하면 그것 사용
         credit = rowTotalCredit;
       } else if (cellCredit !== null) {
         credit = cellCredit;
@@ -1739,6 +1744,11 @@ async function loadCurriculum() {
         groupTotalFromCell: cellHasGroupTotal ? cellCredit : null,
         rowIndex: r,  // 페어링용 (시트의 원래 행 순서)
       };
+      
+      // === 디버깅: 학기교차 과목 모두 출력 ===
+      if (isCrossSem) {
+        console.log(`[학기교차 ${subject}] ${semKey} 셀값="${cellVal}" baseCredit=${baseCredit} cellCredit=${cellCredit} rowTotalCredit=${rowTotalCredit} → credit=${credit} isFixed=${isFixed}`);
+      }
       
       if (isFixed) {
         semesters[semKey].fixed.push(subjInfo);
