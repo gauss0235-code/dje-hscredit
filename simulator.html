@@ -1748,6 +1748,15 @@ async function loadCurriculum() {
         // → 학기 셀은 그룹 합계, 실제 과목 학점은 baseCredit
         cellHasGroupTotal = true;
         credit = baseCredit;
+      } else if (!isFixed && takeNForCredit && takeNForCredit >= 2
+                 && cellCredit !== null && cellCredit > 0
+                 && rowTotalCredit !== null
+                 && rowTotalCredit === cellCredit * takeNForCredit) {
+        // 노은고 선택군L 패턴: 학기 셀에 한 과목 학점(2)이 적혀있고,
+        // 운영학점이 그룹 합계(택N×학점)인 경우
+        // 예: cellCredit=2, takeN=2, rowTotalCredit=4 → 2 × 2 = 4 매칭
+        // → cellCredit이 한 과목 학점
+        credit = cellCredit;
       } else if (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1 && rowTotalCredit > 0) {
         // 일반(비학기교차): 운영학점이 baseCredit과 비슷하면 그것 사용
         credit = rowTotalCredit;
