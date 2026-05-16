@@ -1,10 +1,44 @@
 # 대전광역시 고등학교 교육과정 사이트
 # 검색 엔진 크롤링 정책
 
+# === 카톡/페이스북/트위터 등 소셜 미디어 봇 허용 ===
+# (공유 시 미리보기 카드 생성용)
+User-agent: kakaotalk-scrap
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: NaverBlog
+Allow: /
+
+# === 일반 검색엔진 (Google, Naver, Bing 등) ===
 User-agent: *
 Allow: /
 
-# simulator.html은 파라미터 없이 단독 접근 시 빈 페이지가 되므로 색인 제외
+# simulator.html은 파라미터 없이 단독 접근 시 빈 페이지가 되므로
+# 일반 검색엔진의 색인은 제외 (위 소셜 봇들은 위에서 별도 허용)
 Disallow: /simulator.html
 
 # 사이트맵 위치
