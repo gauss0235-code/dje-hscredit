@@ -998,6 +998,69 @@ body {
   border: 2px solid #BFDBFE;
 }
 
+/* === 보기 전용 모드 배너 (공유 링크로 본 사람용) === */
+.view-only-banner {
+  margin: 24px 0;
+  padding: 24px 20px;
+  background: linear-gradient(135deg, #FFF8E7 0%, #FFE6BD 100%);
+  border-radius: 16px;
+  border: 2px solid #F4D58D;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.view-only-icon {
+  font-size: 2.4em;
+  flex-shrink: 0;
+}
+.view-only-text {
+  flex: 1;
+  min-width: 200px;
+}
+.view-only-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+  color: var(--text-brown);
+  margin-bottom: 6px;
+}
+.view-only-desc {
+  font-size: 0.9em;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+.view-only-cta {
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  color: white;
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.95em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s;
+  box-shadow: 0 2px 6px rgba(74, 138, 184, 0.25);
+  flex-shrink: 0;
+}
+.view-only-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(74, 138, 184, 0.35);
+}
+.view-only-cta svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+@media (max-width: 600px) {
+  .view-only-banner { flex-direction: column; text-align: center; padding: 20px 16px; }
+  .view-only-cta { width: 100%; justify-content: center; }
+}
+
 .share-title {
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-size: 1.05em;
@@ -1016,10 +1079,10 @@ body {
   padding: 14px 8px;
   border-radius: 12px;
   border: none;
-  background: white;
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
   font-family: 'YeogiOttaeJalnanGothic', sans-serif;
   font-size: 0.88em;
-  color: var(--text-dark);
+  color: white;
   cursor: pointer;
   transition: all 0.18s;
   display: flex;
@@ -1027,12 +1090,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  box-shadow: 0 2px 6px rgba(74, 138, 184, 0.12);
+  box-shadow: 0 2px 6px rgba(74, 138, 184, 0.25);
 }
 
 .share-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(74, 138, 184, 0.2);
+  box-shadow: 0 6px 14px rgba(74, 138, 184, 0.35);
 }
 
 .share-btn:disabled {
@@ -1041,6 +1104,7 @@ body {
   transform: none;
 }
 
+/* primary는 더 이상 별도 처리 안 함 (모두 같은 색) */
 .share-btn.primary {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
   color: white;
@@ -1350,6 +1414,8 @@ const SCHOOL_NAME = urlParams.get('school') || '';
 const SHEET_ID = urlParams.get('sheetId') || '';
 const IS_EMBED = urlParams.get('embed') === '1';
 const IS_DEBUG = urlParams.get('debug') === '1';
+// 보기 전용 모드: 공유 링크로 접속 시 결과만 보고 수정 불가
+const IS_VIEW_ONLY = urlParams.get('view') === '1';
 
 // 상태
 const state = {
@@ -1536,7 +1602,8 @@ async function init() {
       if (sharedState && sharedState.career && sharedState.selections) {
         state.career = sharedState.career;
         state.selections = sharedState.selections;
-        state.currentStep = sharedState.step || 8;
+        // 보기 전용 모드면 무조건 결과 단계로
+        state.currentStep = IS_VIEW_ONLY ? 8 : (sharedState.step || 8);
         state.fromShare = true;
         restoredFromShare = true;
       }
@@ -1545,8 +1612,8 @@ async function init() {
     }
   }
   
-  if (!restoredFromShare) {
-    // 이전 진행 상태 복원 (localStorage)
+  if (!restoredFromShare && !IS_VIEW_ONLY) {
+    // 이전 진행 상태 복원 (localStorage) - view 모드면 절대 안 함
     loadState();
   }
   
@@ -3483,6 +3550,19 @@ function renderResultStep() {
         </div>
       </div>
       
+      ${IS_VIEW_ONLY ? `
+      <!-- 보기 전용 안내 배너 -->
+      <div class="view-only-banner">
+        <div class="view-only-icon">👀</div>
+        <div class="view-only-text">
+          <div class="view-only-title">공유된 결과 화면이에요</div>
+          <div class="view-only-desc">친구나 부모님이 만든 과목 선택 결과를 보고 있어요. 본인의 과목 선택을 직접 해보고 싶다면 아래 버튼을 눌러주세요.</div>
+        </div>
+        <button class="view-only-cta" id="goMySimBtn">
+          ${ICONS.reset} 나도 해보기
+        </button>
+      </div>
+      ` : `
       <!-- 공유 버튼 (캡쳐 대상 외) -->
       <div class="share-section">
         <div class="share-title">📤 친구나 부모님에게 공유하기</div>
@@ -3514,11 +3594,29 @@ function renderResultStep() {
           ${ICONS.arrowLeft} 수정하러 가기
         </button>
       </div>
+      `}
     </div>
   `;
 }
 
 function bindResultEvents() {
+  // 보기 전용 모드: "나도 해보기" 버튼만 활성화하고 끝
+  if (IS_VIEW_ONLY) {
+    const goMyBtn = document.getElementById('goMySimBtn');
+    if (goMyBtn) {
+      goMyBtn.addEventListener('click', () => {
+        // 보기 전용 파라미터(s, view) 제거하고 처음부터 시작 (이 학교 그대로)
+        const baseUrl = window.location.origin + window.location.pathname;
+        const params = new URLSearchParams();
+        params.set('school', SCHOOL_NAME);
+        params.set('sheetId', SHEET_ID);
+        if (IS_EMBED) params.set('embed', '1');
+        window.location.href = `${baseUrl}?${params.toString()}`;
+      });
+    }
+    return;  // 다른 버튼들은 존재하지 않음
+  }
+  
   document.getElementById('prevBtn').addEventListener('click', () => {
     state.currentStep--;
     saveState();
@@ -3703,13 +3801,14 @@ async function saveAsImage() {
 }
 
 // 3) 링크 복사
-// === 공유용 URL 생성 (상태 인코딩) ===
+// === 공유용 URL 생성 (상태 인코딩, 보기 전용 모드) ===
 function buildShareableUrl() {
   // 현재 URL의 origin + path만 가져오기 (기존 쿼리 파라미터 제거)
   const baseUrl = window.location.origin + window.location.pathname;
   const params = new URLSearchParams();
   params.set('school', SCHOOL_NAME);
   params.set('sheetId', SHEET_ID);
+  params.set('view', '1');  // 보기 전용 모드 (수정 불가)
   
   // 상태를 JSON → Base64 압축
   const shareState = {
@@ -3823,6 +3922,8 @@ function startFresh() {
 const STORAGE_KEY = `simulator-${SCHOOL_NAME}`;
 
 function saveState() {
+  // 보기 전용 모드(공유 링크)에서는 저장하지 않음 - 받는 사람의 본인 진행 데이터 보호
+  if (IS_VIEW_ONLY) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       career: state.career,
