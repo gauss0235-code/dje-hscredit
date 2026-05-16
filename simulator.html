@@ -40,17 +40,6 @@
 <!-- LZ-string: 공유 URL 압축 (학생 선택 상태를 짧게 인코딩) -->
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
-<!-- Kakao SDK: 카카오톡 공유 (미리보기 카드) -->
-<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
-        integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
-        crossorigin="anonymous"></script>
-<script>
-  // Kakao SDK 초기화 (JavaScript 키)
-  if (typeof Kakao !== 'undefined' && !Kakao.isInitialized()) {
-    Kakao.init('7a7039618dbe4fbcca23bf10ec249a0b');
-  }
-</script>
-
 <!-- 폰트 -->
 <style>
 @font-face {
@@ -3737,7 +3726,23 @@ async function generateShareImage() {
   });
 }
 
-// 1) 공유하기 - 카카오톡 우선 (Kakao SDK), 폴백으로 Web Share API
+// === URL 단축 (is.gd 무료 API) ===
+// 긴 시뮬레이터 결과 URL을 짧게 만들어 카톡/SMS 등에서 깔끔하게 표시
+async function shortenUrl(longUrl) {
+  try {
+    const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data.shorturl) return data.shorturl;
+    throw new Error(data.errormessage || 'shortener returned no url');
+  } catch (err) {
+    console.warn('URL 단축 실패, 원본 URL 사용:', err);
+    return longUrl;  // 실패 시 원본 URL 그대로 사용
+  }
+}
+
+// 1) 공유하기 - Web Share API로 SNS 공유 시트 띄움 (URL은 단축된 형태)
 async function shareResult() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
@@ -3745,51 +3750,16 @@ async function shareResult() {
   showShareHint('공유 준비 중...');
   
   try {
-    // 상태 인코딩된 공유 URL 생성 (보기 전용 모드)
-    const shareUrl = buildShareableUrl();
-    const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
-    const shareDescription = `3년치 교육과정을 설계해봤어요! 결과를 확인해보세요.`;
+    // 1) 긴 공유 URL 생성
+    const longUrl = buildShareableUrl();
     
-    // === 1순위: Kakao SDK (미리보기 카드 100% 보장) ===
-    if (typeof Kakao !== 'undefined' && Kakao.isInitialized() && Kakao.Share) {
-      try {
-        Kakao.Share.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: shareTitle,
-            description: shareDescription,
-            imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
-            link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl,
-            },
-          },
-          buttons: [
-            {
-              title: '결과 확인하기',
-              link: {
-                mobileWebUrl: shareUrl,
-                webUrl: shareUrl,
-              },
-            },
-            {
-              title: '나도 시뮬레이터 해보기',
-              link: {
-                mobileWebUrl: 'https://djhs-curriculum.kro.kr/',
-                webUrl: 'https://djhs-curriculum.kro.kr/',
-              },
-            },
-          ],
-        });
-        showShareHint('카카오톡 공유 창이 열렸어요!', 'success');
-        return;
-      } catch (kakaoErr) {
-        console.warn('Kakao SDK 공유 실패, 폴백 시도:', kakaoErr);
-        // 폴백으로 진행
-      }
-    }
+    // 2) is.gd로 URL 단축 시도 (실패 시 원본 사용)
+    showShareHint('링크를 짧게 만드는 중...');
+    const shareUrl = await shortenUrl(longUrl);
     
-    // === 2순위: Web Share API (다른 앱 또는 카톡 SDK 미지원 환경) ===
+    const shareTitle = `${SCHOOL_NAME}등학교 과목 선택 결과`;
+    
+    // 3) Web Share API로 SNS 공유 시트 띄우기 (모바일에서 가장 자연스러움)
     if (navigator.share) {
       try {
         await navigator.share({
@@ -3804,10 +3774,10 @@ async function shareResult() {
       }
     }
     
-    // === 3순위: 클립보드에 URL 복사 (PC 등) ===
+    // 4) 폴백 (PC 등 Web Share API 미지원): 클립보드에 단축 URL 복사
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(shareUrl);
-      showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
+      showShareHint('짧은 링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
     } else {
       showShareHint('이 환경에서는 자동 공유가 안 돼요. "링크 복사" 버튼을 눌러주세요.', 'error');
     }
@@ -3876,18 +3846,20 @@ function buildShareableUrl() {
 }
 
 async function copyShareLink() {
-  const url = buildShareableUrl();
-  
-  // URL 길이 체크 - 너무 길면 일부 메신저/SNS에서 잘릴 수 있음
-  const URL_WARN_LENGTH = 2000;
+  showShareHint('링크를 짧게 만드는 중...');
   
   try {
+    // 긴 URL 생성 → is.gd로 단축 시도
+    const longUrl = buildShareableUrl();
+    const url = await shortenUrl(longUrl);
+    
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(url);
-      if (url.length > URL_WARN_LENGTH) {
-        showShareHint(`링크가 복사됐어요 (${url.length}자). 길이가 길어 일부 앱에서 잘릴 수 있으니 "이미지 저장"도 함께 사용하세요.`, 'success');
+      // 단축 성공/실패에 따라 안내 메시지 다르게
+      if (url !== longUrl) {
+        showShareHint(`짧은 링크가 복사됐어요! (${url.length}자) 카카오톡 등에 붙여넣으세요.`, 'success');
       } else {
-        showShareHint('링크가 복사됐어요! 다른 곳에 붙여넣으면 결과 화면이 그대로 보여요.', 'success');
+        showShareHint(`링크가 복사됐어요. (${url.length}자) 길이가 길어 일부 앱에서 미리보기가 안 보일 수 있어요.`, 'success');
       }
     } else {
       // 폴백: 임시 textarea
