@@ -1715,8 +1715,22 @@ async function loadCurriculum() {
       // 그 과목의 실제 학점은 운영학점(rowTotalCredit) 또는 baseCredit에서 가져옴
       let cellHasGroupTotal = false;
       let credit;
+      
+      // 선택군의 "택N" 정보를 미리 파싱 (그룹 합계 추정 보조용)
+      // 예: "선택군L 택2" → takeNForCredit = 2
+      let takeNForCredit = null;
+      if (!isFixed && completion) {
+        // "택 2~3" 같은 범위는 큰 값을 사용
+        const rangeM = completion.match(/택\s*\d+\s*[~∼\-–]\s*(\d+)/);
+        if (rangeM) takeNForCredit = parseInt(rangeM[1]);
+        else {
+          const simpleM = completion.match(/택\s*(\d+)/);
+          if (simpleM) takeNForCredit = parseInt(simpleM[1]);
+        }
+      }
+      
       if (cellCredit !== null && baseCredit > 0 && cellCredit > baseCredit * 1.5) {
-        // 학기 셀에 그룹 합계가 들어있는 경우 (예: 26)
+        // 학기 셀에 그룹 합계가 들어있는 경우 (예: 이문고 26)
         // 실제 과목 학점: 운영학점 우선, 없으면 baseCredit
         cellHasGroupTotal = true;
         credit = (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1) 
@@ -1725,8 +1739,15 @@ async function loadCurriculum() {
       } else if (isCrossSem && cellCredit !== null && cellCredit > 0) {
         // 학기교차 과목: 학기 셀에 명시된 학점을 무조건 신뢰
         // (한 학기당 학점이 적혀 있음 - 만년고 음악/미술, 중일고 생태와환경/보건, 확률과통계/정보 등)
-        // 운영학점(rowTotalCredit)은 두 학기 합계라 사용하면 안 됨
         credit = cellCredit;
+      } else if (!isFixed && takeNForCredit && takeNForCredit >= 2
+                 && cellCredit !== null && baseCredit > 0
+                 && cellCredit === baseCredit * takeNForCredit) {
+        // 선택군의 그룹 합계가 학기 셀에 들어있고, baseCredit × 택N과 정확히 일치
+        // (예: 노은고 선택군L "택2", baseCredit=2, 학기셀=4 → 4 = 2 × 2)
+        // → 학기 셀은 그룹 합계, 실제 과목 학점은 baseCredit
+        cellHasGroupTotal = true;
+        credit = baseCredit;
       } else if (rowTotalCredit !== null && rowTotalCredit <= baseCredit + 1 && rowTotalCredit > 0) {
         // 일반(비학기교차): 운영학점이 baseCredit과 비슷하면 그것 사용
         credit = rowTotalCredit;
@@ -1753,6 +1774,12 @@ async function loadCurriculum() {
       // === 디버깅: 학기교차 과목 모두 출력 ===
       if (isCrossSem) {
         console.log(`[학기교차 ${subject}] ${semKey} 셀값="${cellVal}" baseCredit=${baseCredit} cellCredit=${cellCredit} rowTotalCredit=${rowTotalCredit} → credit=${credit} isFixed=${isFixed}`);
+      }
+      
+      // === 디버깅: 선택군 과목의 학점 처리 추적 ===
+      // (학교/학기별 선택군 학점 오류 진단용)
+      if (!isFixed && completion && completion.includes('선택군')) {
+        console.log(`[선택군 ${subject}] ${semKey} 이수구분="${completion}" 학기셀="${cellVal}" baseCredit=${baseCredit} cellCredit=${cellCredit} rowTotalCredit=${rowTotalCredit} → credit=${credit}`);
       }
       
       if (isFixed) {
@@ -1920,6 +1947,66 @@ async function loadCurriculum() {
       console.log(`📌 ${g.학기} ${g.그룹명}: 택${g['takeMin~Max']} 목표${g.목표학점}학점 (총 ${g.전체과목수}과목)`);
       console.table(g.첫5과목);
     }
+  }
+  
+  // === 전체 선택군 학점 일관성 진단 ===
+  // 같은 그룹 안의 과목들 학점이 비정상적으로 다르면 경고
+  // (노은고 선택군L 같은 케이스 자동 탐지)
+  const inconsistentGroups = [];
+  for (const [semKey, semData] of Object.entries(semesters)) {
+    for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+      if (group.subjects.length < 2) continue;
+      const credits = group.subjects.map(s => s.credit);
+      const uniqueCredits = [...new Set(credits)];
+      const maxC = Math.max(...credits);
+      const minC = Math.min(...credits);
+      
+      // 같은 선택군인데 학점 편차가 너무 크면 의심 (보통 한 그룹은 같은 학점)
+      if (maxC > minC * 1.5 && uniqueCredits.length > 1) {
+        inconsistentGroups.push({
+          학기: semKey,
+          그룹명: groupName,
+          학점분포: uniqueCredits.sort((a,b) => a-b).join(', '),
+          과목수: group.subjects.length,
+          예시: group.subjects.slice(0, 4).map(s => `${s.name}(${s.credit})`).join(', '),
+        });
+      }
+    }
+  }
+  
+  if (inconsistentGroups.length > 0) {
+    console.log('%c[선택군 진단] 학점 편차가 큰 선택군 (확인 필요):', 'background: #FEE2E2; color: #991B1B; font-weight: bold; padding: 4px 8px;');
+    console.table(inconsistentGroups);
+  }
+  
+  // === 그룹 전체 학점이 baseCredit × takeN과 일치하는지 검증 ===
+  // (노은고 선택군L 패턴: 택2, 각 과목 2학점이어야 그룹 합계 4학점)
+  const groupCreditChecks = [];
+  for (const [semKey, semData] of Object.entries(semesters)) {
+    for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+      if (!group.takeN || group.subjects.length === 0) continue;
+      const firstCredit = group.subjects[0].credit;
+      const expectedTotal = firstCredit * group.takeN;
+      
+      // 시트에 명시된 목표 학점이 있다면 비교
+      if (group.takeCredit !== null && group.takeCredit !== undefined
+          && group.takeCredit !== expectedTotal) {
+        groupCreditChecks.push({
+          학기: semKey,
+          그룹명: groupName,
+          '택N': group.takeN,
+          첫과목학점: firstCredit,
+          예상합계: expectedTotal,
+          실제목표: group.takeCredit,
+          불일치: '⚠️',
+        });
+      }
+    }
+  }
+  
+  if (groupCreditChecks.length > 0) {
+    console.log('%c[선택군 진단] 택N × 과목학점 ≠ 목표학점 (시트 확인 필요):', 'background: #FEE2E2; color: #991B1B; font-weight: bold; padding: 4px 8px;');
+    console.table(groupCreditChecks);
   }
   
   // === 통합교과군(기술·가정/정보/제2외국어/한문/교양) 분류 진단 ===
