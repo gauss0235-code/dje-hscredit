@@ -40,6 +40,17 @@
 <!-- LZ-string: 공유 URL 압축 (학생 선택 상태를 짧게 인코딩) -->
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
+<!-- Kakao SDK: 카카오톡 공유 (미리보기 카드) -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
+        integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
+        crossorigin="anonymous"></script>
+<script>
+  // Kakao SDK 초기화 (JavaScript 키)
+  if (typeof Kakao !== 'undefined' && !Kakao.isInitialized()) {
+    Kakao.init('7a7039618dbe4fbcca23bf10ec249a0b');
+  }
+</script>
+
 <!-- 폰트 -->
 <style>
 @font-face {
@@ -3726,7 +3737,7 @@ async function generateShareImage() {
   });
 }
 
-// 1) 공유하기 (Web Share API 우선, 링크만 전달)
+// 1) 공유하기 - 카카오톡 우선 (Kakao SDK), 폴백으로 Web Share API
 async function shareResult() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
@@ -3736,11 +3747,49 @@ async function shareResult() {
   try {
     // 상태 인코딩된 공유 URL 생성 (보기 전용 모드)
     const shareUrl = buildShareableUrl();
-    const shareTitle = `${SCHOOL_NAME}등학교 과목 선택 결과`;
+    const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
+    const shareDescription = `3년치 교육과정을 설계해봤어요! 결과를 확인해보세요.`;
     
-    // Web Share API 지원 (모바일, 일부 데스크톱)
-    // 카톡에서 미리보기가 잘 뜨도록 text는 빼고 url만 전달
-    // (text를 함께 넣으면 카톡이 한 줄 텍스트로 합치면서 URL을 못 잡아 미리보기를 안 만들기도 함)
+    // === 1순위: Kakao SDK (미리보기 카드 100% 보장) ===
+    if (typeof Kakao !== 'undefined' && Kakao.isInitialized() && Kakao.Share) {
+      try {
+        Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: shareTitle,
+            description: shareDescription,
+            imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          buttons: [
+            {
+              title: '결과 확인하기',
+              link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl,
+              },
+            },
+            {
+              title: '나도 시뮬레이터 해보기',
+              link: {
+                mobileWebUrl: 'https://djhs-curriculum.kro.kr/',
+                webUrl: 'https://djhs-curriculum.kro.kr/',
+              },
+            },
+          ],
+        });
+        showShareHint('카카오톡 공유 창이 열렸어요!', 'success');
+        return;
+      } catch (kakaoErr) {
+        console.warn('Kakao SDK 공유 실패, 폴백 시도:', kakaoErr);
+        // 폴백으로 진행
+      }
+    }
+    
+    // === 2순위: Web Share API (다른 앱 또는 카톡 SDK 미지원 환경) ===
     if (navigator.share) {
       try {
         await navigator.share({
@@ -3755,7 +3804,7 @@ async function shareResult() {
       }
     }
     
-    // 폴백 (PC 등): 클립보드에 URL 복사
+    // === 3순위: 클립보드에 URL 복사 (PC 등) ===
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(shareUrl);
       showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
