@@ -3747,14 +3747,12 @@ async function shareResult() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
   btn.disabled = true;
-  showShareHint('공유 준비 중...');
   
   try {
     // 1) 긴 공유 URL 생성
     const longUrl = buildShareableUrl();
     
     // 2) is.gd로 URL 단축 시도 (실패 시 원본 사용)
-    showShareHint('링크를 짧게 만드는 중...');
     const shareUrl = await shortenUrl(longUrl);
     
     const shareTitle = `${SCHOOL_NAME}등학교 과목 선택 결과`;
@@ -3766,10 +3764,9 @@ async function shareResult() {
           title: shareTitle,
           url: shareUrl,
         });
-        showShareHint('공유 창이 열렸어요!', 'success');
         return;
       } catch (err) {
-        if (err.name === 'AbortError') { showShareHint(''); return; }
+        if (err.name === 'AbortError') { return; }
         // 다른 오류 시 폴백
       }
     }
@@ -3777,7 +3774,7 @@ async function shareResult() {
     // 4) 폴백 (PC 등 Web Share API 미지원): 클립보드에 단축 URL 복사
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(shareUrl);
-      showShareHint('짧은 링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
+      showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
     } else {
       showShareHint('이 환경에서는 자동 공유가 안 돼요. "링크 복사" 버튼을 눌러주세요.', 'error');
     }
@@ -3846,8 +3843,6 @@ function buildShareableUrl() {
 }
 
 async function copyShareLink() {
-  showShareHint('링크를 짧게 만드는 중...');
-  
   try {
     // 긴 URL 생성 → is.gd로 단축 시도
     const longUrl = buildShareableUrl();
@@ -3855,12 +3850,7 @@ async function copyShareLink() {
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(url);
-      // 단축 성공/실패에 따라 안내 메시지 다르게
-      if (url !== longUrl) {
-        showShareHint(`짧은 링크가 복사됐어요! (${url.length}자) 카카오톡 등에 붙여넣으세요.`, 'success');
-      } else {
-        showShareHint(`링크가 복사됐어요. (${url.length}자) 길이가 길어 일부 앱에서 미리보기가 안 보일 수 있어요.`, 'success');
-      }
+      showShareHint('링크가 복사됐어요!', 'success');
     } else {
       // 폴백: 임시 textarea
       const ta = document.createElement('textarea');
