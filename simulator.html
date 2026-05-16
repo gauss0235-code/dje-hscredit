@@ -3737,14 +3737,14 @@ async function shareResult() {
     // 상태 인코딩된 공유 URL 생성 (보기 전용 모드)
     const shareUrl = buildShareableUrl();
     const shareTitle = `${SCHOOL_NAME}등학교 과목 선택 결과`;
-    const shareText = `${SCHOOL_NAME}등학교 - ${state.career} 진로로 3년 교육과정을 설계해봤어요! 결과를 확인해보세요.`;
     
     // Web Share API 지원 (모바일, 일부 데스크톱)
+    // 카톡에서 미리보기가 잘 뜨도록 text는 빼고 url만 전달
+    // (text를 함께 넣으면 카톡이 한 줄 텍스트로 합치면서 URL을 못 잡아 미리보기를 안 만들기도 함)
     if (navigator.share) {
       try {
         await navigator.share({
           title: shareTitle,
-          text: shareText,
           url: shareUrl,
         });
         showShareHint('공유 창이 열렸어요!', 'success');
