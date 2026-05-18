@@ -1759,8 +1759,14 @@ async function init() {
   // === 상태 복원: URL 파라미터(공유 링크) 우선, 없으면 localStorage ===
   // 'c': LZ-string 압축 (새 방식, 짧음)
   // 's': Base64 (구 방식, 길음 - 호환성 유지)
-  const compressedParam = urlParams.get('c');
-  const sharedStateParam = urlParams.get('s');
+  // 카톡 인앱 브라우저가 query string을 자르는 문제로, hash(#)에서도 읽어와야 함
+  
+  // hash 파싱 (예: #c=N4Igxg...)
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  
+  // c 파라미터: hash 우선, 없으면 query
+  const compressedParam = hashParams.get('c') || urlParams.get('c');
+  const sharedStateParam = hashParams.get('s') || urlParams.get('s');
   let restoredFromShare = false;
   
   if (compressedParam || sharedStateParam) {
@@ -4066,13 +4072,12 @@ async function handleSnsShare(sns) {
               imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
               imageWidth: 1200,
               imageHeight: 630,
-              // 단축 URL 사용 - 긴 URL은 카카오 서버가 거부함
-              // is.gd가 정확한 원본 URL로 리다이렉트하므로 query string도 보존됨
-              link: { mobileWebUrl: shortUrl, webUrl: shortUrl },
+              // 원본 URL 사용 (데이터는 hash에 있어 카톡이 자르지 않음)
+              link: { mobileWebUrl: longUrl, webUrl: longUrl },
             },
             buttons: [
               // 결과 확인하기 버튼 (왼쪽)
-              { title: '결과 확인하기', link: { mobileWebUrl: shortUrl, webUrl: shortUrl } },
+              { title: '결과 확인하기', link: { mobileWebUrl: longUrl, webUrl: longUrl } },
               // 나도 해보기 버튼 (오른쪽)
               { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
@@ -4194,6 +4199,8 @@ async function saveAsImage() {
 
 // 3) 링크 복사
 // === 공유용 URL 생성 (LZ-string 압축, 보기 전용 모드) ===
+// 카톡 인앱 브라우저는 ? query를 잘라먹는 문제가 있어, 데이터를 # hash에 저장
+// hash는 클라이언트가 처리하므로 카톡이 손대지 못함
 function buildShareableUrl() {
   // 현재 URL의 origin + path만 가져오기 (기존 쿼리 파라미터 제거)
   const baseUrl = window.location.origin + window.location.pathname;
@@ -4208,23 +4215,24 @@ function buildShareableUrl() {
     selections: state.selections,
     step: 8,
   };
+  
+  let encoded = '';
   try {
     const json = JSON.stringify(shareState);
     // LZ-string 압축 (URL-safe Base64로) - 일반 Base64보다 60-80% 짧음
-    let encoded;
     if (typeof LZString !== 'undefined' && LZString.compressToEncodedURIComponent) {
       encoded = LZString.compressToEncodedURIComponent(json);
-      params.set('c', encoded);  // 'c' = compressed
     } else {
       // 폴백: 기존 Base64
       encoded = btoa(unescape(encodeURIComponent(json)));
-      params.set('s', encoded);
     }
   } catch (e) {
     console.warn('상태 인코딩 실패:', e);
   }
   
-  return `${baseUrl}?${params.toString()}`;
+  // hash 부분에 압축 데이터 저장 (카톡 인앱 브라우저가 자르지 않음)
+  const hashPart = encoded ? `#c=${encoded}` : '';
+  return `${baseUrl}?${params.toString()}${hashPart}`;
 }
 
 async function copyShareLink() {
