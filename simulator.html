@@ -4066,11 +4066,14 @@ async function handleSnsShare(sns) {
               imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
               imageWidth: 1200,
               imageHeight: 630,
-              link: { mobileWebUrl: shortUrl, webUrl: shortUrl },
+              // 메인 카드 클릭 시 이동 URL (원본 긴 URL - query string 보존)
+              link: { mobileWebUrl: longUrl, webUrl: longUrl },
             },
             buttons: [
-              { title: '결과 확인하기', link: { mobileWebUrl: shortUrl, webUrl: shortUrl } },
-              { title: '나도 시뮬레이터 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
+              // 결과 확인하기 버튼이 먼저 (위쪽에 표시)
+              { title: '결과 확인하기', link: { mobileWebUrl: longUrl, webUrl: longUrl } },
+              // 나도 해보기 버튼 (좌우 나란히 표시됨)
+              { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
           });
           closeShareModal();
