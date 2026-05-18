@@ -4072,12 +4072,12 @@ async function handleSnsShare(sns) {
               imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
               imageWidth: 1200,
               imageHeight: 630,
-              // 원본 URL 사용 (데이터는 hash에 있어 카톡이 자르지 않음)
-              link: { mobileWebUrl: longUrl, webUrl: longUrl },
+              // 단축 URL 사용 - is.gd가 hash까지 보존하여 리다이렉트함
+              link: { mobileWebUrl: shortUrl, webUrl: shortUrl },
             },
             buttons: [
               // 결과 확인하기 버튼 (왼쪽)
-              { title: '결과 확인하기', link: { mobileWebUrl: longUrl, webUrl: longUrl } },
+              { title: '결과 확인하기', link: { mobileWebUrl: shortUrl, webUrl: shortUrl } },
               // 나도 해보기 버튼 (오른쪽)
               { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
