@@ -3768,13 +3768,15 @@ async function shareResult() {
     // 1) 긴 공유 URL 생성
     const longUrl = buildShareableUrl();
     
-    // 2) is.gd로 URL 단축 (Kakao SDK에 짧은 URL 전달 → 안정성↑)
-    const shareUrl = await shortenUrl(longUrl);
+    // 2) is.gd로 URL 단축 (Web Share API/클립보드 폴백용으로만 사용)
+    //    Kakao SDK는 원본 긴 URL을 직접 전달 (단축 URL은 일부 환경에서 query string 손실 발생)
+    const shortUrl = await shortenUrl(longUrl);
     
     const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
     const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
     
     // === 1순위: Kakao SDK 피드 메시지 (큰 이미지 카드) ===
+    // Kakao SDK는 URL 길이 제한이 없고 query string도 보존되므로 원본 URL 사용
     if (typeof Kakao !== 'undefined' && Kakao.isInitialized() && Kakao.Share) {
       try {
         Kakao.Share.sendDefault({
@@ -3786,16 +3788,16 @@ async function shareResult() {
             imageWidth: 1200,
             imageHeight: 630,
             link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl,
+              mobileWebUrl: longUrl,
+              webUrl: longUrl,
             },
           },
           buttons: [
             {
               title: '결과 확인하기',
               link: {
-                mobileWebUrl: shareUrl,
-                webUrl: shareUrl,
+                mobileWebUrl: longUrl,
+                webUrl: longUrl,
               },
             },
             {
@@ -3817,11 +3819,12 @@ async function shareResult() {
     }
     
     // === 2순위: Web Share API (카톡 SDK 미지원 환경, 일반 SNS 공유) ===
+    // 일반 공유는 단축 URL 사용 (메시지 깔끔)
     if (navigator.share) {
       try {
         await navigator.share({
           title: shareTitle,
-          url: shareUrl,
+          url: shortUrl,
         });
         return;
       } catch (err) {
@@ -3832,7 +3835,7 @@ async function shareResult() {
     
     // === 3순위: 클립보드 복사 (PC + Web Share API 미지원) ===
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shortUrl);
       showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
     } else {
       showShareHint('이 환경에서는 자동 공유가 안 돼요. "링크 복사" 버튼을 눌러주세요.', 'error');
