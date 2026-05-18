@@ -1756,10 +1756,12 @@ async function init() {
     document.body.style.background = 'transparent';
   }
   
-  // === 상태 복원: URL 파라미터(공유 링크) 우선, 없으면 localStorage ===
-  // 'c': LZ-string 압축 (새 방식, 짧음)
-  // 's': Base64 (구 방식, 길음 - 호환성 유지)
-  // 카톡 인앱 브라우저가 query string을 자르는 문제로, hash(#)에서도 읽어와야 함
+  // === 상태 복원 (공유 링크 → JSONbin → hash → query 순) ===
+  // 1) binId: JSONbin.io 새 방식 (최신, 가장 안정적)
+  // 2) c (hash/query): LZ-string 압축 (이전 방식, 호환성 유지)
+  // 3) s (hash/query): Base64 (구 방식, 호환성 유지)
+  
+  const binIdParam = urlParams.get('binId');
   
   // hash 파싱 (예: #c=N4Igxg...)
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -1769,14 +1771,31 @@ async function init() {
   const sharedStateParam = hashParams.get('s') || urlParams.get('s');
   let restoredFromShare = false;
   
-  if (compressedParam || sharedStateParam) {
+  // 1) JSONbin 시도 (최신 방식)
+  if (binIdParam) {
+    try {
+      console.log('[복원] JSONbin 조회 시도:', binIdParam);
+      const sharedState = await loadShareDataFromBin(binIdParam);
+      if (sharedState && sharedState.career && sharedState.selections) {
+        state.career = sharedState.career;
+        state.selections = sharedState.selections;
+        state.currentStep = IS_VIEW_ONLY ? 8 : (sharedState.step || 8);
+        state.fromShare = true;
+        restoredFromShare = true;
+        console.log('[복원] JSONbin 복원 성공');
+      }
+    } catch (e) {
+      console.warn('[복원] JSONbin 실패:', e);
+    }
+  }
+  
+  // 2) JSONbin 실패 시 hash/query에서 복원 시도 (구 링크 호환)
+  if (!restoredFromShare && (compressedParam || sharedStateParam)) {
     try {
       let json = null;
       if (compressedParam && typeof LZString !== 'undefined') {
-        // 새 방식: LZ-string 압축 해제
         json = LZString.decompressFromEncodedURIComponent(compressedParam);
       } else if (sharedStateParam) {
-        // 구 방식: Base64 (UTF-8 안전)
         json = decodeURIComponent(escape(atob(sharedStateParam)));
       }
       
@@ -1785,7 +1804,6 @@ async function init() {
         if (sharedState && sharedState.career && sharedState.selections) {
           state.career = sharedState.career;
           state.selections = sharedState.selections;
-          // 보기 전용 모드면 무조건 결과 단계로
           state.currentStep = IS_VIEW_ONLY ? 8 : (sharedState.step || 8);
           state.fromShare = true;
           restoredFromShare = true;
@@ -4044,9 +4062,12 @@ function closeShareModal() {
 
 // === SNS별 공유 핸들러 ===
 async function handleSnsShare(sns) {
-  // 공통 데이터 준비
-  const longUrl = buildShareableUrl();
-  const shortUrl = await shortenUrl(longUrl);
+  // 공통 데이터 준비 - JSONbin으로 짧은 URL 생성 (await 필요)
+  const shareUrl = await buildShareableUrl();
+  // JSONbin 성공 시 URL이 충분히 짧음 (~100자) → 단축 불필요
+  // 실패 시 hash 포함 긴 URL → 단축 시도
+  const isShortAlready = !shareUrl.includes('#');  // JSONbin 성공이면 # 없음
+  const shortUrl = isShortAlready ? shareUrl : await shortenUrl(shareUrl);
   const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
   const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
   const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}&fresh=1`;
@@ -4072,13 +4093,11 @@ async function handleSnsShare(sns) {
               imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
               imageWidth: 1200,
               imageHeight: 630,
-              // 단축 URL 사용 - is.gd가 hash까지 보존하여 리다이렉트함
-              link: { mobileWebUrl: shortUrl, webUrl: shortUrl },
+              // JSONbin 짧은 URL 사용 - 카톡 인앱 브라우저에서 안전
+              link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
             },
             buttons: [
-              // 결과 확인하기 버튼 (왼쪽)
-              { title: '결과 확인하기', link: { mobileWebUrl: shortUrl, webUrl: shortUrl } },
-              // 나도 해보기 버튼 (오른쪽)
+              { title: '결과 확인하기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
               { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
           });
@@ -4198,56 +4217,117 @@ async function saveAsImage() {
 }
 
 // 3) 링크 복사
-// === 공유용 URL 생성 (LZ-string 압축, 보기 전용 모드) ===
-// 카톡 인앱 브라우저는 ? query를 잘라먹는 문제가 있어, 데이터를 # hash에 저장
-// hash는 클라이언트가 처리하므로 카톡이 손대지 못함
-function buildShareableUrl() {
+// === 공유용 URL 생성 (JSONbin.io에 데이터 저장 후 짧은 ID로 URL 생성) ===
+// 카톡 인앱 브라우저가 긴 URL이나 hash를 제대로 처리 못하는 문제를 해결하기 위해
+// 결과 데이터는 JSONbin.io에 저장하고 URL에는 짧은 bin ID만 전달
+const JSONBIN_API_KEY = '$2a$10$xEkLvIO6YtQwZQcR1woXTOEaQKWU2vHGXqleJqCwE1gea2QRKF3jK';
+const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
+
+// JSONbin에 결과 데이터 저장 → bin ID 반환
+async function saveShareDataToBin(shareState) {
+  try {
+    const response = await fetch(JSONBIN_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_API_KEY,
+        'X-Bin-Private': 'false',  // 공개 빈 (인증 없이 읽기 가능)
+        'X-Bin-Name': `share-${SCHOOL_NAME}-${Date.now()}`,
+      },
+      body: JSON.stringify(shareState),
+    });
+    
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`JSONbin 저장 실패: ${response.status} ${errText}`);
+    }
+    
+    const data = await response.json();
+    // 응답 예: { metadata: { id: 'abc123...', ... }, record: {...} }
+    return data.metadata?.id || null;
+  } catch (err) {
+    console.error('[JSONbin] 저장 실패:', err);
+    return null;
+  }
+}
+
+// JSONbin에서 bin ID로 결과 데이터 조회
+async function loadShareDataFromBin(binId) {
+  try {
+    // 공개 빈은 latest 엔드포인트로 읽기 (API 키 불필요)
+    const response = await fetch(`${JSONBIN_API_URL}/${binId}/latest`, {
+      method: 'GET',
+      headers: {
+        'X-Master-Key': JSONBIN_API_KEY,
+      },
+    });
+    
+    if (!response.ok) throw new Error(`JSONbin 조회 실패: ${response.status}`);
+    const data = await response.json();
+    return data.record || null;
+  } catch (err) {
+    console.error('[JSONbin] 조회 실패:', err);
+    return null;
+  }
+}
+
+// 공유 URL 생성 (비동기 - JSONbin 호출 포함)
+async function buildShareableUrl() {
   // 현재 URL의 origin + path만 가져오기 (기존 쿼리 파라미터 제거)
   const baseUrl = window.location.origin + window.location.pathname;
   const params = new URLSearchParams();
   params.set('school', SCHOOL_NAME);
   params.set('sheetId', SHEET_ID);
-  params.set('view', '1');  // 보기 전용 모드 (수정 불가)
+  params.set('view', '1');
   
-  // 상태를 JSON으로
+  // 상태를 객체로
   const shareState = {
     career: state.career,
     selections: state.selections,
     step: 8,
   };
   
+  // 1) JSONbin에 저장 시도
+  const binId = await saveShareDataToBin(shareState);
+  
+  if (binId) {
+    // 성공: 짧은 binId만 URL에 포함 (약 24자)
+    params.set('binId', binId);
+    console.log('[공유] JSONbin 저장 성공:', binId);
+    return `${baseUrl}?${params.toString()}`;
+  }
+  
+  // 2) 폴백: 기존 방식 (LZ-string 압축 + hash)
+  console.warn('[공유] JSONbin 실패, 기존 방식 사용');
   let encoded = '';
   try {
     const json = JSON.stringify(shareState);
-    // LZ-string 압축 (URL-safe Base64로) - 일반 Base64보다 60-80% 짧음
     if (typeof LZString !== 'undefined' && LZString.compressToEncodedURIComponent) {
       encoded = LZString.compressToEncodedURIComponent(json);
     } else {
-      // 폴백: 기존 Base64
       encoded = btoa(unescape(encodeURIComponent(json)));
     }
   } catch (e) {
     console.warn('상태 인코딩 실패:', e);
   }
-  
-  // hash 부분에 압축 데이터 저장 (카톡 인앱 브라우저가 자르지 않음)
   const hashPart = encoded ? `#c=${encoded}` : '';
   return `${baseUrl}?${params.toString()}${hashPart}`;
 }
 
 async function copyShareLink() {
   try {
-    // 긴 URL 생성 → is.gd로 단축 시도
-    const longUrl = buildShareableUrl();
-    const url = await shortenUrl(longUrl);
+    // JSONbin URL 생성 (충분히 짧음)
+    const url = await buildShareableUrl();
+    // JSONbin 실패 시(URL에 # 있음) is.gd 단축 시도
+    const finalUrl = url.includes('#') ? await shortenUrl(url) : url;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(finalUrl);
       showShareHint('링크가 복사됐어요!', 'success');
     } else {
       // 폴백: 임시 textarea
       const ta = document.createElement('textarea');
-      ta.value = url;
+      ta.value = finalUrl;
       ta.style.position = 'fixed';
       ta.style.left = '-9999px';
       document.body.appendChild(ta);
