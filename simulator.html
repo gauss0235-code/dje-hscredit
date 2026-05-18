@@ -40,6 +40,22 @@
 <!-- LZ-string: 공유 URL 압축 (학생 선택 상태를 짧게 인코딩) -->
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
+<!-- Kakao SDK: 카카오톡 공유 (피드 메시지 - 큰 이미지 + 제목 + 버튼) -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
+        integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
+        crossorigin="anonymous"></script>
+<script>
+  // Kakao SDK 초기화 (페이지 로드 시 한번)
+  if (typeof Kakao !== 'undefined' && !Kakao.isInitialized()) {
+    try {
+      Kakao.init('7a7039618dbe4fbcca23bf10ec249a0b');
+      console.log('Kakao SDK 초기화 완료');
+    } catch (e) {
+      console.warn('Kakao SDK 초기화 실패:', e);
+    }
+  }
+</script>
+
 <!-- 폰트 -->
 <style>
 @font-face {
@@ -3742,7 +3758,7 @@ async function shortenUrl(longUrl) {
   }
 }
 
-// 1) 공유하기 - Web Share API로 SNS 공유 시트 띄움 (URL은 단축된 형태)
+// 1) 공유하기 - 카카오톡 우선 (피드 메시지 카드), 폴백으로 Web Share API
 async function shareResult() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
@@ -3752,12 +3768,55 @@ async function shareResult() {
     // 1) 긴 공유 URL 생성
     const longUrl = buildShareableUrl();
     
-    // 2) is.gd로 URL 단축 시도 (실패 시 원본 사용)
+    // 2) is.gd로 URL 단축 (Kakao SDK에 짧은 URL 전달 → 안정성↑)
     const shareUrl = await shortenUrl(longUrl);
     
-    const shareTitle = `${SCHOOL_NAME}등학교 과목 선택 결과`;
+    const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
+    const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
     
-    // 3) Web Share API로 SNS 공유 시트 띄우기 (모바일에서 가장 자연스러움)
+    // === 1순위: Kakao SDK 피드 메시지 (큰 이미지 카드) ===
+    if (typeof Kakao !== 'undefined' && Kakao.isInitialized() && Kakao.Share) {
+      try {
+        Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: shareTitle,
+            description: shareDescription,
+            imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
+            imageWidth: 1200,
+            imageHeight: 630,
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          buttons: [
+            {
+              title: '결과 확인하기',
+              link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl,
+              },
+            },
+            {
+              title: '나도 시뮬레이터 해보기',
+              link: {
+                mobileWebUrl: 'https://djhs-curriculum.kro.kr/',
+                webUrl: 'https://djhs-curriculum.kro.kr/',
+              },
+            },
+          ],
+        });
+        // Kakao SDK 호출 성공 (카톡 공유 창이 열림)
+        btn.disabled = false;
+        return;
+      } catch (kakaoErr) {
+        console.warn('Kakao SDK 공유 실패, Web Share API 폴백:', kakaoErr);
+        // 폴백으로 진행
+      }
+    }
+    
+    // === 2순위: Web Share API (카톡 SDK 미지원 환경, 일반 SNS 공유) ===
     if (navigator.share) {
       try {
         await navigator.share({
@@ -3771,7 +3830,7 @@ async function shareResult() {
       }
     }
     
-    // 4) 폴백 (PC 등 Web Share API 미지원): 클립보드에 단축 URL 복사
+    // === 3순위: 클립보드 복사 (PC + Web Share API 미지원) ===
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(shareUrl);
       showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
