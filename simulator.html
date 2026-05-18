@@ -1078,7 +1078,8 @@ body {
   margin-bottom: 20px;
 }
 .share-modal-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 600;
   font-size: 1.1em;
   color: var(--text-dark);
 }
@@ -1102,8 +1103,8 @@ body {
 }
 .share-modal-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 .share-modal-btn {
   border: none;
@@ -1133,21 +1134,26 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .share-modal-icon.kakao { background: #FEE500; color: #381E1E; }
+.share-modal-icon.instagram { 
+  background: linear-gradient(45deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%); 
+}
 .share-modal-icon.twitter { background: #000000; }
 .share-modal-icon.sms { background: #34C759; }
 .share-modal-icon.copy { background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%); }
 .share-modal-icon.image { background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%); }
 .share-modal-icon.other { background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%); }
 .share-modal-label {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
   font-size: 0.82em;
   color: var(--text-dark);
 }
 @media (max-width: 480px) {
-  .share-modal { padding: 20px; }
-  .share-modal-grid { gap: 8px; }
-  .share-modal-icon { width: 48px; height: 48px; font-size: 1.4em; }
-  .share-modal-label { font-size: 0.78em; }
+  .share-modal { padding: 20px 16px; }
+  .share-modal-grid { gap: 6px; }
+  .share-modal-icon { width: 44px; height: 44px; font-size: 1.3em; }
+  .share-modal-label { font-size: 0.72em; }
+  .share-modal-btn { padding: 8px 4px; }
 }
 
 /* === 보기 전용 모드 배너 (공유 링크로 본 사람용) === */
@@ -3743,15 +3749,15 @@ function renderResultStep() {
       <div class="share-section">
         <div class="share-title">📤 친구나 부모님에게 공유하기</div>
         <div class="share-buttons">
-          <button class="share-btn primary" id="shareBtn">
+          <button type="button" class="share-btn primary" id="shareBtn">
             ${ICONS.share}
             <span>공유하기</span>
           </button>
-          <button class="share-btn" id="saveImageBtn">
+          <button type="button" class="share-btn" id="saveImageBtn">
             ${ICONS.image}
             <span>이미지 저장</span>
           </button>
-          <button class="share-btn" id="copyLinkBtn">
+          <button type="button" class="share-btn" id="copyLinkBtn">
             ${ICONS.copy}
             <span>링크 복사</span>
           </button>
@@ -3763,13 +3769,17 @@ function renderResultStep() {
       <div class="share-modal-overlay" id="shareModalOverlay">
         <div class="share-modal">
           <div class="share-modal-header">
-            <div class="share-modal-title">어디로 공유할까요?</div>
+            <div class="share-modal-title"></div>
             <button class="share-modal-close" id="shareModalClose" aria-label="닫기">✕</button>
           </div>
           <div class="share-modal-grid">
             <button class="share-modal-btn" data-sns="kakao">
               <div class="share-modal-icon kakao">💬</div>
               <div class="share-modal-label">카카오톡</div>
+            </button>
+            <button class="share-modal-btn" data-sns="instagram">
+              <div class="share-modal-icon instagram">📷</div>
+              <div class="share-modal-label">인스타그램</div>
             </button>
             <button class="share-modal-btn" data-sns="twitter">
               <div class="share-modal-icon twitter">𝕏</div>
@@ -3778,14 +3788,6 @@ function renderResultStep() {
             <button class="share-modal-btn" data-sns="sms">
               <div class="share-modal-icon sms">💬</div>
               <div class="share-modal-label">문자메시지</div>
-            </button>
-            <button class="share-modal-btn" data-sns="copy">
-              <div class="share-modal-icon copy">🔗</div>
-              <div class="share-modal-label">링크 복사</div>
-            </button>
-            <button class="share-modal-btn" data-sns="image">
-              <div class="share-modal-icon image">🖼️</div>
-              <div class="share-modal-label">이미지 저장</div>
             </button>
             <button class="share-modal-btn" data-sns="other">
               <div class="share-modal-icon other">📤</div>
@@ -3949,11 +3951,20 @@ async function shortenUrl(longUrl) {
 
 // 1) 공유하기 - 카카오톡 우선 (피드 메시지 카드), 폴백으로 Web Share API
 // === 1) 공유하기 버튼 → 모달 띄우기 ===
-function shareResult() {
+function shareResult(e) {
+  // 이벤트 기본 동작 + 전파 차단 (삼성 인터넷 등에서 자동 공유 시트 띄우는 동작 차단)
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+  
   const modal = document.getElementById('shareModalOverlay');
   if (modal) {
     modal.classList.add('active');
   }
+  
+  return false;
 }
 
 // === 공유 모달 닫기 ===
@@ -4013,6 +4024,33 @@ async function handleSnsShare(sns) {
       break;
     }
     
+    case 'instagram': {
+      // 인스타그램은 직접 URL 공유 API 없음
+      // → 링크를 클립보드에 복사 + 인스타그램 앱 열기 시도 + 안내
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shortUrl);
+        }
+      } catch (e) {}
+      
+      // 모바일이면 인스타그램 앱 열기 시도 (스토리/DM 자동 열기는 불가)
+      const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile) {
+        // 인스타그램 앱 직접 열기 (스토리 카메라)
+        window.location.href = 'instagram://story-camera';
+        // 앱이 없으면 웹으로 폴백 (1초 후)
+        setTimeout(() => {
+          window.open('https://www.instagram.com/', '_blank');
+        }, 1500);
+      } else {
+        window.open('https://www.instagram.com/', '_blank');
+      }
+      
+      showShareHint('링크가 복사됐어요! 인스타그램 스토리나 DM에 붙여넣어주세요.', 'success');
+      closeShareModal();
+      break;
+    }
+    
     case 'twitter': {
       // X (트위터): 인텐트 URL
       const text = encodeURIComponent(`${shareTitle}\n${shareDescription}`);
@@ -4027,37 +4065,6 @@ async function handleSnsShare(sns) {
       const body = encodeURIComponent(`${shareTitle}\n${shortUrl}`);
       window.location.href = `sms:?body=${body}`;
       closeShareModal();
-      break;
-    }
-    
-    case 'copy': {
-      // 링크 복사
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(shortUrl);
-          showShareHint('링크가 복사됐어요!', 'success');
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = shortUrl;
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          showShareHint('링크가 복사됐어요!', 'success');
-        }
-      } catch (e) {
-        showShareHint('복사 중 문제가 생겼어요.', 'error');
-      }
-      closeShareModal();
-      break;
-    }
-    
-    case 'image': {
-      // 이미지 저장 (기존 함수 호출)
-      closeShareModal();
-      saveAsImage();
       break;
     }
     
