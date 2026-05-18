@@ -3932,9 +3932,24 @@ function bindResultEvents() {
     });
   }
   
-  // SNS 버튼들 (이벤트 위임)
+  // SNS 버튼들 - 이벤트 위임 (모달 컨테이너에 한 번만 등록)
+  if (shareModalOverlay) {
+    shareModalOverlay.addEventListener('click', (e) => {
+      const btn = e.target.closest('.share-modal-btn');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const sns = btn.dataset.sns;
+        if (sns) handleSnsShare(sns);
+      }
+    });
+  }
+  
+  // 추가 안전망: 각 버튼에도 개별 이벤트 (혹시 위임이 안 될 경우)
   document.querySelectorAll('.share-modal-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const sns = btn.dataset.sns;
       if (sns) handleSnsShare(sns);
     });
@@ -4035,9 +4050,13 @@ async function shortenUrl(longUrl) {
 }
 
 // 1) 공유하기 - 카카오톡 우선 (피드 메시지 카드), 폴백으로 Web Share API
-// === 1) 공유하기 버튼 → 모달 띄우기 ===
+// 공유 URL을 미리 준비 (모달 띄우는 동안 백그라운드 저장)
+let _preparedShareUrl = null;
+let _shareUrlPromise = null;
+
+// === 1) 공유하기 버튼 → 모달 띄우기 + JSONbin 저장 시작 ===
 function shareResult(e) {
-  // 이벤트 기본 동작 + 전파 차단 (삼성 인터넷 등에서 자동 공유 시트 띄우는 동작 차단)
+  // 이벤트 기본 동작 + 전파 차단
   if (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -4048,6 +4067,16 @@ function shareResult(e) {
   if (modal) {
     modal.classList.add('active');
   }
+  
+  // 모달이 떠있는 동안 백그라운드로 미리 JSONbin 저장
+  _preparedShareUrl = null;
+  _shareUrlPromise = buildShareableUrl().then(url => {
+    _preparedShareUrl = url;
+    return url;
+  }).catch(err => {
+    console.error('공유 URL 준비 실패:', err);
+    return null;
+  });
   
   return false;
 }
@@ -4062,21 +4091,19 @@ function closeShareModal() {
 
 // === SNS별 공유 핸들러 ===
 async function handleSnsShare(sns) {
-  // [진단 v6] 시작
-  if (sns === 'kakao') {
-    alert('[진단 v6 - 1단계] 카카오 버튼 클릭, JSONbin 저장 시도 중...');
+  // 미리 준비된 URL 사용 (shareResult에서 백그라운드로 생성 시작함)
+  // 아직 안 끝났으면 잠시 대기
+  let shareUrl = _preparedShareUrl;
+  if (!shareUrl && _shareUrlPromise) {
+    shareUrl = await _shareUrlPromise;
+  }
+  // 미리 준비 안 됐으면 (예외 케이스) 지금 만들기
+  if (!shareUrl) {
+    shareUrl = await buildShareableUrl();
   }
   
-  // 공통 데이터 준비 - JSONbin으로 짧은 URL 생성 (await 필요)
-  const shareUrl = await buildShareableUrl();
-  
-  if (sns === 'kakao') {
-    alert(`[진단 v6 - 2단계] shareUrl 생성됨 (${shareUrl.length}자):\n${shareUrl.substring(0, 150)}`);
-  }
-  
-  // JSONbin 성공 시 URL이 충분히 짧음 (~100자) → 단축 불필요
-  // 실패 시 hash 포함 긴 URL → 단축 시도
-  const isShortAlready = !shareUrl.includes('#');  // JSONbin 성공이면 # 없음
+  // JSONbin 성공 시 URL이 충분히 짧음 → 단축 불필요
+  const isShortAlready = !shareUrl.includes('#');
   const shortUrl = isShortAlready ? shareUrl : await shortenUrl(shareUrl);
   const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
   const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
@@ -4094,7 +4121,6 @@ async function handleSnsShare(sns) {
                        && Kakao.Share;
       
       if (useKakaoSDK) {
-        alert(`[진단 v6 - 3단계] Kakao.Share 호출 시도. 사용 URL:\n${shareUrl.substring(0, 100)}`);
         try {
           Kakao.Share.sendDefault({
             objectType: 'feed',
@@ -4111,15 +4137,12 @@ async function handleSnsShare(sns) {
               { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
           });
-          alert('[진단 v6 - 4단계] Kakao.Share 호출 성공! 카톡 창이 열려야 함');
           closeShareModal();
         } catch (e) {
-          alert(`[진단 v6 - 4단계 실패] Kakao SDK 에러: ${e.message || e}`);
           console.error('Kakao SDK 실패, Web Share API 폴백:', e);
           fallbackToWebShare(shareTitle, shortUrl);
         }
       } else {
-        alert(`[진단 v6 - 분기] Kakao SDK 사용 안 함 (useKakaoSDK=false). Web Share API 폴백.\nisSamsungBrowser=${isSamsungBrowser}, Kakao 존재=${typeof Kakao !== 'undefined'}`);
         // 삼성 인터넷 등: Web Share API로 폴백
         fallbackToWebShare(shareTitle, shortUrl);
       }
