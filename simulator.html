@@ -1457,6 +1457,8 @@ const IS_EMBED = urlParams.get('embed') === '1';
 const IS_DEBUG = urlParams.get('debug') === '1';
 // 보기 전용 모드: 공유 링크로 접속 시 결과만 보고 수정 불가
 const IS_VIEW_ONLY = urlParams.get('view') === '1';
+// 처음부터 시작 모드: "나도 시뮬레이터 해보기"로 들어온 경우 localStorage 무시하고 1단계부터
+const IS_FRESH_START = urlParams.get('fresh') === '1';
 
 // 상태
 const state = {
@@ -1666,9 +1668,18 @@ async function init() {
     }
   }
   
-  if (!restoredFromShare && !IS_VIEW_ONLY) {
-    // 이전 진행 상태 복원 (localStorage) - view 모드면 절대 안 함
+  if (!restoredFromShare && !IS_VIEW_ONLY && !IS_FRESH_START) {
+    // 이전 진행 상태 복원 (localStorage)
+    // - view 모드면 절대 안 함 (보기 전용)
+    // - fresh 모드면 절대 안 함 ("나도 해보기"로 처음부터 시작)
     loadState();
+  }
+  
+  // fresh 모드: 기존 localStorage도 삭제하여 다음 방문에도 영향 없도록
+  if (IS_FRESH_START) {
+    try {
+      localStorage.removeItem(`simulator-${SCHOOL_NAME}`);
+    } catch (e) {}
   }
   
   try {
@@ -3768,17 +3779,47 @@ async function shareResult() {
     // 1) 긴 공유 URL 생성
     const longUrl = buildShareableUrl();
     
+    // [진단] SDK 상태 콘솔 로깅
+    console.log('=== 공유하기 진단 ===');
+    console.log('Kakao 객체 존재:', typeof Kakao !== 'undefined');
+    console.log('Kakao 초기화됨:', typeof Kakao !== 'undefined' && Kakao.isInitialized());
+    console.log('Kakao.Share 존재:', typeof Kakao !== 'undefined' && Kakao.Share);
+    console.log('navigator.share 지원:', typeof navigator.share);
+    console.log('navigator.clipboard 지원:', !!(navigator.clipboard && navigator.clipboard.writeText));
+    console.log('longUrl 길이:', longUrl.length);
+    console.log('User Agent:', navigator.userAgent);
+    
     // 2) is.gd로 URL 단축 (Web Share API/클립보드 폴백용으로만 사용)
     //    Kakao SDK는 원본 긴 URL을 직접 전달 (단축 URL은 일부 환경에서 query string 손실 발생)
     const shortUrl = await shortenUrl(longUrl);
+    console.log('shortUrl:', shortUrl);
     
     const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
     const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
     
-    // === 1순위: Kakao SDK 피드 메시지 (큰 이미지 카드) ===
-    // Kakao SDK는 URL 길이 제한이 없고 query string도 보존되므로 원본 URL 사용
-    if (typeof Kakao !== 'undefined' && Kakao.isInitialized() && Kakao.Share) {
+    // "나도 해보기" 버튼용 URL: 같은 학교 시뮬레이터 1단계 (view, c 파라미터 제외)
+    // fresh=1: 받는 사람의 이전 진행 상태(localStorage) 무시하고 처음부터 시작
+    const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}&fresh=1`;
+    
+    // === 환경 감지: 삼성 인터넷은 Kakao SDK와 호환성 문제 있음 ===
+    // Kakao.Share.sendDefault 호출 시 반응 없이 멈추는 알려진 버그
+    const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+    
+    // 삼성 인터넷이면 Kakao SDK 스킵하고 Web Share API 직행
+    const useKakaoSDK = !isSamsungBrowser
+                       && typeof Kakao !== 'undefined' 
+                       && Kakao.isInitialized() 
+                       && Kakao.Share;
+    
+    if (isSamsungBrowser) {
+      console.log('삼성 인터넷 감지 - Kakao SDK 스킵, Web Share API 사용');
+    }
+    
+    // === 1순위: Kakao SDK 피드 메시지 (삼성 인터넷 제외) ===
+    if (useKakaoSDK) {
       try {
+        console.log('Kakao.Share.sendDefault 호출 시도...');
         Kakao.Share.sendDefault({
           objectType: 'feed',
           content: {
@@ -3803,31 +3844,32 @@ async function shareResult() {
             {
               title: '나도 시뮬레이터 해보기',
               link: {
-                mobileWebUrl: 'https://djhs-curriculum.kro.kr/',
-                webUrl: 'https://djhs-curriculum.kro.kr/',
+                mobileWebUrl: trySimUrl,
+                webUrl: trySimUrl,
               },
             },
           ],
         });
-        // Kakao SDK 호출 성공 (카톡 공유 창이 열림)
+        console.log('Kakao.Share.sendDefault 호출 성공');
         btn.disabled = false;
         return;
       } catch (kakaoErr) {
-        console.warn('Kakao SDK 공유 실패, Web Share API 폴백:', kakaoErr);
+        console.error('Kakao SDK 공유 실패:', kakaoErr);
         // 폴백으로 진행
       }
     }
     
-    // === 2순위: Web Share API (카톡 SDK 미지원 환경, 일반 SNS 공유) ===
-    // 일반 공유는 단축 URL 사용 (메시지 깔끔)
+    // === 2순위: Web Share API (모바일 권장 - OS 공유 시트) ===
     if (navigator.share) {
       try {
+        console.log('navigator.share 호출...');
         await navigator.share({
           title: shareTitle,
           url: shortUrl,
         });
         return;
       } catch (err) {
+        console.warn('navigator.share 실패:', err);
         if (err.name === 'AbortError') { return; }
         // 다른 오류 시 폴백
       }
