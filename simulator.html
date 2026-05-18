@@ -1039,6 +1039,117 @@ body {
   border: 2px solid #BFDBFE;
 }
 
+/* === 공유 SNS 선택 모달 === */
+.share-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: shareModalFade 0.2s ease-out;
+}
+.share-modal-overlay.active {
+  display: flex;
+}
+@keyframes shareModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.share-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: shareModalSlide 0.25s ease-out;
+}
+@keyframes shareModalSlide {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.share-modal-title {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 1.1em;
+  color: var(--text-dark);
+}
+.share-modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #F3F4F6;
+  border-radius: 50%;
+  font-size: 1em;
+  color: var(--text-mid);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.share-modal-close:hover {
+  background: #E5E7EB;
+  color: var(--text-dark);
+}
+.share-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.share-modal-btn {
+  border: none;
+  background: transparent;
+  padding: 12px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.18s;
+}
+.share-modal-btn:hover {
+  background: #F3F4F6;
+  transform: translateY(-2px);
+}
+.share-modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6em;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.share-modal-icon.kakao { background: #FEE500; color: #381E1E; }
+.share-modal-icon.twitter { background: #000000; }
+.share-modal-icon.sms { background: #34C759; }
+.share-modal-icon.copy { background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%); }
+.share-modal-icon.image { background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%); }
+.share-modal-icon.other { background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%); }
+.share-modal-label {
+  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-size: 0.82em;
+  color: var(--text-dark);
+}
+@media (max-width: 480px) {
+  .share-modal { padding: 20px; }
+  .share-modal-grid { gap: 8px; }
+  .share-modal-icon { width: 48px; height: 48px; font-size: 1.4em; }
+  .share-modal-label { font-size: 0.78em; }
+}
+
 /* === 보기 전용 모드 배너 (공유 링크로 본 사람용) === */
 .view-only-banner {
   margin: 24px 0;
@@ -3648,6 +3759,42 @@ function renderResultStep() {
         <div class="share-hint" id="shareHint"></div>
       </div>
       
+      <!-- 공유 SNS 선택 모달 -->
+      <div class="share-modal-overlay" id="shareModalOverlay">
+        <div class="share-modal">
+          <div class="share-modal-header">
+            <div class="share-modal-title">어디로 공유할까요?</div>
+            <button class="share-modal-close" id="shareModalClose" aria-label="닫기">✕</button>
+          </div>
+          <div class="share-modal-grid">
+            <button class="share-modal-btn" data-sns="kakao">
+              <div class="share-modal-icon kakao">💬</div>
+              <div class="share-modal-label">카카오톡</div>
+            </button>
+            <button class="share-modal-btn" data-sns="twitter">
+              <div class="share-modal-icon twitter">𝕏</div>
+              <div class="share-modal-label">X (트위터)</div>
+            </button>
+            <button class="share-modal-btn" data-sns="sms">
+              <div class="share-modal-icon sms">💬</div>
+              <div class="share-modal-label">문자메시지</div>
+            </button>
+            <button class="share-modal-btn" data-sns="copy">
+              <div class="share-modal-icon copy">🔗</div>
+              <div class="share-modal-label">링크 복사</div>
+            </button>
+            <button class="share-modal-btn" data-sns="image">
+              <div class="share-modal-icon image">🖼️</div>
+              <div class="share-modal-label">이미지 저장</div>
+            </button>
+            <button class="share-modal-btn" data-sns="other">
+              <div class="share-modal-icon other">📤</div>
+              <div class="share-modal-label">다른 앱</div>
+            </button>
+          </div>
+        </div>
+      </div>
+      
       <div class="result-actions">
         <button id="printBtn">${ICONS.print} 인쇄하기</button>
         <button id="resetBtn">${ICONS.reset} 다시 시작</button>
@@ -3713,6 +3860,37 @@ function bindResultEvents() {
   if (shareBtn) shareBtn.addEventListener('click', shareResult);
   if (saveImageBtn) saveImageBtn.addEventListener('click', saveAsImage);
   if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyShareLink);
+  
+  // === 공유 모달 이벤트 ===
+  const shareModalOverlay = document.getElementById('shareModalOverlay');
+  const shareModalClose = document.getElementById('shareModalClose');
+  
+  // 모달 닫기 버튼
+  if (shareModalClose) {
+    shareModalClose.addEventListener('click', closeShareModal);
+  }
+  
+  // 모달 배경 클릭 시 닫기
+  if (shareModalOverlay) {
+    shareModalOverlay.addEventListener('click', (e) => {
+      if (e.target === shareModalOverlay) closeShareModal();
+    });
+  }
+  
+  // SNS 버튼들 (이벤트 위임)
+  document.querySelectorAll('.share-modal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sns = btn.dataset.sns;
+      if (sns) handleSnsShare(sns);
+    });
+  });
+  
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', function escHandler(e) {
+    if (e.key === 'Escape' && shareModalOverlay && shareModalOverlay.classList.contains('active')) {
+      closeShareModal();
+    }
+  });
 }
 
 // ============================================
@@ -3770,124 +3948,155 @@ async function shortenUrl(longUrl) {
 }
 
 // 1) 공유하기 - 카카오톡 우선 (피드 메시지 카드), 폴백으로 Web Share API
-async function shareResult() {
-  const btn = document.getElementById('shareBtn');
-  if (!btn) return;
-  btn.disabled = true;
+// === 1) 공유하기 버튼 → 모달 띄우기 ===
+function shareResult() {
+  const modal = document.getElementById('shareModalOverlay');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+// === 공유 모달 닫기 ===
+function closeShareModal() {
+  const modal = document.getElementById('shareModalOverlay');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// === SNS별 공유 핸들러 ===
+async function handleSnsShare(sns) {
+  // 공통 데이터 준비
+  const longUrl = buildShareableUrl();
+  const shortUrl = await shortenUrl(longUrl);
+  const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
+  const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
+  const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}&fresh=1`;
   
-  try {
-    // 1) 긴 공유 URL 생성
-    const longUrl = buildShareableUrl();
-    
-    // [진단] SDK 상태 콘솔 로깅
-    console.log('=== 공유하기 진단 ===');
-    console.log('Kakao 객체 존재:', typeof Kakao !== 'undefined');
-    console.log('Kakao 초기화됨:', typeof Kakao !== 'undefined' && Kakao.isInitialized());
-    console.log('Kakao.Share 존재:', typeof Kakao !== 'undefined' && Kakao.Share);
-    console.log('navigator.share 지원:', typeof navigator.share);
-    console.log('navigator.clipboard 지원:', !!(navigator.clipboard && navigator.clipboard.writeText));
-    console.log('longUrl 길이:', longUrl.length);
-    console.log('User Agent:', navigator.userAgent);
-    
-    // 2) is.gd로 URL 단축 (Web Share API/클립보드 폴백용으로만 사용)
-    //    Kakao SDK는 원본 긴 URL을 직접 전달 (단축 URL은 일부 환경에서 query string 손실 발생)
-    const shortUrl = await shortenUrl(longUrl);
-    console.log('shortUrl:', shortUrl);
-    
-    const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
-    const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
-    
-    // "나도 해보기" 버튼용 URL: 같은 학교 시뮬레이터 1단계 (view, c 파라미터 제외)
-    // fresh=1: 받는 사람의 이전 진행 상태(localStorage) 무시하고 처음부터 시작
-    const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}&fresh=1`;
-    
-    // === 환경 감지: 삼성 인터넷은 Kakao SDK와 호환성 문제 있음 ===
-    // Kakao.Share.sendDefault 호출 시 반응 없이 멈추는 알려진 버그
-    const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
-    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-    
-    // 삼성 인터넷이면 Kakao SDK 스킵하고 Web Share API 직행
-    const useKakaoSDK = !isSamsungBrowser
-                       && typeof Kakao !== 'undefined' 
-                       && Kakao.isInitialized() 
+  // 환경 감지
+  const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
+  
+  switch (sns) {
+    case 'kakao': {
+      // 카카오톡: SDK 미리보기 카드 (삼성 인터넷에선 Web Share API 폴백)
+      const useKakaoSDK = !isSamsungBrowser
+                       && typeof Kakao !== 'undefined'
+                       && Kakao.isInitialized()
                        && Kakao.Share;
-    
-    if (isSamsungBrowser) {
-      console.log('삼성 인터넷 감지 - Kakao SDK 스킵, Web Share API 사용');
+      
+      if (useKakaoSDK) {
+        try {
+          Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+              title: shareTitle,
+              description: shareDescription,
+              imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
+              imageWidth: 1200,
+              imageHeight: 630,
+              link: { mobileWebUrl: longUrl, webUrl: longUrl },
+            },
+            buttons: [
+              { title: '결과 확인하기', link: { mobileWebUrl: longUrl, webUrl: longUrl } },
+              { title: '나도 시뮬레이터 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
+            ],
+          });
+          closeShareModal();
+        } catch (e) {
+          console.error('Kakao SDK 실패, Web Share API 폴백:', e);
+          fallbackToWebShare(shareTitle, shortUrl);
+        }
+      } else {
+        // 삼성 인터넷 등: Web Share API로 폴백
+        fallbackToWebShare(shareTitle, shortUrl);
+      }
+      break;
     }
     
-    // === 1순위: Kakao SDK 피드 메시지 (삼성 인터넷 제외) ===
-    if (useKakaoSDK) {
+    case 'twitter': {
+      // X (트위터): 인텐트 URL
+      const text = encodeURIComponent(`${shareTitle}\n${shareDescription}`);
+      const url = encodeURIComponent(shortUrl);
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+      closeShareModal();
+      break;
+    }
+    
+    case 'sms': {
+      // 문자메시지: sms: 스킴
+      const body = encodeURIComponent(`${shareTitle}\n${shortUrl}`);
+      window.location.href = `sms:?body=${body}`;
+      closeShareModal();
+      break;
+    }
+    
+    case 'copy': {
+      // 링크 복사
       try {
-        console.log('Kakao.Share.sendDefault 호출 시도...');
-        Kakao.Share.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: shareTitle,
-            description: shareDescription,
-            imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
-            imageWidth: 1200,
-            imageHeight: 630,
-            link: {
-              mobileWebUrl: longUrl,
-              webUrl: longUrl,
-            },
-          },
-          buttons: [
-            {
-              title: '결과 확인하기',
-              link: {
-                mobileWebUrl: longUrl,
-                webUrl: longUrl,
-              },
-            },
-            {
-              title: '나도 시뮬레이터 해보기',
-              link: {
-                mobileWebUrl: trySimUrl,
-                webUrl: trySimUrl,
-              },
-            },
-          ],
-        });
-        console.log('Kakao.Share.sendDefault 호출 성공');
-        btn.disabled = false;
-        return;
-      } catch (kakaoErr) {
-        console.error('Kakao SDK 공유 실패:', kakaoErr);
-        // 폴백으로 진행
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shortUrl);
+          showShareHint('링크가 복사됐어요!', 'success');
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = shortUrl;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showShareHint('링크가 복사됐어요!', 'success');
+        }
+      } catch (e) {
+        showShareHint('복사 중 문제가 생겼어요.', 'error');
+      }
+      closeShareModal();
+      break;
+    }
+    
+    case 'image': {
+      // 이미지 저장 (기존 함수 호출)
+      closeShareModal();
+      saveAsImage();
+      break;
+    }
+    
+    case 'other': {
+      // 다른 앱 (OS 공유 시트 - Web Share API)
+      fallbackToWebShare(shareTitle, shortUrl);
+      closeShareModal();
+      break;
+    }
+  }
+}
+
+// Web Share API 폴백 함수
+async function fallbackToWebShare(title, url) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Web Share API 실패:', err);
+        // 마지막 폴백: 클립보드
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
+          }
+        } catch (e) {}
       }
     }
-    
-    // === 2순위: Web Share API (모바일 권장 - OS 공유 시트) ===
-    if (navigator.share) {
-      try {
-        console.log('navigator.share 호출...');
-        await navigator.share({
-          title: shareTitle,
-          url: shortUrl,
-        });
-        return;
-      } catch (err) {
-        console.warn('navigator.share 실패:', err);
-        if (err.name === 'AbortError') { return; }
-        // 다른 오류 시 폴백
+  } else {
+    // Web Share API 미지원: 클립보드 폴백
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        showShareHint('이 환경에서는 자동 공유가 안 돼요. 링크가 복사됐어요!', 'success');
       }
+    } catch (e) {
+      showShareHint('이 환경에서는 자동 공유가 안 돼요.', 'error');
     }
-    
-    // === 3순위: 클립보드 복사 (PC + Web Share API 미지원) ===
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(shortUrl);
-      showShareHint('링크가 복사됐어요! 카카오톡 등에 붙여넣어주세요.', 'success');
-    } else {
-      showShareHint('이 환경에서는 자동 공유가 안 돼요. "링크 복사" 버튼을 눌러주세요.', 'error');
-    }
-    
-  } catch (err) {
-    console.error('공유 실패:', err);
-    showShareHint('공유 중 문제가 생겼어요. "링크 복사"를 시도해주세요.', 'error');
-  } finally {
-    btn.disabled = false;
   }
 }
 
