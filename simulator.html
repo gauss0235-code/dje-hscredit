@@ -4269,27 +4269,38 @@ const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
 // JSONbin에 결과 데이터 저장 → bin ID 반환
 async function saveShareDataToBin(shareState) {
   try {
+    const requestBody = JSON.stringify(shareState);
+    console.log('[JSONbin] 요청 시작. 데이터 크기:', requestBody.length);
+    
     const response = await fetch(JSONBIN_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Master-Key': JSONBIN_API_KEY,
-        'X-Bin-Private': 'false',  // 공개 빈 (인증 없이 읽기 가능)
-        'X-Bin-Name': `share-${SCHOOL_NAME}-${Date.now()}`,
+        'X-Bin-Private': 'false',
+        // X-Bin-Name 제거 (한글 학교명이 HTTP 헤더에 들어가면 일부 환경에서 차단)
       },
-      body: JSON.stringify(shareState),
+      body: requestBody,
     });
+    
+    console.log('[JSONbin] 응답 상태:', response.status, response.statusText);
     
     if (!response.ok) {
       const errText = await response.text();
+      console.error('[JSONbin] 에러 본문:', errText);
+      // 모바일 진단을 위해 alert도 표시
+      alert(`[JSONbin 실패]\n상태: ${response.status}\n응답: ${errText.substring(0, 200)}`);
       throw new Error(`JSONbin 저장 실패: ${response.status} ${errText}`);
     }
     
     const data = await response.json();
-    // 응답 예: { metadata: { id: 'abc123...', ... }, record: {...} }
-    return data.metadata?.id || null;
+    console.log('[JSONbin] 응답 데이터:', data);
+    const binId = data.metadata?.id || null;
+    console.log('[JSONbin] binId:', binId);
+    return binId;
   } catch (err) {
     console.error('[JSONbin] 저장 실패:', err);
+    alert(`[JSONbin 예외]\n${err.message || err}`);
     return null;
   }
 }
