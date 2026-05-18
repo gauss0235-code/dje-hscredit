@@ -4102,6 +4102,13 @@ async function handleSnsShare(sns) {
     shareUrl = await buildShareableUrl();
   }
   
+  // [진단] URL 어떤 형태인지 확인
+  if (sns === 'kakao') {
+    const hasHash = shareUrl.includes('#');
+    const hasBinId = shareUrl.includes('binId=');
+    alert(`[URL 진단]\n길이: ${shareUrl.length}자\nbinId 포함: ${hasBinId}\nhash 포함: ${hasHash}\n\n${shareUrl.substring(0, 200)}`);
+  }
+  
   // JSONbin 성공 시 URL이 충분히 짧음 → 단축 불필요
   const isShortAlready = !shareUrl.includes('#');
   const shortUrl = isShortAlready ? shareUrl : await shortenUrl(shareUrl);
