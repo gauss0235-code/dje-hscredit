@@ -4062,8 +4062,18 @@ function closeShareModal() {
 
 // === SNS별 공유 핸들러 ===
 async function handleSnsShare(sns) {
+  // [진단 v6] 시작
+  if (sns === 'kakao') {
+    alert('[진단 v6 - 1단계] 카카오 버튼 클릭, JSONbin 저장 시도 중...');
+  }
+  
   // 공통 데이터 준비 - JSONbin으로 짧은 URL 생성 (await 필요)
   const shareUrl = await buildShareableUrl();
+  
+  if (sns === 'kakao') {
+    alert(`[진단 v6 - 2단계] shareUrl 생성됨 (${shareUrl.length}자):\n${shareUrl.substring(0, 150)}`);
+  }
+  
   // JSONbin 성공 시 URL이 충분히 짧음 (~100자) → 단축 불필요
   // 실패 시 hash 포함 긴 URL → 단축 시도
   const isShortAlready = !shareUrl.includes('#');  // JSONbin 성공이면 # 없음
@@ -4084,6 +4094,7 @@ async function handleSnsShare(sns) {
                        && Kakao.Share;
       
       if (useKakaoSDK) {
+        alert(`[진단 v6 - 3단계] Kakao.Share 호출 시도. 사용 URL:\n${shareUrl.substring(0, 100)}`);
         try {
           Kakao.Share.sendDefault({
             objectType: 'feed',
@@ -4093,7 +4104,6 @@ async function handleSnsShare(sns) {
               imageUrl: 'https://djhs-curriculum.kro.kr/og-image.png',
               imageWidth: 1200,
               imageHeight: 630,
-              // JSONbin 짧은 URL 사용 - 카톡 인앱 브라우저에서 안전
               link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
             },
             buttons: [
@@ -4101,12 +4111,15 @@ async function handleSnsShare(sns) {
               { title: '나도 해보기', link: { mobileWebUrl: trySimUrl, webUrl: trySimUrl } },
             ],
           });
+          alert('[진단 v6 - 4단계] Kakao.Share 호출 성공! 카톡 창이 열려야 함');
           closeShareModal();
         } catch (e) {
+          alert(`[진단 v6 - 4단계 실패] Kakao SDK 에러: ${e.message || e}`);
           console.error('Kakao SDK 실패, Web Share API 폴백:', e);
           fallbackToWebShare(shareTitle, shortUrl);
         }
       } else {
+        alert(`[진단 v6 - 분기] Kakao SDK 사용 안 함 (useKakaoSDK=false). Web Share API 폴백.\nisSamsungBrowser=${isSamsungBrowser}, Kakao 존재=${typeof Kakao !== 'undefined'}`);
         // 삼성 인터넷 등: Web Share API로 폴백
         fallbackToWebShare(shareTitle, shortUrl);
       }
