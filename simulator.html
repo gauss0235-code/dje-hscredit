@@ -3965,17 +3965,49 @@ async function generateShareImage() {
 // === URL 단축 (is.gd 무료 API) ===
 // 긴 시뮬레이터 결과 URL을 짧게 만들어 카톡/SMS 등에서 깔끔하게 표시
 async function shortenUrl(longUrl) {
+  console.log('[단축] 원본 URL 길이:', longUrl.length);
+  
+  // 1) is.gd 시도
   try {
+    console.log('[단축] is.gd 시도 중...');
     const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
     const response = await fetch(apiUrl);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (data.shorturl) return data.shorturl;
-    throw new Error(data.errormessage || 'shortener returned no url');
+    console.log('[단축] is.gd 응답 status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('[단축] is.gd 응답:', data);
+      if (data.shorturl) {
+        console.log('[단축] is.gd 성공:', data.shorturl);
+        return data.shorturl;
+      }
+      console.warn('[단축] is.gd 에러:', data.errormessage);
+    }
   } catch (err) {
-    console.warn('URL 단축 실패, 원본 URL 사용:', err);
-    return longUrl;  // 실패 시 원본 URL 그대로 사용
+    console.warn('[단축] is.gd 실패:', err.message);
   }
+  
+  // 2) TinyURL 시도 (is.gd 실패 시 폴백)
+  try {
+    console.log('[단축] TinyURL 시도 중...');
+    const apiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+    const response = await fetch(apiUrl);
+    console.log('[단축] TinyURL 응답 status:', response.status);
+    
+    if (response.ok) {
+      const text = await response.text();
+      if (text && text.startsWith('https://tinyurl.com/')) {
+        console.log('[단축] TinyURL 성공:', text);
+        return text.trim();
+      }
+    }
+  } catch (err) {
+    console.warn('[단축] TinyURL 실패:', err.message);
+  }
+  
+  // 3) 모두 실패: 원본 반환
+  console.warn('[단축] 모든 단축 서비스 실패. 원본 URL 사용');
+  return longUrl;
 }
 
 // 1) 공유하기 - 카카오톡 우선 (피드 메시지 카드), 폴백으로 Web Share API
