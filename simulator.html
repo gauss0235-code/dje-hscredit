@@ -4102,13 +4102,6 @@ async function handleSnsShare(sns) {
     shareUrl = await buildShareableUrl();
   }
   
-  // [진단] URL 어떤 형태인지 확인
-  if (sns === 'kakao') {
-    const hasHash = shareUrl.includes('#');
-    const hasBinId = shareUrl.includes('binId=');
-    alert(`[URL 진단]\n길이: ${shareUrl.length}자\nbinId 포함: ${hasBinId}\nhash 포함: ${hasHash}\n\n${shareUrl.substring(0, 200)}`);
-  }
-  
   // JSONbin 성공 시 URL이 충분히 짧음 → 단축 불필요
   const isShortAlready = !shareUrl.includes('#');
   const shortUrl = isShortAlready ? shareUrl : await shortenUrl(shareUrl);
@@ -4270,7 +4263,6 @@ const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
 async function saveShareDataToBin(shareState) {
   try {
     const requestBody = JSON.stringify(shareState);
-    console.log('[JSONbin] 요청 시작. 데이터 크기:', requestBody.length);
     
     const response = await fetch(JSONBIN_API_URL, {
       method: 'POST',
@@ -4283,24 +4275,15 @@ async function saveShareDataToBin(shareState) {
       body: requestBody,
     });
     
-    console.log('[JSONbin] 응답 상태:', response.status, response.statusText);
-    
     if (!response.ok) {
       const errText = await response.text();
-      console.error('[JSONbin] 에러 본문:', errText);
-      // 모바일 진단을 위해 alert도 표시
-      alert(`[JSONbin 실패]\n상태: ${response.status}\n응답: ${errText.substring(0, 200)}`);
       throw new Error(`JSONbin 저장 실패: ${response.status} ${errText}`);
     }
     
     const data = await response.json();
-    console.log('[JSONbin] 응답 데이터:', data);
-    const binId = data.metadata?.id || null;
-    console.log('[JSONbin] binId:', binId);
-    return binId;
+    return data.metadata?.id || null;
   } catch (err) {
     console.error('[JSONbin] 저장 실패:', err);
-    alert(`[JSONbin 예외]\n${err.message || err}`);
     return null;
   }
 }
