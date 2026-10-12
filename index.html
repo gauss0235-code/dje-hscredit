@@ -1199,11 +1199,14 @@ h1, h2 {
 
 .curriculum-table tbody td.semester.cross-semester .cross-mark {
   display: block;
-  font-size: 0.75em;
+  font-size: 0.9em;
   font-weight: 600;
   margin-top: 1px;
   color: #78350F;
   opacity: 0.85;
+  /* 열 너비 계산에서는 빠지고, 정해진 열 너비 안에서 표시 */
+  width: 0;
+  min-width: 100%;
 }
 
 /* 병합된 학기 셀에 여러 값이 있는 경우 (예: "3 3 3") */
@@ -1219,7 +1222,7 @@ h1, h2 {
 /* 학기 셀의 괄호 안내 문구 (희망자만, 택5/택2 등) - 작은 글씨
    width:0 + min-width:100% → 열 너비 계산에서는 빠지고, 정해진 열 너비 안에서 표시 (좁으면 줄바꿈) */
 .curriculum-table tbody td.semester.multi-value .semester-note {
-  font-size: 0.68em;
+  font-size: 0.8em;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.04em;
@@ -1318,16 +1321,32 @@ h1, h2 {
     width: 100%;
     table-layout: fixed;
   }
+  /* 열 너비 비율 (고정 레이아웃은 첫 머리글 줄만 보므로 colgroup으로 지정)
+     - 학기 열 6개가 남는 공간만 받아 지나치게 좁아지던 문제 해결 */
+  .curriculum-table col.col-section { width: 8%; }
+  .curriculum-table col.col-area { width: 9.5%; }
+  .curriculum-table col.col-subject { width: 18.5%; }
+  .curriculum-table col.col-type { width: 11%; }
+  .curriculum-table col.col-base { width: 4.5%; }
+  .curriculum-table col.col-completion { width: 10.5%; }
+  .curriculum-table col.col-sem { width: 5.5%; }
+  .curriculum-table col.col-total { width: 5%; }
+  .curriculum-table tbody td.completion-type { padding: 5px 1px; }
   .curriculum-table thead th { padding: 6px 2px; font-size: 0.78em; word-break: keep-all; }
-  .curriculum-table tbody td { padding: 5px 2px; word-break: keep-all; }
+  /* keep-all로 단어 단위 줄바꿈, 칸보다 긴 단어(예: 지구시스템과학)만 칸 안에서 나눔 */
+  .curriculum-table tbody td { padding: 5px 2px; word-break: keep-all; overflow-wrap: anywhere; }
   .curriculum-table tbody td.section { width: 28px; padding: 6px 2px; font-size: 0.75em; letter-spacing: -0.05em; }
   .curriculum-table tbody td.section.horizontal.line-break { padding: 6px 0; letter-spacing: -0.08em; }
+  /* 좁은 학기 열: 학기교차·(희망자만) 등은 글자 단위로 줄바꿈해서 잘리지 않게 */
+  .curriculum-table tbody td.semester.multi-value { padding: 5px 1px; }
+  .curriculum-table tbody td.semester .cross-mark,
+  .curriculum-table tbody td.semester .semester-note { word-break: break-all; line-height: 1.15; letter-spacing: 0; }
   .curriculum-table tbody td.subject { font-size: 0.95em; word-break: keep-all; line-height: 1.3; }
 }
 
 @media (max-width: 380px) {
   .curriculum-table { font-size: 0.6em; }
-  .curriculum-table thead th { padding: 5px 1px; font-size: 0.75em; }
+  .curriculum-table thead th { padding: 5px 0; font-size: 0.75em; overflow-wrap: anywhere; }
   .curriculum-table tbody td { padding: 4px 1px; }
 }
 
@@ -2301,6 +2320,11 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
     </div>
     
     <table class="curriculum-table">
+      <colgroup>
+        <col class="col-section"><col class="col-area"><col class="col-subject"><col class="col-type"><col class="col-base"><col class="col-completion">
+        <col class="col-sem"><col class="col-sem"><col class="col-sem"><col class="col-sem"><col class="col-sem"><col class="col-sem">
+        <col class="col-total">
+      </colgroup>
       <thead>
         <tr>
           <th rowspan="2" style="width:28px;">구분</th>
