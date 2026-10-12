@@ -3089,7 +3089,7 @@ function renderVocationalView() {
       if (view.dept && deptKey(b.deptOf.get(r) || '') !== view.dept) continue;
       bodyRows.push(r);
     }
-    const table = renderSheetTable(parsed, b, bodyRows);
+    const table = renderSheetTable(parsed, b, bodyRows, view.activeTab === 'school');
     if (!table) continue;
     tableCount++;
     html += `${b.title ? `<h4 class="sheet-block-title">${escapeHtml(b.title)}</h4>` : ''}
@@ -3105,7 +3105,8 @@ function renderVocationalView() {
 }
 
 // 시트 영역 하나를 표로 그림: 병합은 보이는 행만 세어 rowspan을 다시 계산 (학과로 거른 경우 대비)
-function renderSheetTable(parsed, b, bodyRows) {
+// mergedLabelTotals: 옆으로 병합된 이름 칸이 있는 행도 합계 행으로 볼지 ('학교 전체' 탭만)
+function renderSheetTable(parsed, b, bodyRows, mergedLabelTotals = false) {
   const { grid, merges } = parsed;
   const text = (r, c) => ((grid[r] || [])[c] || '').toString().trim();
   const isBlankRow = (r) => {
@@ -3190,14 +3191,15 @@ function renderSheetTable(parsed, b, bodyRows) {
 
   // 합계 행(머리글과 같은 색):
   // - 합계·소계·총계·창의적 체험활동 문구가 있는 행
-  // - 과목명 칸을 넘어 옆으로 병합된 이름 칸이 있는 행 (예: '전공 일반'·'전공 실무' 학점 합계,
-  //   '전공 실무 운영 학점', '전문 공통/전공 일반/전공 실무') → 과목 한 줄이 아니라 묶음 합계
+  // - '학교 전체' 탭에서만: 과목명 칸을 넘어 옆으로 병합된 이름 칸이 있는 행
+  //   (예: '전문 공통/전공 일반/전공 실무' 학점 합계 행)
+  //   전문교과·학습영역 탭의 '전공 일반'·'전공 실무 운영 학점' 같은 행은 합계가 아니므로 제외
   const isSummaryRow = (r) => {
     for (let c = 0; c < Math.min(b.cols, 8); c++) {
       const t = text(r, c).replace(/\s/g, '');
       if (/^(합계|소계|총계)$/.test(t) || /(소계|총계)$/.test(t) || /^(학기별|창의적체험활동)/.test(t)) return true;
     }
-    if (subjectStart < 0) return false;
+    if (!mergedLabelTotals || subjectStart < 0) return false;
     return merges.some(m => m.startRowIndex === r
       && m.startColumnIndex >= 1
       && m.endColumnIndex - m.startColumnIndex >= 2
