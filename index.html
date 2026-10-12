@@ -103,6 +103,14 @@
   font-style: normal;
   font-display: block;
 }
+/* 페이퍼로지 SemiBold (지도 학교 이름 전용) */
+@font-face {
+  font-family: 'Paperlogy SemiBold';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 /* 페이퍼로지 ExtraBold (지도 구 이름 전용) */
 @font-face {
   font-family: 'Paperlogy ExtraBold';
@@ -464,7 +472,7 @@ h1, h2 {
   font-size: 1em;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit;
+  font-family: 'Paperlogy', sans-serif;
   box-shadow: 0 6px 20px rgba(74, 138, 184, 0.4);
   transition: height 0.6s cubic-bezier(0.33, 1, 0.68, 1),
               margin 0.6s cubic-bezier(0.33, 1, 0.68, 1),
@@ -623,8 +631,8 @@ h1, h2 {
 }
 
 .school-name {
-  font-family: 'Asta Sans Variable', sans-serif;
-  font-weight: 700;
+  font-family: 'Paperlogy SemiBold', 'Asta Sans Variable', sans-serif;
+  font-weight: 600;
   font-size: 9px;
   fill: var(--text-dark);
   pointer-events: none;
