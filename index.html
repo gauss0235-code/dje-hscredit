@@ -401,7 +401,8 @@ h1, h2 {
 /* 움직임 줄이기 설정을 켠 기기에서는 장식 애니메이션 정지 */
 @media (prefers-reduced-motion: reduce) {
   .cloud, .rocket, .rocket-flame { animation: none; }
-  .svg-wrap, .district-group, .district-shape, .district-label, .school-marker { transition: none; }
+  /* 뒤에 나오는 지도·확대 상태 규칙보다 우선하도록 !important */
+  .svg-wrap, .district-group, .district-shape, .district-label, .school-marker, .back-btn { transition: none !important; }
 }
 
 /* 모바일에서는 로켓 작게 + 구름 일부 숨김 */
@@ -434,21 +435,31 @@ h1, h2 {
   align-items: center;
 }
 
+/* 전체 지도로 돌아가기 버튼
+   숨김 상태는 높이 0 → 확대 시 높이·아래 여백이 지도 확대(0.6s)와 같은 곡선으로 열림
+   (버튼이 한 번에 생기면서 지도가 59px 덜컥 밀리던 문제 방지, 지도를 가리지 않음) */
 .back-btn {
-  display: none;
-  margin: 0 auto 16px;
+  display: inline-flex;
+  height: 0;
+  margin: 0 auto 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
   z-index: 10;
   background: var(--sky-blue-dark);
   color: white;
   border: none;
-  padding: 12px 26px;
+  padding: 0 26px;
   border-radius: 30px;
   font-size: 1em;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   box-shadow: 0 6px 20px rgba(74, 138, 184, 0.4);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: height 0.6s cubic-bezier(0.33, 1, 0.68, 1),
+              margin 0.6s cubic-bezier(0.33, 1, 0.68, 1),
+              opacity 0.3s ease, visibility 0.6s,
+              background 0.2s, box-shadow 0.2s, transform 0.15s;
   align-items: center;
   gap: 8px;
 }
@@ -457,7 +468,12 @@ h1, h2 {
   box-shadow: 0 8px 24px rgba(74, 138, 184, 0.5);
   transform: translateY(-1px);
 }
-.back-btn.visible { display: inline-flex; }
+.back-btn.visible {
+  height: 43px;
+  margin-bottom: 16px;
+  opacity: 1;
+  visibility: visible;
+}
 
 .svg-wrap {
   position: relative;
@@ -1334,22 +1350,35 @@ h1, h2 {
 }
 
 /* PC - 편성표 열 너비
-   구분·기본학점·운영학점은 내용에 맞는 고정 폭, 학기 열 6개는 같은 비율,
-   남는 공간은 교과(군)·과목·과목유형·이수구분이 나눠 가짐 (짧은 열이 넓어지지 않게) */
+   구분·기본학점·이수구분·운영학점은 고정 폭, 교과(군)·과목유형·학기 열은 비율,
+   남는 공간은 과목 열이 가져감 (짧은 열이 넓어지지 않게) */
 @media (min-width: 801px) {
   .curriculum-table thead th { width: auto !important; min-width: 0 !important; }
-  .curriculum-table col.col-section { width: 64px; }
-  .curriculum-table col.col-base { width: 56px; }
-  .curriculum-table col.col-total { width: 64px; }
-  .curriculum-table col.col-sem { width: 6.5%; }
-  .curriculum-table col.col-area { width: 8.5%; }
-  .curriculum-table col.col-type { width: 7.5%; }
+  /* 좁은 PC 화면(801~1099px) 기준 */
+  .curriculum-table col.col-section { width: 56px; }
+  .curriculum-table col.col-base { width: 44px; }
+  .curriculum-table col.col-completion { width: 68px; }
+  .curriculum-table col.col-total { width: 52px; }
+  .curriculum-table tbody td.completion-type { word-break: keep-all; padding-left: 2px; padding-right: 2px; }
+  .curriculum-table col.col-sem { width: 5.5%; }
+  .curriculum-table col.col-area { width: 7.5%; }
+  .curriculum-table col.col-type { width: 9.5%; }
   .curriculum-table tbody td.subject-area,
   .curriculum-table tbody td.subject-name,
   .curriculum-table tbody td.subject-type,
   .curriculum-table tbody td.completion-type { width: auto; min-width: 0; }
   /* 합계 행의 "174~178" 같은 긴 값은 칸 안에서 줄바꿈 */
   .curriculum-table tbody td.total-credits { overflow-wrap: anywhere; }
+}
+/* 넓은 PC 화면(1100px 이상) */
+@media (min-width: 1100px) {
+  .curriculum-table col.col-section { width: 64px; }
+  .curriculum-table col.col-base { width: 56px; }
+  .curriculum-table col.col-completion { width: 72px; }
+  .curriculum-table col.col-total { width: 64px; }
+  .curriculum-table col.col-sem { width: 6.5%; }
+  .curriculum-table col.col-area { width: 8.5%; }
+  .curriculum-table col.col-type { width: 7.5%; }
 }
 
 /* 모바일 반응형 - 편성표 */
@@ -1498,7 +1527,8 @@ footer {
   .main-content { padding: 0 12px 40px; }
   .district-label { font-size: 38px; }
   .school-name { font-size: 12px; }
-  .back-btn { padding: 10px 20px; font-size: 0.9em; }
+  .back-btn { padding: 0 20px; font-size: 0.9em; }
+  .back-btn.visible { height: 38px; }
   .modal { padding: 28px 22px 22px; }
   .modal h3 { font-size: 1.4em; }
   .year-btn { padding: 14px 10px; font-size: 0.85em; }
@@ -1905,9 +1935,13 @@ let viewBoxAnimId = 0;  // 진행 중인 확대/축소 애니메이션 식별 (�
 function animateViewBox(targetVb, duration = 600) {
   const current = svg.getAttribute('viewBox').split(/\s+/).map(Number);
   const target = targetVb.split(/\s+/).map(Number);
-  const animId = ++viewBoxAnimId;
-  // 움직임 줄이기 설정 기기에서는 바로 이동
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) duration = 1;
+  const animId = ++viewBoxAnimId;  // 진행 중인 이전 애니메이션도 이것으로 중단됨
+  // 움직임 줄이기 설정 기기에서는 애니메이션 없이 바로 이동
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    svg.setAttribute('viewBox', targetVb);
+    svg.classList.remove('map-animating');
+    return;
+  }
   // 시작 시각은 첫 프레임 기준 (클릭 직후 무거운 첫 프레임에서 확대가 한꺼번에 건너뛰지 않도록)
   let startTime = null;
 
@@ -2798,10 +2832,11 @@ document.addEventListener('click', (e) => {
     heroEl.classList.toggle('decor-paused', !heroOnScreen || overlayOpen);
   };
   if ('IntersectionObserver' in window) {
-    new IntersectionObserver(([entry]) => {
-      heroOnScreen = entry.isIntersecting;
+    // 가장 최근 상태 사용, 화면 위쪽 끝에 몇 px만 걸친 경우(지도로 자동 스크롤한 직후)는 화면 밖으로 처리
+    new IntersectionObserver((entries) => {
+      heroOnScreen = entries[entries.length - 1].isIntersecting;
       syncDecor();
-    }).observe(heroEl);
+    }, { rootMargin: '-2px 0px 0px 0px' }).observe(heroEl);
   }
   const mo = new MutationObserver(syncDecor);
   document.querySelectorAll('.modal-overlay, .embed-overlay').forEach(el => {
