@@ -1549,7 +1549,7 @@ body {
 <div class="main">
   <div class="school-header">
     <div class="school-name" id="schoolNameDisplay">학교명 로딩 중...</div>
-    <div class="school-sub">2026학년도 입학생 과목 선택 시뮬레이터</div>
+    <div class="school-sub" id="schoolSubDisplay">2026학년도 입학생 과목 선택 시뮬레이터</div>
   </div>
 
   <!-- 단계 콘텐츠 영역 -->
@@ -1581,6 +1581,10 @@ const IS_DEBUG = urlParams.get('debug') === '1';
 const IS_VIEW_ONLY = urlParams.get('view') === '1';
 // 처음부터 시작 모드: "나도 시뮬레이터 해보기"로 들어온 경우 localStorage 무시하고 1단계부터
 const IS_FRESH_START = urlParams.get('fresh') === '1';
+// 입학년도: year 파라미터 없으면 2026 (기존 링크·저장 기록 호환)
+const YEAR = urlParams.get('year') === '2027' ? '2027' : '2026';
+// URL에 붙일 학년도 파라미터 (2026은 기존 주소 그대로 유지)
+const YEAR_PARAM = YEAR === '2026' ? '' : `&year=${YEAR}`;
 
 // 상태
 const state = {
@@ -1709,6 +1713,81 @@ const SCHOOL_RECOMMEND_OVERRIDES = {
   },
 };
 
+// ============================================
+// 학교별 특별 이수 규칙 (편성표 구조만으로 표현되지 않는 규칙)
+// ============================================
+// alternateWithGroup: 학기교차 '지정' 과목과 선택군을 두 학기에 번갈아 이수
+//   - 두 학기 모두 [지정 과목 + 선택군 과목] 중 1과목을 고름
+//   - 지정 과목은 두 학기 중 한 학기에 반드시 이수 (같은 과목 두 번 선택은 중복 차단으로 막힘)
+// 키: 입학년도 → 학교명 (SCHOOL_NAME 그대로, 학과 있는 경우 "학교명_학과")
+const SCHOOL_SPECIAL_RULES = {
+  '2027': {
+    // 2학년: 정보(지정, 학기교차)와 제2외국어(선택군B 택1)를 학기별로 번갈아 이수
+    '중일고': [
+      { type: 'alternateWithGroup', subject: '정보', group: '선택군B', semesters: ['2-1', '2-2'] },
+    ],
+  },
+};
+
+function getSchoolSpecialRules() {
+  return (SCHOOL_SPECIAL_RULES[YEAR] || {})[SCHOOL_NAME] || [];
+}
+
+// 받침 유무에 따라 조사 선택 (예: 정보 → '는', 중국어 → '는', 한문 → '은')
+function josa(word, withBatchim, withoutBatchim) {
+  const code = (word || '').charCodeAt(word.length - 1) - 0xAC00;
+  if (code < 0 || code > 11171) return withoutBatchim;
+  return code % 28 !== 0 ? withBatchim : withoutBatchim;
+}
+
+// 편성표 분석 결과(semesters)에 학교별 특별 규칙 반영
+function applySchoolSpecialRules(semesters) {
+  for (const rule of getSchoolSpecialRules()) {
+    if (rule.type !== 'alternateWithGroup') continue;
+    for (const semKey of rule.semesters) {
+      const semData = semesters[semKey];
+      const group = semData && semData.choiceGroups[rule.group];
+      if (!group) {
+        console.warn(`[특별 규칙] ${semKey}에 ${rule.group}이 없어 적용하지 않음`);
+        continue;
+      }
+      // 지정 과목을 다른 선택 묶음(또는 학교지정)에서 꺼내 선택군으로 옮김
+      if (!group.subjects.some(s => s.name === rule.subject)) {
+        let subj = null;
+        for (const [name, g] of Object.entries(semData.choiceGroups)) {
+          if (name === rule.group) continue;
+          const idx = g.subjects.findIndex(s => s.name === rule.subject);
+          if (idx >= 0) {
+            subj = g.subjects.splice(idx, 1)[0];
+            if (g.subjects.length === 0) delete semData.choiceGroups[name];
+            break;
+          }
+        }
+        if (!subj) {
+          const idx = semData.fixed.findIndex(s => s.name === rule.subject);
+          if (idx >= 0) subj = semData.fixed.splice(idx, 1)[0];
+        }
+        if (!subj) {
+          console.warn(`[특별 규칙] ${semKey}에 ${rule.subject} 과목이 없어 적용하지 않음`);
+          continue;
+        }
+        group.subjects.unshift(subj);
+      }
+      group.alternateRule = { subject: rule.subject, semesters: rule.semesters };
+      console.log(`[특별 규칙] ${semKey} ${rule.group}: ${rule.subject} 포함, ${rule.semesters.join('/')} 중 한 학기 필수`);
+    }
+  }
+}
+
+// 번갈아 이수 규칙: 다른 학기 키와 그 학기 선택 목록
+function getAlternateCounterpart(rule, semKey, groupName, selections = state.selections) {
+  const otherKey = rule.semesters.find(k => k !== semKey);
+  const otherChoices = (((selections[otherKey] || {}).choices || {})[groupName] || [])
+    .filter(n => n !== '__SKIP__');
+  const otherLabel = (SEMESTERS.find(s => s.key === otherKey) || {}).label || otherKey;
+  return { otherKey, otherChoices, otherLabel };
+}
+
 // 학교별 예외 규칙에서 매칭되는지 확인 (과목명 공백/기호 차이 무관)
 function matchesOverride(subjectName, list) {
   if (!list || list.length === 0) return false;
@@ -1760,6 +1839,7 @@ async function init() {
   document.title = displayDept
     ? `${displaySchoolName}고 ${displayDept} - 과목 선택 시뮬레이터`
     : `${displaySchoolName}고 - 과목 선택 시뮬레이터`;
+  document.getElementById('schoolSubDisplay').textContent = `${YEAR}학년도 입학생 과목 선택 시뮬레이터`;
   
   // embed 모드: 홈 버튼 라벨을 "닫기"로 변경
   if (IS_EMBED) {
@@ -1836,7 +1916,7 @@ async function init() {
   // fresh 모드: 기존 localStorage도 삭제하여 다음 방문에도 영향 없도록
   if (IS_FRESH_START) {
     try {
-      localStorage.removeItem(`simulator-${SCHOOL_NAME}`);
+      localStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
   }
   
@@ -1899,13 +1979,29 @@ async function loadCurriculum() {
     }
   }
   
-  // === 학교 유형 추출 (2행) ===
+  // === 시트 양식 감지 ===
+  // 2026 양식: 1행 제목, 2행 메타, 3행 머리글, 4행부터 데이터
+  // 2027 양식: 맨 위에 빈 행이 추가되어 한 행씩 밀림 (2행 제목, 3행 메타, 4행 머리글, 5행부터 데이터)
+  // → "구분 … 과목" 머리글 행을 찾아 그 위를 메타, 아래를 데이터로 사용
+  let headerRowIdx = 2;
+  for (let r = 0; r < Math.min(expandedGrid.length, 10); r++) {
+    const row = expandedGrid[r] || [];
+    if ((row[0] || '').toString().trim() === '구분' && (row[2] || '').toString().trim() === '과목') {
+      headerRowIdx = r;
+      break;
+    }
+  }
+
+  // === 학교 유형 추출 (머리글 바로 위 행) ===
   // 라벨-값 매칭 방식 (편성표 모달과 동일)
-  const metaRow = expandedGrid[1] || [];
+  const metaRow = expandedGrid[headerRowIdx - 1] || [];
   let schoolTypeText = '-';
   for (let i = 0; i < metaRow.length; i++) {
     const cell = (metaRow[i] || '').toString().trim();
     if (cell.replace(/\s/g, '').includes('학교유형')) {
+      // 2027 양식: 한 셀에 "학교명   OO고등학교          학교유형   일반고등학교          …" 문장
+      const inline = /\s{2,}/.test(cell) && cell.match(/학교\s*유형\s+(.+?)(?:\s{2,}|$)/);
+      if (inline) { schoolTypeText = inline[1].trim(); break; }
       for (let j = i + 1; j < metaRow.length; j++) {
         const next = (metaRow[j] || '').toString().trim();
         if (next && next !== cell) { schoolTypeText = next; break; }
@@ -1929,8 +2025,8 @@ async function loadCurriculum() {
     schoolCategory = 'general';
   }
   
-  // 데이터 행 (4행부터, 인덱스 3)
-  const dataStartRow = 3;
+  // 데이터 행: 머리글 다음 행부터 (2026 양식은 4행, 2027 양식은 5행)
+  const dataStartRow = headerRowIdx + 1;
   
   // 컬럼 매핑 (이전에 분석한대로)
   const COL = {
@@ -2214,6 +2310,34 @@ async function loadCurriculum() {
   
   console.log('학기별 목표 학점:', semesterTargets);
   console.log('총 교과 이수 학점:', totalCurriculumCredits);
+
+  // === 범위 선택군(택7~8 등)의 학점 합계가 시트에 없을 때 보완 ===
+  // 2027 이문고 선택군C 패턴: 그룹 합계(26) 대신 "(택5/택2)" 같은 조합 안내만 적혀 있음
+  // → 그 학기 목표 학점에서 학교지정 학점과 다른 선택군 학점을 빼서 그룹 합계를 구함
+  for (const [semKey, semData] of Object.entries(semesters)) {
+    const groups = Object.values(semData.choiceGroups);
+    const missing = groups.filter(g => g.takeMin !== null && g.takeMax !== null && g.takeCredit === null);
+    if (missing.length !== 1 || !semesterTargets[semKey]) continue;
+    const target = missing[0];
+
+    // 학교지정 학점은 학기 학점 집계(computeStats)와 같은 방식으로 모두 합산
+    const fixedSum = semData.fixed.reduce((sum, s) => sum + (s.credit || 0), 0);
+    let othersSum = 0;
+    let othersKnown = true;
+    for (const g of groups) {
+      if (g === target) continue;
+      if (g.subjects.length > 0 && g.subjects.every(s => s.optional)) continue;  // 희망자만 그룹은 목표 학점에 미포함
+      if (g.takeCredit !== null) othersSum += g.takeCredit;
+      else if (g.takeN !== null && g.subjects.length > 0) othersSum += g.takeN * g.subjects[0].credit;
+      else othersKnown = false;
+    }
+
+    const remaining = semesterTargets[semKey] - fixedSum - othersSum;
+    if (othersKnown && remaining > target.takeMax) {
+      target.takeCredit = remaining;
+      console.log(`[선택군 보완] ${semKey} ${target.name}: 택${target.takeMin}~${target.takeMax} → 학점 합계 ${remaining} (학기 목표 ${semesterTargets[semKey]} - 지정 ${fixedSum} - 기타 선택군 ${othersSum})`);
+    }
+  }
   
   // === 선택군 학점 합계(takeCredit) 진단 ===
   // 이문고 선택군C/D 같은 패턴 확인
@@ -2384,7 +2508,10 @@ async function loadCurriculum() {
     console.table(techSubjects);
   }
   
-  return { 
+  // === 학교별 특별 이수 규칙 반영 (예: 2027 중일고 2학년 정보/제2외국어) ===
+  applySchoolSpecialRules(semesters);
+
+  return {
     semesters,
     schoolType: schoolTypeText,
     schoolCategory,  // 'general' | 'autonomous' | 'excluded'
@@ -2408,8 +2535,9 @@ function isRecommended(subjectName, subjectArea, semKey) {
   // === 학교별 예외 규칙 먼저 검사 ===
   // SCHOOL_NAME은 "대전둔산여자고" 또는 "학교명_학과" 형식일 수 있어
   // 학과 부분 제거하여 학교명만으로 매칭
+  // 예외 규칙은 2026 편성표 기준이라 2026학년도에만 적용
   const schoolKey = SCHOOL_NAME.split('_')[0];
-  const schoolOverride = SCHOOL_RECOMMEND_OVERRIDES[schoolKey];
+  const schoolOverride = YEAR === '2026' ? SCHOOL_RECOMMEND_OVERRIDES[schoolKey] : null;
   if (schoolOverride && schoolOverride[state.career] && semKey) {
     const careerOverride = schoolOverride[state.career];
     
@@ -2472,8 +2600,9 @@ function isSuneung(subjectName) {
 }
 
 // ============================================
-// 교육과정 편성 점검 (대전광역시 고시 제2024-15호 기준)
+// 교육과정 편성 점검 (대전광역시 고시 기준: 2026 입학생 제2024-15호, 2027 입학생 제2026-2호)
 // ============================================
+const GUIDELINE_NOTICE = { '2026': '고시 제2024-15호', '2027': '고시 제2026-2호' };
 
 // 교과군 분류: 시트의 area 텍스트 → 표준 교과군 키
 // 시트의 area(교과군) 텍스트를 표준 교과군 키로 변환
@@ -2742,7 +2871,19 @@ function validateSemester(semKey, state, curriculumData) {
         if (isOptIn && choices.length === 0) continue;
         
         if (choices.length === 0) continue;  // 일반 그룹: 선택 안 했으면 패스
-        
+
+        // 학교별 특별 규칙: 지정 과목을 두 학기 중 한 학기에 반드시 이수 (예: 2027 중일고 정보)
+        if (group.alternateRule) {
+          const rule = group.alternateRule;
+          const { otherChoices, otherLabel } = getAlternateCounterpart(rule, semKey, groupName, state.selections);
+          if (otherChoices.length > 0 && !choices.includes(rule.subject) && !otherChoices.includes(rule.subject)) {
+            errors.push({
+              type: 'alternate_required',
+              message: `${rule.subject}${josa(rule.subject, '은', '는')} 이 학기와 ${otherLabel} 중 한 학기에 꼭 들어야 해요. ${otherLabel}에 ${otherChoices[0]}${josa(otherChoices[0], '을', '를')} 골랐으니 이번 학기에는 ${rule.subject}${josa(rule.subject, '을', '를')} 골라주세요.`,
+            });
+          }
+        }
+
         const selectedCredits = choices.reduce((sum, name) => {
           const s = group.subjects.find(x => x.name === name);
           return sum + (s ? s.credit : 0);
@@ -2854,9 +2995,29 @@ function validateAll(state, curriculumData) {
       });
     }
   }
-  
-  return { 
-    checks, 
+
+  // (4) 학교별 특별 이수 규칙 (예: 2027 중일고 2학년 정보)
+  for (const rule of getSchoolSpecialRules()) {
+    if (rule.type !== 'alternateWithGroup') continue;
+    const applied = rule.semesters.every(k => {
+      const g = curriculumData.semesters[k] && curriculumData.semesters[k].choiceGroups[rule.group];
+      return g && g.alternateRule;
+    });
+    if (!applied) continue;
+    const labels = rule.semesters.map(k => (SEMESTERS.find(s => s.key === k) || {}).label || k);
+    const takenIn = rule.semesters.filter(k =>
+      ((((state.selections[k] || {}).choices || {})[rule.group]) || []).includes(rule.subject));
+    checks.push({
+      title: `${rule.subject} 이수 (${labels.join('·')} 중 한 학기)`,
+      passed: takenIn.length === 1,
+      detail: takenIn.length === 1
+        ? `${labels[rule.semesters.indexOf(takenIn[0])]}에 이수`
+        : (takenIn.length === 0 ? '아직 선택하지 않았어요' : '두 학기에 모두 선택했어요'),
+    });
+  }
+
+  return {
+    checks,
     passed: checks.filter(c => c.passed),
     failed: checks.filter(c => !c.passed),
     stats,
@@ -2910,7 +3071,8 @@ function renderStep(scrollToTop = true) {
       'step_number': stepNum,
       'step_name': stepLabels[stepNum - 1] || '',
       'school_name': SCHOOL_NAME || '미지정',
-      'career': state.career || '미선택'
+      'career': state.career || '미선택',
+      'entrance_year': YEAR
     });
   }
   
@@ -3156,7 +3318,8 @@ function bindCareerCardEvents() {
       if (typeof gtag === 'function') {
         gtag('event', 'career_selected', {
           'career': state.career,
-          'school_name': SCHOOL_NAME || '미지정'
+          'school_name': SCHOOL_NAME || '미지정',
+          'entrance_year': YEAR
         });
       }
     });
@@ -3231,7 +3394,19 @@ function renderSemesterStep(sem) {
     
     // 그룹 안내 문구
     let groupGuide = '';
-    if (takeMin !== null && takeMax !== null && takeCredit !== null) {
+    if (group.alternateRule) {
+      // 학교별 특별 규칙: 지정 과목과 선택군을 두 학기에 번갈아 이수 (예: 2027 중일고 정보/제2외국어)
+      const rule = group.alternateRule;
+      const { otherChoices, otherLabel } = getAlternateCounterpart(rule, sem.key, groupName);
+      const others = group.subjects.filter(s => s.name !== rule.subject).map(s => s.name).join('·');
+      if (otherChoices.includes(rule.subject)) {
+        groupGuide = `${otherLabel}에 ${rule.subject}${josa(rule.subject, '을', '를')} 골랐으니 이번 학기에는 ${others} 중 1과목을 골라주세요`;
+      } else if (otherChoices.length > 0) {
+        groupGuide = `${otherLabel}에 ${otherChoices[0]}${josa(otherChoices[0], '을', '를')} 골랐으니 이번 학기에는 ${rule.subject}${josa(rule.subject, '을', '를')} 골라주세요`;
+      } else {
+        groupGuide = `${rule.subject} 또는 ${others} 중 1과목을 골라주세요 (${rule.subject}${josa(rule.subject, '은', '는')} 이 학기와 ${otherLabel} 중 한 학기에 꼭 들어야 해요)`;
+      }
+    } else if (takeMin !== null && takeMax !== null && takeCredit !== null) {
       // 패턴 3: 이문고 선택군C/D - 범위 + 학점 합계
       groupGuide = `${takeMin}~${takeMax}과목을 골라 학점 합계가 정확히 ${takeCredit}학점이 되도록 해주세요`;
     } else if (isOptIn) {
@@ -3632,7 +3807,8 @@ function renderResultStep() {
   if (typeof gtag === 'function') {
     gtag('event', 'simulator_completed', {
       'school_name': SCHOOL_NAME || '미지정',
-      'career': state.career || '미선택'
+      'career': state.career || '미선택',
+      'entrance_year': YEAR
     });
   }
   
@@ -3692,7 +3868,7 @@ function renderResultStep() {
           : `⚠ ${validation.failed.length}개 항목 검토가 필요해요`}
       </div>
       <div class="v-subtitle">
-        대전광역시 고등학교 교육과정 편성·운영 지침 (고시 제2024-15호) 기준 · ${categoryLabel}
+        대전광역시 고등학교 교육과정 편성·운영 지침 (${GUIDELINE_NOTICE[YEAR]}) 기준 · ${categoryLabel}
       </div>
       <div class="check-list">
         ${validation.checks.map(c => `
@@ -3736,7 +3912,7 @@ function renderResultStep() {
       <div id="shareableContent">
         <div class="result-summary">
           <h2>🎉 시뮬레이션 완료!</h2>
-          <div class="share-school-name">${SCHOOL_NAME}등학교</div>
+          <div class="share-school-name">${SCHOOL_NAME}등학교 · ${YEAR}학년도 입학생</div>
           <div class="total-credit">
             진로: <strong style="color: var(--text-brown);">${state.career}</strong> · 
             총 <strong>${totalCredit}</strong> 학점
@@ -3889,6 +4065,7 @@ function bindResultEvents() {
         const params = new URLSearchParams();
         params.set('school', SCHOOL_NAME);
         params.set('sheetId', SHEET_ID);
+        if (YEAR !== '2026') params.set('year', YEAR);
         if (IS_EMBED) params.set('embed', '1');
         window.location.href = `${baseUrl}?${params.toString()}`;
       });
@@ -4118,8 +4295,8 @@ async function handleSnsShare(sns) {
   const isShortAlready = !shareUrl.includes('#');
   const shortUrl = isShortAlready ? shareUrl : await shortenUrl(shareUrl);
   const shareTitle = `${SCHOOL_NAME}등학교 - ${state.career} 진로`;
-  const shareDescription = `${SCHOOL_NAME}등학교의 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
-  const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}&fresh=1`;
+  const shareDescription = `${SCHOOL_NAME}등학교의 ${YEAR}학년도 입학생 과목 선택 시뮬레이터로 3년 교육과정을 설계해봤어요. 결과를 확인해보세요!`;
+  const trySimUrl = `${window.location.origin}${window.location.pathname}?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}${YEAR_PARAM}&fresh=1`;
   
   // 환경 감지
   const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
@@ -4253,7 +4430,7 @@ async function saveAsImage() {
   
   try {
     const blob = await generateShareImage();
-    const filename = `${SCHOOL_NAME}_과목선택_${new Date().toISOString().slice(0, 10)}.png`;
+    const filename = `${SCHOOL_NAME}_${YEAR}학년도_과목선택_${new Date().toISOString().slice(0, 10)}.png`;
     downloadBlob(blob, filename);
     showShareHint('이미지가 저장됐어요!', 'success');
   } catch (err) {
@@ -4327,6 +4504,7 @@ async function buildShareableUrl() {
   const params = new URLSearchParams();
   params.set('school', SCHOOL_NAME);
   params.set('sheetId', SHEET_ID);
+  if (YEAR !== '2026') params.set('year', YEAR);
   params.set('view', '1');
   
   // 상태를 객체로
@@ -4441,7 +4619,7 @@ function startFresh() {
   
   // URL의 공유 파라미터(s) 제거 (학교/시트ID는 유지)
   const newUrl = window.location.origin + window.location.pathname 
-    + `?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}${IS_EMBED ? '&embed=1' : ''}`;
+    + `?school=${encodeURIComponent(SCHOOL_NAME)}&sheetId=${SHEET_ID}${YEAR_PARAM}${IS_EMBED ? '&embed=1' : ''}`;
   window.history.replaceState({}, '', newUrl);
   
   renderStep();
@@ -4450,7 +4628,8 @@ function startFresh() {
 // ============================================
 // localStorage 저장/복원
 // ============================================
-const STORAGE_KEY = `simulator-${SCHOOL_NAME}`;
+// 2026은 기존 키 그대로 (학생 진행 기록 유지), 그 외 학년도는 키를 분리해 서로 덮어쓰지 않게
+const STORAGE_KEY = YEAR === '2026' ? `simulator-${SCHOOL_NAME}` : `simulator-${YEAR}-${SCHOOL_NAME}`;
 
 function saveState() {
   // 보기 전용 모드(공유 링크)에서는 저장하지 않음 - 받는 사람의 본인 진행 데이터 보호
