@@ -120,12 +120,21 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Pretendard', sans-serif;
-  background: linear-gradient(180deg, #B8DDF5 0%, #C8E2F4 30%, #D8EBF5 60%, #E8F4FB 100%);
-  background-attachment: fixed;
+  background: #C8E2F4;
   color: var(--text-dark);
   line-height: 1.6;
   overflow-x: hidden;
   min-height: 100vh;
+}
+/* 고정 배경 그라데이션: background-attachment: fixed 대신 고정 레이어로
+   (스크롤할 때마다 화면 전체를 다시 그리지 않도록) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, #B8DDF5 0%, #C8E2F4 30%, #D8EBF5 60%, #E8F4FB 100%);
+  pointer-events: none;
 }
 
 h1, h2 {
@@ -377,6 +386,19 @@ h1, h2 {
   100% { transform: scaleY(1.15) scaleX(1.05); opacity: 1; }
 }
 
+/* 모달(학교·편성표·PDF·시뮬레이터)이 열려 있는 동안 구름·로켓 애니메이션 일시정지
+   → 모달 뒤 배경 블러(backdrop-filter)를 매 프레임 다시 계산하지 않도록 */
+body:has(.modal-overlay.active, .embed-overlay.active) .cloud,
+body:has(.modal-overlay.active, .embed-overlay.active) .rocket,
+body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
+  animation-play-state: paused;
+}
+
+/* 움직임 줄이기 설정을 켠 기기에서는 장식 애니메이션 정지 */
+@media (prefers-reduced-motion: reduce) {
+  .cloud, .rocket, .rocket-flame { animation: none; }
+}
+
 /* 모바일에서는 로켓 작게 + 구름 일부 숨김 */
 @media (max-width: 768px) {
   .rocket-1 { width: 60px; top: 18%; right: 6%; }
@@ -437,7 +459,8 @@ h1, h2 {
   width: 100%;
   margin: 0 auto;
   perspective: 1500px;
-  transition: max-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 지도 확대(viewBox) 애니메이션과 같은 시간·곡선으로 맞춰 두 움직임이 엇갈리지 않게 */
+  transition: max-width 0.6s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 /* 첫화면(전체 보기): PC에서 작게 */
@@ -456,6 +479,13 @@ h1, h2 {
   display: block;
   filter: drop-shadow(0 8px 24px rgba(180, 140, 80, 0.18));
   transform-style: preserve-3d;
+  transition: filter 0.3s ease;
+}
+/* 확대/축소 애니메이션 중에는 지도 전체 그림자(큰 블러)를 잠시 끄고, 끝나면 서서히 복원
+   (매 프레임 큰 블러를 다시 계산하지 않도록) */
+#daejeonMap.map-animating {
+  filter: none;
+  transition: none;
 }
 
 .district-group {
@@ -474,10 +504,15 @@ h1, h2 {
 .map-state-zoomed .district-group:not(.zoomed-active) {
   opacity: 0;
   pointer-events: none;
+  /* 사라지는 구: 채도 필터는 바로 해제하고 투명도만 전환 (필터 재계산 방지) */
+  filter: none;
+  transition: opacity 0.35s ease;
 }
 .map-state-zoomed .district-group.zoomed-active {
   cursor: default;
   transform: none !important;
+  /* 마우스 올림 3D 효과에서 원위치로: 튕김 없이 확대 곡선과 같은 곡선으로 */
+  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.4s ease;
 }
 
 .district-shape {
@@ -1850,18 +1885,29 @@ function renderAllMarkers() {
   }
 }
 
+let viewBoxAnimId = 0;  // 진행 중인 확대/축소 애니메이션 식별 (연속 클릭 시 이전 애니메이션 중단)
+
 function animateViewBox(targetVb, duration = 600) {
   const current = svg.getAttribute('viewBox').split(/\s+/).map(Number);
   const target = targetVb.split(/\s+/).map(Number);
   const startTime = performance.now();
-  
+  const animId = ++viewBoxAnimId;
+
+  // 애니메이션 동안 지도 전체 그림자 끄기 (CSS #daejeonMap.map-animating)
+  svg.classList.add('map-animating');
+
   function step(now) {
+    if (animId !== viewBoxAnimId) return;  // 새 애니메이션이 시작되면 이전 것은 중단
     const elapsed = now - startTime;
     const t = Math.min(elapsed / duration, 1);
     const eased = 1 - Math.pow(1 - t, 3);
     const interpolated = current.map((c, i) => c + (target[i] - c) * eased);
     svg.setAttribute('viewBox', interpolated.join(' '));
-    if (t < 1) requestAnimationFrame(step);
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      svg.classList.remove('map-animating');
+    }
   }
   requestAnimationFrame(step);
 }
