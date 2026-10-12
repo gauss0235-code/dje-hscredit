@@ -1485,6 +1485,167 @@ h1, h2 {
   .curriculum-table tbody td { padding: 4px 1px; }
 }
 
+/* ============================================ */
+/* 직업계고 편성표: 시트 탭 + 학과 선택 + 시트 모양 표 */
+/* ============================================ */
+.sheet-nav {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border-bottom: 1px solid #E5EDF4;
+}
+.sheet-nav[hidden],
+.dept-filter[hidden] { display: none; }
+
+.sheet-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sheet-tab {
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 0.95em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2px solid #D6E6F2;
+  background: white;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sheet-tab:hover { border-color: var(--sky-blue); color: var(--sky-blue-dark); }
+.sheet-tab.active {
+  background: var(--sky-blue-dark);
+  border-color: var(--sky-blue-dark);
+  color: white;
+}
+
+/* 학과 버튼: 많으면 옆으로 밀어서 봄 */
+.dept-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.dept-chip {
+  flex-shrink: 0;
+  font-family: 'Asta Sans Variable', sans-serif;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #F0E0B8;
+  background: #FFFBF0;
+  color: var(--text-brown);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.dept-chip:hover { border-color: var(--accent-yellow); }
+.dept-chip.active {
+  background: var(--accent-yellow);
+  border-color: var(--accent-yellow);
+  color: var(--text-dark);
+}
+
+.sheet-block-title {
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 1.05em;
+  color: var(--text-dark);
+  margin: 22px 0 10px;
+}
+.curriculum-info + .sheet-block-title { margin-top: 4px; }
+
+/* 표가 화면보다 넓으면 표만 옆으로 밀어서 봄 */
+.sheet-table-scroll {
+  overflow-x: auto;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(74, 138, 184, 0.1);
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  font-size: 0.85em;
+}
+.sheet-table th {
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  color: white;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  padding: 8px 4px;
+  text-align: center;
+  white-space: pre-line;
+  word-break: keep-all;
+  line-height: 1.3;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+.sheet-table td {
+  padding: 7px 5px;
+  text-align: center;
+  vertical-align: middle;
+  font-family: 'Asta Sans Variable', sans-serif;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: pre-line;
+  word-break: keep-all;
+  line-height: 1.35;
+  border-right: 1px solid #F0F4F8;
+  border-bottom: 1px solid #F0F4F8;
+}
+.sheet-table th:last-child,
+.sheet-table td:last-child { border-right: none; }
+.sheet-table td.text-left { text-align: left; padding-left: 8px; }
+/* 첫 열(구분·학과): 일반고 편성표의 구분 열과 같은 색 */
+.sheet-table td.first-col {
+  background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
+  color: var(--text-brown);
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  border-right: 2px solid #E8C896;
+}
+.sheet-table td.first-col.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 4px;
+}
+.sheet-table td.semester {
+  color: var(--sky-blue-dark);
+  font-weight: 700;
+}
+.sheet-table td.semester.has-value {
+  background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+}
+.sheet-table tr.summary-row td,
+.sheet-table tr.summary-row td.semester.has-value {
+  background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
+  color: white;
+  font-weight: 700;
+  border-right-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 600px) {
+  .sheet-nav { padding: 8px 10px; gap: 6px; }
+  .sheet-tab { font-size: 0.85em; padding: 6px 12px; }
+  .dept-chip { font-size: 0.78em; padding: 5px 10px; }
+  .sheet-block-title { font-size: 0.95em; margin: 16px 0 8px; }
+  .sheet-table { min-width: 600px; font-size: 0.72em; }
+  .sheet-table th { padding: 6px 3px; }
+  .sheet-table td { padding: 5px 3px; }
+}
+
 .embed-loading {
   position: absolute;
   inset: 0;
@@ -1846,6 +2007,11 @@ footer {
         </svg>
       </button>
     </div>
+    <!-- 직업계고 편성표 전용: 시트 탭 + 학과 선택 (일반고 편성표에서는 숨김) -->
+    <div class="sheet-nav" id="sheetNav" hidden>
+      <div class="sheet-tabs" id="sheetTabs" role="tablist"></div>
+      <div class="dept-filter" id="deptFilter"></div>
+    </div>
     <div class="embed-frame-wrap">
       <div class="embed-loading" id="embedLoading">
         <div class="spinner"></div>
@@ -1906,7 +2072,7 @@ footer {
 </footer>
 
 <script>
-const SCHOOLS = {"yuseong": [{"name": "대덕고", "type": "coed", "x": 356, "y": 352, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jouuYDwCADyYbhB6Zr6boKF8sFjTKN7c0cXLA5Xdil4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1fyFYWz7H6xtxRUe2BorD8qBPrzmH2sLM2anojt3Ye_0"}, {"name": "대덕소프트웨어마이스터고", "type": "coed", "x": 322, "y": 341, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특목고", "curriculum2026Pdf": "1EChPPPr1sQFtruro_Bs_3hsCL85upGbx"}, {"name": "대전과학고", "type": "coed", "x": 322, "y": 401, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "영재고", "curriculum2026Pdf": "1qK11FORHc7BuFsCQkAxHi__AE8vYAgzp"}, {"name": "대전노은고", "type": "coed", "x": 198, "y": 422, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1U4o7c0W6nMap2a24h571vdbQa9fnvovc3dp4eTVUmKU", "curriculum2027": "https://docs.google.com/spreadsheets/d/1JRyBGUBx74kvSRrYmcqfx2JicNGzR7efahuKzK8KoI4"}, {"name": "대전도시과학고", "type": "coed", "x": 184, "y": 637, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "1VksVzKzG29PxjfSQUx3i2GTzQoDcSSKh"}, {"name": "대전도안고", "type": "coed", "x": 229, "y": 520, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1dmocAPrIlrYcKNIiI3lo5POTbNThADlZrSYkQioBGm8", "curriculum2027": "https://docs.google.com/spreadsheets/d/1G9aYBZXQ323e2jAkOIK8UeSKV9oeQAZhcPDNNpv0vQ4"}, {"name": "대전반석고", "type": "coed", "x": 185, "y": 365, "labelDx": -10, "labelDy": -13, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1TjQkAX8NcX9UTX9botqRj_I69GpoBvU4-vnnzc9msf0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1G0pArCbGdFgYKI_RFld2Eg9qI19kOMs4x5A32GuQC5o"}, {"name": "대전예술고", "type": "coed", "x": 218, "y": 485, "labelDx": -9, "labelDy": -3, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1pClMGkUzExqCo-942W1YQfoiki7xQWOrAJoc96Oq3Rw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1CFJtgYzLeMTy3q3R7P0bmAd5usJX3jupeCXavMAo_ng"}, {"name": "대전용산고", "type": "coed", "x": 377, "y": 230, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1dxU48aq1EETuhsg_HPfhd1fe122-djROdLJR72NW0Yw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1-y4BxvvzE_FzBhHGdZlSF8E9whOpYqsY_NmGVNXuGUA"}, {"name": "대전전민고", "type": "coed", "x": 390, "y": 318, "labelDx": 32, "labelDy": -11, "labelAnchor": "middle", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1M-Gl_FGcOvSYgGRo4nSEv4inmIjNq92hgYW2pjMeYMs", "curriculum2027": "https://docs.google.com/spreadsheets/d/1EG9E8ZaohGV2omAsAUVwmfoQ8Pfz7sbKxfpo_UdAFcQ"}, {"name": "대전전자디자인고", "type": "coed", "x": 342, "y": 275, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1kg7B3kETFl-Qyezk9Hwzo739fHbtSPFq"}, {"name": "대전지족고", "type": "coed", "x": 189, "y": 393, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1JlpJCPpyM46qmVAReWBPkE5vCG7RykwyuMyEmSAfj1k", "curriculum2027": "https://docs.google.com/spreadsheets/d/1VeRM-0nSheeaZFGTolFwej4IR4-aIUtKkdZh3-x-cqE"}, {"name": "대전체육고", "type": "coed", "x": 249, "y": 519, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1h0i_wPnkaRNncNgk-swGzZSw1m7x_VJw2IwCck4uMIA", "curriculum2027": "https://docs.google.com/spreadsheets/d/1XZCaYaCSaevMYVYOUHgdMOAjbe1EnUffrnKxv-6fxVs"}, {"name": "유성고", "type": "male", "x": 226, "y": 465, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10DpOYm41o6veu7FMovzPQCCrOX4WxUrSq4F_Lx19l_g", "curriculum2027": "https://docs.google.com/spreadsheets/d/1VYzyYB6mg8Ef8gyJKlAi3uTrPQUXJBTZPRNJpIzfkp0"}, {"name": "유성생명과학고", "type": "coed", "x": 203, "y": 469, "labelDx": -10, "labelDy": -11, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "17PqXrgO0Lb8UYLZJTtq9nDFAXeM5oHml"}, {"name": "유성여자고", "type": "female", "x": 215, "y": 379, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1LcMzFUZjhxzJf43z98bOCqcnhpIw9eLFibAbM18K_JI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1eWVgaheBfE8J9ngT-WzUWCZjHVH1qBZ_fO6nFrecJMg"}, {"name": "중일고", "type": "coed", "x": 360, "y": 234, "labelDx": -11, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1wLbIFdWtT3MFh8x8lNMbjgjW4nkIYfoAqecG0Tb1HnM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1LDox4qBT6Y_gGLymOI7dkwAj9ogLG1sTM00CPrMHehM"}], "daedeok": [{"name": "대전생활과학고", "type": "coed", "x": 444, "y": 471, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1a24HlcItIfZodRH0naR8M02MB3oC370Z"}, {"name": "대전송촌고", "type": "coed", "x": 505, "y": 432, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1qES0Dv9jScIncLFNycShy6cW7ktedK0rF8bkVeLcO0M", "curriculum2027": "https://docs.google.com/spreadsheets/d/1tYcKRo53xoJQwt_UStZHEaQLv1Mq0ciGuuRJTvFm2uo"}, {"name": "대전이문고", "type": "coed", "x": 444, "y": 182, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/17OUvLVlWRWbbW7ywtthkOjAqB9uZ2uxBoZsYJNBZccs", "curriculum2027": "https://docs.google.com/spreadsheets/d/132IT5vOaPD7rOzaKLeurapNpzYBJ6ca_AMdUHVop-34"}, {"name": "동대전고", "type": "coed", "x": 452, "y": 448, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1nQEwxDunFL7EhiKHQV6bx1DjpQ--hQMWcRzGlFnLj8Y", "curriculum2027": "https://docs.google.com/spreadsheets/d/1akEGg65UXcBKMRX4HhczJQd4C30wQhDnhcjzw_mVdL8"}, {"name": "신탄진고", "type": "coed", "x": 482, "y": 179, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1J6nkIuuxyyG0TflXWckOZxfEcWvlqT2bzee7klYmyXc", "curriculum2027": "https://docs.google.com/spreadsheets/d/1eHeL1Nm3xfkVoHx0fqG5ffpYrqUBbPhapxB6bjYHGro"}], "donggu": [{"name": "계룡디지텍고", "type": "male", "x": 481, "y": 529, "labelDx": -9, "labelDy": -3, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "12OQeOIXE7VXkOVOvNmkPEtUsIBc1ShrW"}, {"name": "대전가오고", "type": "coed", "x": 539, "y": 593, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1IXobCKgYAXY_TbptQoZZn8BrYqw_PAcDKq94z4S-5Fs", "curriculum2027": "https://docs.google.com/spreadsheets/d/1OUnAQMEKrViz0Un1dOndtUMGYlvTm1MqCjZKKHWTPRM"}, {"name": "대전대성여자고", "type": "female", "x": 500, "y": 523, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1FhadGgezEiSprYpQdpnJoN_JuTU51L1_"}, {"name": "대전동신과학고", "type": "coed", "x": 589, "y": 532, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1JmKcMEShSLXaOpF0mxKsssQgjCluuxVY6DIYVGbqArw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1wniSkIhHSgseQlYkToJmzOnHZtCCQsxSkxHMbFifTp0"}, {"name": "대전여자고", "type": "female", "x": 526, "y": 565, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/12szYGRQoUc3fPMZi-XUrM_oB-FAnU5P5yTom5Z3Yx_0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Lyh7vVavOoWM0LhnHSJ0H01Flgz6GS6-6X7p47GZSmc"}, {"name": "동아마이스터고", "type": "male", "x": 538, "y": 492, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026Pdf": "12UNQuBOAyAwknXSOyarqATK3SicWxVIj"}, {"name": "명석고", "type": "male", "x": 537, "y": 471, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1HSS4G0s9-PRjWf99niN3ZiLQjawSeIGbu2BDd7g1esw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1KD1lrIWQquziSaSnNjo7fyRl0q06qEM11aaGNphX_Q4"}, {"name": "보문고", "type": "male", "x": 458, "y": 515, "labelDx": -10, "labelDy": -14, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cTwKwY2pW0KScbmc87K3FHu_CZPysN4DkhVmtJ61XxE", "curriculum2027": "https://docs.google.com/spreadsheets/d/1c4Qiikx0ndQ_Dmk9W6eX0a6hIOPmzwLEW2JKsMEQexk"}, {"name": "우송고", "type": "coed", "x": 514, "y": 543, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10kViZ7_OqcgtLmvEOf52T6iW0RQzLpQpIAOZcAvpwXo", "curriculum2027": "https://docs.google.com/spreadsheets/d/1t7Kmc379gAE5xXk7jGvL1ijHD-6-85mpEHuKndu7ylg"}], "junggu": [{"name": "남대전고", "type": "male", "x": 461, "y": 595, "labelDx": -9, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ojON4ucCXHhPYhTV-onPK4ZrowVaoLSur8xuEd0cMpU", "curriculum2027": "https://docs.google.com/spreadsheets/d/1kU7DWHowOlcCc3nJj9KujVaSEm0C4LrJ96uWLhjPZS8"}, {"name": "대전고", "type": "male", "x": 451, "y": 576, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1vnvZzwSt_4gHroNI1U-koCo1omTpjusmU5WvRMfPinQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1LtLrIizECiCVe38KfQFvGTrYe_B3iFDVHi9u1QK2kfQ"}, {"name": "대전국제통상고", "type": "coed", "x": 401, "y": 625, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1oBC0qO87mwKG7Sqf-nITNHdZx543AHVh"}, {"name": "대전대성고", "type": "male", "x": 406, "y": 532, "labelDx": -9, "labelDy": -11, "labelAnchor": "end", "establishment": "자사고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1x00yXzGf1lBzi1IFSe40dy-x6f55FUAU08HBtyNEaH0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1b6rJP0NOmik2HHWv7Ndhx9QBAQ7cevruSm5Rj1Cta3M"}, {"name": "대전동산고", "type": "male", "x": 389, "y": 610, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1wVGb0hNrp9iEfUtKFAEA8FUTdmbVTeTOnnNr2Bbpvio", "curriculum2027": "https://docs.google.com/spreadsheets/d/13bAMvLRCRS-O2nWOitaqNHZPIIJVoTydcLEJh7AZ2n0"}, {"name": "대전성모여자고", "type": "female", "x": 431, "y": 576, "labelDx": -9, "labelDy": -9, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1J_hHVzb94X1sfc2nMdRKGoeQuQkEeyWuAI_dY3WYDQM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1drnCjPWxPsf2c8y8zy9ktmkEACDsmte_jeEVdRB7B3U"}, {"name": "대전신일여자고", "type": "female", "x": 489, "y": 613, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1U0zXpAsFTWUeYDjnJeKqOdaSbFqrcsP2"}, {"name": "대전여자상업고", "type": "female", "x": 443, "y": 515, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1RrKW_38mxd87fv1SaXrLaGNK1VVearV0"}, {"name": "대전중앙고", "type": "male", "x": 420, "y": 498, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cM0sZOlDYn_kMxGBOVlZ-_j2Gf_owDHOkhi2vyHjSBQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1R_N7ncPx9FhzP3c0RsT-64nc4IbVGiwtftOCEpZ0qaU"}, {"name": "대전한빛고", "type": "coed", "x": 329, "y": 696, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1hmikEy0xYieAkRRqG-nGh_rhJFaa9mJtQ7GzqeJgoWw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1oisOok38Vd-7qTn1EM-XObibEQm0JQPczh4PqezwH-k"}, {"name": "청란여자고", "type": "female", "x": 478, "y": 593, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1oPuBGUVEXCtIQPBSNdXjLmpjhaT11EpRMNvSWnS-TZI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1rDQV5x2mvXhyp8Pm2XqtJgl_XKK8xRP116tOVmmlFNg"}, {"name": "충남기계공업고", "type": "male", "x": 383, "y": 631, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "1u1PMQ4KhvaWkna0PmSKih7PgRsJ5fVn2"}, {"name": "충남여자고", "type": "female", "x": 411, "y": 545, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ZcBAll_ySDDaodckzs88sLONberLTFdGSjmunfe6MOI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1d6JGqApwObJjbJV0H_Rtg0a14RYkmSb6wD-ScRf0BAM"}, {"name": "호수돈여자고", "type": "female", "x": 420, "y": 561, "labelDx": 10, "labelDy": -15, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1sSS6JMQolGu4aSVsOJfNd5qMAnKI5N1Qj-OfHbFWEyg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1TXAXHzZU0813eIk2iqNIi2DhG6KDRD4YvcirKrJs32c"}], "seogu": [{"name": "대전관저고", "type": "coed", "x": 235, "y": 599, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1lASatRXuVUupnzkRuBIIbg6TU6JJP7p9E4CaTT_pBbw", "curriculum2027": "https://docs.google.com/spreadsheets/d/19naoQraFRtcW2JuLImdp2UU6e_ymMHkgJ08T-WnomXc"}, {"name": "대전괴정고", "type": "coed", "x": 336, "y": 506, "labelDx": 10, "labelDy": -15, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ixfNC3bv73wtGfCc-Ger2VTR8-JJDxSbfPSE7dRxLQI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1fKnMcRoQRhe7CQQoW3lWDlof4_kSBTEBuibyWO0FGDc"}, {"name": "대전구봉고", "type": "coed", "x": 225, "y": 652, "labelDx": 3, "labelDy": 4, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cwPiaq04AWIvvRcQdkchpidFk5K2Ucr-Nz3bIkKLy_k", "curriculum2027": "https://docs.google.com/spreadsheets/d/1luBnF5LCUBNIzxcPTTeL5Xnb7e_29PDwUy5R-9WQw3Q"}, {"name": "대전대신고", "type": "male", "x": 345, "y": 594, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "자사고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jhSoilMxP_us0nftK77Bm7QY4kogLXbLfvu2Vv06vTk", "curriculum2027": "https://docs.google.com/spreadsheets/d/1FaP_4TQCJbsr3D6yBO0BKoIBKs6v_LjBh5TJtaaMXCs"}, {"name": "대전둔산여자고", "type": "female", "x": 335, "y": 455, "labelDx": -9, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1Mo3eN-HgPN_Xsnn1oVejuHfi_I3QurwsZ2uWNlCRO6A", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Fl8YmS564hcBE2UA1SesOMYkEXElnc-6zvmB_xCFem4"}, {"name": "대전둔원고", "type": "coed", "x": 323, "y": 491, "labelDx": 9, "labelDy": -17, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ljkynx3cHtgW7ziHi5mxIpfY2wEbTojp-LrP1rW5LHQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1MfenZtZQQR2iXOL6w5XUBtWjDtSbiu1mUZwHCEspuW8"}, {"name": "대전만년고", "type": "coed", "x": 330, "y": 418, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1lBr3aBW6eFlTlpnH4J1ehXgYwkwN_HZOLPNOGhwRNDg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1kSZK917H8KSFgO84PSvrHrvySICYWaYx4HPPy3qrz1g"}, {"name": "대전복수고", "type": "coed", "x": 320, "y": 622, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1UJY1emKrTlJ2Q8RoCWkhjt2qRh2fW20NLhjg6DOGWPw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1W1AGXKhns0yL_czMbhFRbHknPcts0ZmtFEr_MaeMb1U"}, {"name": "대전산업정보고", "type": "coed", "x": 381, "y": 522, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "각종학교", "curriculum2026Pdf": "1buq76mgxCDeeK2XsvdHzqV0yFcQs-jjQ"}, {"name": "대전외국어고", "type": "coed", "x": 306, "y": 518, "labelDx": -9, "labelDy": -13, "labelAnchor": "end", "establishment": "특목고", "departments2026": [{"label": "영어과", "curriculum2026": "https://docs.google.com/spreadsheets/d/1oYUG9rpf5kOz1Acp8V5uUEa8m-jOAvrZ0NANFVYeBTM"}, {"label": "독일어과~러시아어과", "curriculum2026": "https://docs.google.com/spreadsheets/d/1RuTfLOMtrFvlk1kMtlpwzTnFGEwDt8Ao88QReSXIxIM"}], "departments2027": [{"label": "영어과", "curriculum2027": "https://docs.google.com/spreadsheets/d/1O29J1qcdGIBOP28UiuxpjmuBX9ouLTIXyyi4rq8iOSI"}, {"label": "독일어과~러시아어과", "curriculum2027": "https://docs.google.com/spreadsheets/d/1FYEAO7gw7Pqjv5IpDdo2fbOD6lAfZaMRv93Nxwf_kH4"}]}, {"name": "대전제일고", "type": "coed", "x": 313, "y": 575, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10A_TgrHPlJRzirf8OWupmgFnVkuWix4QR7Z0Ykulig8", "curriculum2027": "https://docs.google.com/spreadsheets/d/1PnsvtdswuqWLYhckB_z7TjTywOIOwfS0HHXwi9JlISg"}, {"name": "동방고", "type": "coed", "x": 254, "y": 633, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jjnHeDgkSi1ckPCl3iK_Kk9vdeaMPR6BZrqdjpDv_o4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1oYMcCGQqhPQjamv80nKCc3C9DPasVNIcnd4qb-34Edw"}, {"name": "서대전고", "type": "male", "x": 319, "y": 434, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1g66KwKeFLYGbnt6sudcEBEgCBGK9W17IridL3GICwm4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1HzmGNFmMyaZQWJghpaDoHt9bWO-tG21McVVPsnT7p4Q"}, {"name": "서대전여자고", "type": "female", "x": 312, "y": 542, "labelDx": 9, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1TvAsN2BJ9eRJbGplUDYJiOYihPvsSv5NsRN5MwpQ0Nw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1TK0RQlRHy99s40sKVhiWE8zufBIupyhnb-cYhENqnKc"}, {"name": "서일고", "type": "male", "x": 200, "y": 663, "labelDx": -10, "labelDy": -11, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1B8N3vCnNelUIAetczBlhrsHrOilF8ONwm3_YBGJWXfg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Bpqk0HkH1TGXOV8i9NV0lFRx2TfCrpUFBEXuJVRM5Yo"}, {"name": "서일여자고", "type": "female", "x": 213, "y": 657, "labelDx": -24, "labelDy": -25, "labelAnchor": "middle", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1qq1B5XQgh_pTnl4Oa11lKemnBJ06Fue-YtToKcYebOM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Xt4FciUTWKCOgQe2iA_sCARlzabyr3LV3R3zq3j8NKk"}, {"name": "충남고", "type": "male", "x": 370, "y": 458, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1sd8g3iZcF_AmLh0khR8mAZOlEOIzY3dvKWMZozHUwys", "curriculum2027": "https://docs.google.com/spreadsheets/d/1mo3WjSx8BNQ1QCjRatI6TjRO5i-RUPRRJmY0Oue_Or4", "subject2026": "https://script.google.com/macros/s/AKfycbwBJWOT6HIQSVKNQbg-ZTnbHtm4FFq8nO5-_WSf40Iq9D9CChAlPo4AkoX2R35r3op5/exec"}, {"name": "한밭고", "type": "coed", "x": 295, "y": 482, "labelDx": -9, "labelDy": -13, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/163Hfn6sOk51wS-5kmxwXzjeA5cWYZu5x_yh5fa604uI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1BBMB308h6bUH0K-s3y-vsPvcrM0ZJjK2Yk-qeiyBCvE"}]};
+const SCHOOLS = {"yuseong": [{"name": "대덕고", "type": "coed", "x": 356, "y": 352, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jouuYDwCADyYbhB6Zr6boKF8sFjTKN7c0cXLA5Xdil4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1fyFYWz7H6xtxRUe2BorD8qBPrzmH2sLM2anojt3Ye_0"}, {"name": "대덕소프트웨어마이스터고", "type": "coed", "x": 322, "y": 341, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특목고", "curriculum2026Pdf": "1EChPPPr1sQFtruro_Bs_3hsCL85upGbx", "curriculum2027": "https://docs.google.com/spreadsheets/d/14wHfuoNMg-QpGoLzYn_XuZ3W9IB8ZCQoHMbXH3q2ebA", "vocational": true}, {"name": "대전과학고", "type": "coed", "x": 322, "y": 401, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "영재고", "curriculum2026Pdf": "1qK11FORHc7BuFsCQkAxHi__AE8vYAgzp"}, {"name": "대전노은고", "type": "coed", "x": 198, "y": 422, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1U4o7c0W6nMap2a24h571vdbQa9fnvovc3dp4eTVUmKU", "curriculum2027": "https://docs.google.com/spreadsheets/d/1JRyBGUBx74kvSRrYmcqfx2JicNGzR7efahuKzK8KoI4"}, {"name": "대전도시과학고", "type": "coed", "x": 184, "y": 637, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "1VksVzKzG29PxjfSQUx3i2GTzQoDcSSKh", "curriculum2027": "https://docs.google.com/spreadsheets/d/1YZv5TTnS-5rPHyVyCh-GoBL5xDZdLFb_yKYg3vkjlRw", "vocational": true}, {"name": "대전도안고", "type": "coed", "x": 229, "y": 520, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1dmocAPrIlrYcKNIiI3lo5POTbNThADlZrSYkQioBGm8", "curriculum2027": "https://docs.google.com/spreadsheets/d/1G9aYBZXQ323e2jAkOIK8UeSKV9oeQAZhcPDNNpv0vQ4"}, {"name": "대전반석고", "type": "coed", "x": 185, "y": 365, "labelDx": -10, "labelDy": -13, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1TjQkAX8NcX9UTX9botqRj_I69GpoBvU4-vnnzc9msf0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1G0pArCbGdFgYKI_RFld2Eg9qI19kOMs4x5A32GuQC5o"}, {"name": "대전예술고", "type": "coed", "x": 218, "y": 485, "labelDx": -9, "labelDy": -3, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1pClMGkUzExqCo-942W1YQfoiki7xQWOrAJoc96Oq3Rw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1CFJtgYzLeMTy3q3R7P0bmAd5usJX3jupeCXavMAo_ng"}, {"name": "대전용산고", "type": "coed", "x": 377, "y": 230, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1dxU48aq1EETuhsg_HPfhd1fe122-djROdLJR72NW0Yw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1-y4BxvvzE_FzBhHGdZlSF8E9whOpYqsY_NmGVNXuGUA"}, {"name": "대전전민고", "type": "coed", "x": 390, "y": 318, "labelDx": 32, "labelDy": -11, "labelAnchor": "middle", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1M-Gl_FGcOvSYgGRo4nSEv4inmIjNq92hgYW2pjMeYMs", "curriculum2027": "https://docs.google.com/spreadsheets/d/1EG9E8ZaohGV2omAsAUVwmfoQ8Pfz7sbKxfpo_UdAFcQ"}, {"name": "대전전자디자인고", "type": "coed", "x": 342, "y": 275, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1kg7B3kETFl-Qyezk9Hwzo739fHbtSPFq", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Fg6Ey-wwdmfGEQykf_WBZQxmnM0plnon39lSu_viMJw", "vocational": true}, {"name": "대전지족고", "type": "coed", "x": 189, "y": 393, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1JlpJCPpyM46qmVAReWBPkE5vCG7RykwyuMyEmSAfj1k", "curriculum2027": "https://docs.google.com/spreadsheets/d/1VeRM-0nSheeaZFGTolFwej4IR4-aIUtKkdZh3-x-cqE"}, {"name": "대전체육고", "type": "coed", "x": 249, "y": 519, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1h0i_wPnkaRNncNgk-swGzZSw1m7x_VJw2IwCck4uMIA", "curriculum2027": "https://docs.google.com/spreadsheets/d/1XZCaYaCSaevMYVYOUHgdMOAjbe1EnUffrnKxv-6fxVs"}, {"name": "유성고", "type": "male", "x": 226, "y": 465, "labelDx": 11, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10DpOYm41o6veu7FMovzPQCCrOX4WxUrSq4F_Lx19l_g", "curriculum2027": "https://docs.google.com/spreadsheets/d/1VYzyYB6mg8Ef8gyJKlAi3uTrPQUXJBTZPRNJpIzfkp0"}, {"name": "유성생명과학고", "type": "coed", "x": 203, "y": 469, "labelDx": -10, "labelDy": -11, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "17PqXrgO0Lb8UYLZJTtq9nDFAXeM5oHml", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Bzu9EcmB2NeQLdcLlgDn8wWVbnxygpDuwmlJEuZwkeU", "vocational": true}, {"name": "유성여자고", "type": "female", "x": 215, "y": 379, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1LcMzFUZjhxzJf43z98bOCqcnhpIw9eLFibAbM18K_JI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1eWVgaheBfE8J9ngT-WzUWCZjHVH1qBZ_fO6nFrecJMg"}, {"name": "중일고", "type": "coed", "x": 360, "y": 234, "labelDx": -11, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1wLbIFdWtT3MFh8x8lNMbjgjW4nkIYfoAqecG0Tb1HnM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1LDox4qBT6Y_gGLymOI7dkwAj9ogLG1sTM00CPrMHehM"}], "daedeok": [{"name": "대전생활과학고", "type": "coed", "x": 444, "y": 471, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1a24HlcItIfZodRH0naR8M02MB3oC370Z", "curriculum2027": "https://docs.google.com/spreadsheets/d/1KXCA6_JCacqcv377vArhEp871jOw-l4hBFjJdMNzZFQ", "vocational": true}, {"name": "대전송촌고", "type": "coed", "x": 505, "y": 432, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1qES0Dv9jScIncLFNycShy6cW7ktedK0rF8bkVeLcO0M", "curriculum2027": "https://docs.google.com/spreadsheets/d/1tYcKRo53xoJQwt_UStZHEaQLv1Mq0ciGuuRJTvFm2uo"}, {"name": "대전이문고", "type": "coed", "x": 444, "y": 182, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/17OUvLVlWRWbbW7ywtthkOjAqB9uZ2uxBoZsYJNBZccs", "curriculum2027": "https://docs.google.com/spreadsheets/d/132IT5vOaPD7rOzaKLeurapNpzYBJ6ca_AMdUHVop-34"}, {"name": "동대전고", "type": "coed", "x": 452, "y": 448, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1nQEwxDunFL7EhiKHQV6bx1DjpQ--hQMWcRzGlFnLj8Y", "curriculum2027": "https://docs.google.com/spreadsheets/d/1akEGg65UXcBKMRX4HhczJQd4C30wQhDnhcjzw_mVdL8"}, {"name": "신탄진고", "type": "coed", "x": 482, "y": 179, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1J6nkIuuxyyG0TflXWckOZxfEcWvlqT2bzee7klYmyXc", "curriculum2027": "https://docs.google.com/spreadsheets/d/1eHeL1Nm3xfkVoHx0fqG5ffpYrqUBbPhapxB6bjYHGro"}], "donggu": [{"name": "계룡디지텍고", "type": "male", "x": 481, "y": 529, "labelDx": -9, "labelDy": -3, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "12OQeOIXE7VXkOVOvNmkPEtUsIBc1ShrW", "curriculum2027": "https://docs.google.com/spreadsheets/d/1V_UTc7l8XTNGL1mOcSUJTMYtnKEVBgAOPpYUAvOAeHw", "vocational": true}, {"name": "대전가오고", "type": "coed", "x": 539, "y": 593, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1IXobCKgYAXY_TbptQoZZn8BrYqw_PAcDKq94z4S-5Fs", "curriculum2027": "https://docs.google.com/spreadsheets/d/1OUnAQMEKrViz0Un1dOndtUMGYlvTm1MqCjZKKHWTPRM"}, {"name": "대전대성여자고", "type": "female", "x": 500, "y": 523, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1FhadGgezEiSprYpQdpnJoN_JuTU51L1_", "curriculum2027": "https://docs.google.com/spreadsheets/d/1QPgDSvC0j13WLQkVHUK1nPoERRTMv-YEF8_6S8ssR_s", "vocational": true}, {"name": "대전동신과학고", "type": "coed", "x": 589, "y": 532, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1JmKcMEShSLXaOpF0mxKsssQgjCluuxVY6DIYVGbqArw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1wniSkIhHSgseQlYkToJmzOnHZtCCQsxSkxHMbFifTp0"}, {"name": "대전여자고", "type": "female", "x": 526, "y": 565, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/12szYGRQoUc3fPMZi-XUrM_oB-FAnU5P5yTom5Z3Yx_0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Lyh7vVavOoWM0LhnHSJ0H01Flgz6GS6-6X7p47GZSmc"}, {"name": "동아마이스터고", "type": "male", "x": 538, "y": 492, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특목고", "curriculum2026Pdf": "12UNQuBOAyAwknXSOyarqATK3SicWxVIj", "curriculum2027": "https://docs.google.com/spreadsheets/d/1f9QZQP7x7-lMDymyDXoKXKbuyk4uxMSJ9sL_fwMeJyM", "vocational": true}, {"name": "명석고", "type": "male", "x": 537, "y": 471, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1HSS4G0s9-PRjWf99niN3ZiLQjawSeIGbu2BDd7g1esw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1KD1lrIWQquziSaSnNjo7fyRl0q06qEM11aaGNphX_Q4"}, {"name": "보문고", "type": "male", "x": 458, "y": 515, "labelDx": -10, "labelDy": -14, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cTwKwY2pW0KScbmc87K3FHu_CZPysN4DkhVmtJ61XxE", "curriculum2027": "https://docs.google.com/spreadsheets/d/1c4Qiikx0ndQ_Dmk9W6eX0a6hIOPmzwLEW2JKsMEQexk"}, {"name": "우송고", "type": "coed", "x": 514, "y": 543, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10kViZ7_OqcgtLmvEOf52T6iW0RQzLpQpIAOZcAvpwXo", "curriculum2027": "https://docs.google.com/spreadsheets/d/1t7Kmc379gAE5xXk7jGvL1ijHD-6-85mpEHuKndu7ylg"}], "junggu": [{"name": "남대전고", "type": "male", "x": 461, "y": 595, "labelDx": -9, "labelDy": -12, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ojON4ucCXHhPYhTV-onPK4ZrowVaoLSur8xuEd0cMpU", "curriculum2027": "https://docs.google.com/spreadsheets/d/1kU7DWHowOlcCc3nJj9KujVaSEm0C4LrJ96uWLhjPZS8"}, {"name": "대전고", "type": "male", "x": 451, "y": 576, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1vnvZzwSt_4gHroNI1U-koCo1omTpjusmU5WvRMfPinQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1LtLrIizECiCVe38KfQFvGTrYe_B3iFDVHi9u1QK2kfQ"}, {"name": "대전국제통상고", "type": "coed", "x": 401, "y": 625, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1oBC0qO87mwKG7Sqf-nITNHdZx543AHVh", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Nygwy1VORyrjhgB_Ucsq4jAia5VWQ1HD-nWgfLUO6Dk", "vocational": true}, {"name": "대전대성고", "type": "male", "x": 406, "y": 532, "labelDx": -9, "labelDy": -11, "labelAnchor": "end", "establishment": "자사고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1x00yXzGf1lBzi1IFSe40dy-x6f55FUAU08HBtyNEaH0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1b6rJP0NOmik2HHWv7Ndhx9QBAQ7cevruSm5Rj1Cta3M"}, {"name": "대전동산고", "type": "male", "x": 389, "y": 610, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1wVGb0hNrp9iEfUtKFAEA8FUTdmbVTeTOnnNr2Bbpvio", "curriculum2027": "https://docs.google.com/spreadsheets/d/13bAMvLRCRS-O2nWOitaqNHZPIIJVoTydcLEJh7AZ2n0"}, {"name": "대전성모여자고", "type": "female", "x": 431, "y": 576, "labelDx": -9, "labelDy": -9, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1J_hHVzb94X1sfc2nMdRKGoeQuQkEeyWuAI_dY3WYDQM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1drnCjPWxPsf2c8y8zy9ktmkEACDsmte_jeEVdRB7B3U"}, {"name": "대전신일여자고", "type": "female", "x": 489, "y": 613, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1U0zXpAsFTWUeYDjnJeKqOdaSbFqrcsP2", "curriculum2027": "https://docs.google.com/spreadsheets/d/1CoY6n6OnN0B4FHlbbOZyhgjvXU7M1S2lbtJzdM55xaM", "vocational": true}, {"name": "대전여자상업고", "type": "female", "x": 443, "y": 515, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "특성화고", "curriculum2026Pdf": "1RrKW_38mxd87fv1SaXrLaGNK1VVearV0", "curriculum2027": "https://docs.google.com/spreadsheets/d/1fxel5AN2HnVMZhVGhKyiSWffgjiiETw_OpElr5gTjPo", "vocational": true}, {"name": "대전중앙고", "type": "male", "x": 420, "y": 498, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cM0sZOlDYn_kMxGBOVlZ-_j2Gf_owDHOkhi2vyHjSBQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1R_N7ncPx9FhzP3c0RsT-64nc4IbVGiwtftOCEpZ0qaU"}, {"name": "대전한빛고", "type": "coed", "x": 329, "y": 696, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1hmikEy0xYieAkRRqG-nGh_rhJFaa9mJtQ7GzqeJgoWw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1oisOok38Vd-7qTn1EM-XObibEQm0JQPczh4PqezwH-k"}, {"name": "청란여자고", "type": "female", "x": 478, "y": 593, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1oPuBGUVEXCtIQPBSNdXjLmpjhaT11EpRMNvSWnS-TZI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1rDQV5x2mvXhyp8Pm2XqtJgl_XKK8xRP116tOVmmlFNg"}, {"name": "충남기계공업고", "type": "male", "x": 383, "y": 631, "labelDx": -10, "labelDy": -12, "labelAnchor": "end", "establishment": "특성화고", "curriculum2026Pdf": "1u1PMQ4KhvaWkna0PmSKih7PgRsJ5fVn2", "curriculum2027": "https://docs.google.com/spreadsheets/d/1__FzNx7D2PjthzO0uKMI6LWz7ywlPrl0FQq4FTaMkLE", "vocational": true}, {"name": "충남여자고", "type": "female", "x": 411, "y": 545, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ZcBAll_ySDDaodckzs88sLONberLTFdGSjmunfe6MOI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1d6JGqApwObJjbJV0H_Rtg0a14RYkmSb6wD-ScRf0BAM"}, {"name": "호수돈여자고", "type": "female", "x": 420, "y": 561, "labelDx": 10, "labelDy": -15, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1sSS6JMQolGu4aSVsOJfNd5qMAnKI5N1Qj-OfHbFWEyg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1TXAXHzZU0813eIk2iqNIi2DhG6KDRD4YvcirKrJs32c"}], "seogu": [{"name": "대전관저고", "type": "coed", "x": 235, "y": 599, "labelDx": 10, "labelDy": -13, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1lASatRXuVUupnzkRuBIIbg6TU6JJP7p9E4CaTT_pBbw", "curriculum2027": "https://docs.google.com/spreadsheets/d/19naoQraFRtcW2JuLImdp2UU6e_ymMHkgJ08T-WnomXc"}, {"name": "대전괴정고", "type": "coed", "x": 336, "y": 506, "labelDx": 10, "labelDy": -15, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ixfNC3bv73wtGfCc-Ger2VTR8-JJDxSbfPSE7dRxLQI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1fKnMcRoQRhe7CQQoW3lWDlof4_kSBTEBuibyWO0FGDc"}, {"name": "대전구봉고", "type": "coed", "x": 225, "y": 652, "labelDx": 3, "labelDy": 4, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1cwPiaq04AWIvvRcQdkchpidFk5K2Ucr-Nz3bIkKLy_k", "curriculum2027": "https://docs.google.com/spreadsheets/d/1luBnF5LCUBNIzxcPTTeL5Xnb7e_29PDwUy5R-9WQw3Q"}, {"name": "대전대신고", "type": "male", "x": 345, "y": 594, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "자사고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jhSoilMxP_us0nftK77Bm7QY4kogLXbLfvu2Vv06vTk", "curriculum2027": "https://docs.google.com/spreadsheets/d/1FaP_4TQCJbsr3D6yBO0BKoIBKs6v_LjBh5TJtaaMXCs"}, {"name": "대전둔산여자고", "type": "female", "x": 335, "y": 455, "labelDx": -9, "labelDy": -12, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1Mo3eN-HgPN_Xsnn1oVejuHfi_I3QurwsZ2uWNlCRO6A", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Fl8YmS564hcBE2UA1SesOMYkEXElnc-6zvmB_xCFem4"}, {"name": "대전둔원고", "type": "coed", "x": 323, "y": 491, "labelDx": 9, "labelDy": -17, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1ljkynx3cHtgW7ziHi5mxIpfY2wEbTojp-LrP1rW5LHQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1MfenZtZQQR2iXOL6w5XUBtWjDtSbiu1mUZwHCEspuW8"}, {"name": "대전만년고", "type": "coed", "x": 330, "y": 418, "labelDx": 10, "labelDy": -14, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1lBr3aBW6eFlTlpnH4J1ehXgYwkwN_HZOLPNOGhwRNDg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1kSZK917H8KSFgO84PSvrHrvySICYWaYx4HPPy3qrz1g"}, {"name": "대전복수고", "type": "coed", "x": 320, "y": 622, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1UJY1emKrTlJ2Q8RoCWkhjt2qRh2fW20NLhjg6DOGWPw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1W1AGXKhns0yL_czMbhFRbHknPcts0ZmtFEr_MaeMb1U"}, {"name": "대전산업정보고", "type": "coed", "x": 381, "y": 522, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "각종학교", "curriculum2026Pdf": "1buq76mgxCDeeK2XsvdHzqV0yFcQs-jjQ", "curriculum2027": "https://docs.google.com/spreadsheets/d/1ElSIG-q-NJI3OOhHzukLnykbTjvXvlpnMD5Et5zrrMU", "vocational": true}, {"name": "대전외국어고", "type": "coed", "x": 306, "y": 518, "labelDx": -9, "labelDy": -13, "labelAnchor": "end", "establishment": "특목고", "departments2026": [{"label": "영어과", "curriculum2026": "https://docs.google.com/spreadsheets/d/1oYUG9rpf5kOz1Acp8V5uUEa8m-jOAvrZ0NANFVYeBTM"}, {"label": "독일어과~러시아어과", "curriculum2026": "https://docs.google.com/spreadsheets/d/1RuTfLOMtrFvlk1kMtlpwzTnFGEwDt8Ao88QReSXIxIM"}], "departments2027": [{"label": "영어과", "curriculum2027": "https://docs.google.com/spreadsheets/d/1O29J1qcdGIBOP28UiuxpjmuBX9ouLTIXyyi4rq8iOSI"}, {"label": "독일어과~러시아어과", "curriculum2027": "https://docs.google.com/spreadsheets/d/1FYEAO7gw7Pqjv5IpDdo2fbOD6lAfZaMRv93Nxwf_kH4"}]}, {"name": "대전제일고", "type": "coed", "x": 313, "y": 575, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/10A_TgrHPlJRzirf8OWupmgFnVkuWix4QR7Z0Ykulig8", "curriculum2027": "https://docs.google.com/spreadsheets/d/1PnsvtdswuqWLYhckB_z7TjTywOIOwfS0HHXwi9JlISg"}, {"name": "동방고", "type": "coed", "x": 254, "y": 633, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1jjnHeDgkSi1ckPCl3iK_Kk9vdeaMPR6BZrqdjpDv_o4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1oYMcCGQqhPQjamv80nKCc3C9DPasVNIcnd4qb-34Edw"}, {"name": "서대전고", "type": "male", "x": 319, "y": 434, "labelDx": 10, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1g66KwKeFLYGbnt6sudcEBEgCBGK9W17IridL3GICwm4", "curriculum2027": "https://docs.google.com/spreadsheets/d/1HzmGNFmMyaZQWJghpaDoHt9bWO-tG21McVVPsnT7p4Q"}, {"name": "서대전여자고", "type": "female", "x": 312, "y": 542, "labelDx": 9, "labelDy": -11, "labelAnchor": "start", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1TvAsN2BJ9eRJbGplUDYJiOYihPvsSv5NsRN5MwpQ0Nw", "curriculum2027": "https://docs.google.com/spreadsheets/d/1TK0RQlRHy99s40sKVhiWE8zufBIupyhnb-cYhENqnKc"}, {"name": "서일고", "type": "male", "x": 200, "y": 663, "labelDx": -10, "labelDy": -11, "labelAnchor": "end", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1B8N3vCnNelUIAetczBlhrsHrOilF8ONwm3_YBGJWXfg", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Bpqk0HkH1TGXOV8i9NV0lFRx2TfCrpUFBEXuJVRM5Yo"}, {"name": "서일여자고", "type": "female", "x": 213, "y": 657, "labelDx": -24, "labelDy": -25, "labelAnchor": "middle", "establishment": "사립", "curriculum2026": "https://docs.google.com/spreadsheets/d/1qq1B5XQgh_pTnl4Oa11lKemnBJ06Fue-YtToKcYebOM", "curriculum2027": "https://docs.google.com/spreadsheets/d/1Xt4FciUTWKCOgQe2iA_sCARlzabyr3LV3R3zq3j8NKk"}, {"name": "충남고", "type": "male", "x": 370, "y": 458, "labelDx": 10, "labelDy": -12, "labelAnchor": "start", "establishment": "자공고", "curriculum2026": "https://docs.google.com/spreadsheets/d/1sd8g3iZcF_AmLh0khR8mAZOlEOIzY3dvKWMZozHUwys", "curriculum2027": "https://docs.google.com/spreadsheets/d/1mo3WjSx8BNQ1QCjRatI6TjRO5i-RUPRRJmY0Oue_Or4", "subject2026": "https://script.google.com/macros/s/AKfycbwBJWOT6HIQSVKNQbg-ZTnbHtm4FFq8nO5-_WSf40Iq9D9CChAlPo4AkoX2R35r3op5/exec"}, {"name": "한밭고", "type": "coed", "x": 295, "y": 482, "labelDx": -9, "labelDy": -13, "labelAnchor": "end", "establishment": "공립", "curriculum2026": "https://docs.google.com/spreadsheets/d/163Hfn6sOk51wS-5kmxwXzjeA5cWYZu5x_yh5fa604uI", "curriculum2027": "https://docs.google.com/spreadsheets/d/1BBMB308h6bUH0K-s3y-vsPvcrM0ZJjK2Yk-qeiyBCvE"}]};
 const BBOXES = {"yuseong": {"vb_x": 57, "vb_y": 195, "vb_w": 453, "vb_h": 453}, "daedeok": {"vb_x": 248, "vb_y": 86, "vb_w": 453, "vb_h": 453}, "donggu": {"vb_x": 311, "vb_y": 294, "vb_w": 453, "vb_h": 453}, "junggu": {"vb_x": 212, "vb_y": 420, "vb_w": 453, "vb_h": 453}, "seogu": {"vb_x": 78, "vb_y": 380, "vb_w": 453, "vb_h": 453}};
 const DISTRICT_KR = { yuseong: '유성구', daedeok: '대덕구', donggu: '동구', seogu: '서구', junggu: '중구' };
 const TYPE_KR = { coed: '남녀공학', female: '여자고', male: '남자고' };
@@ -2201,8 +2367,19 @@ function showSchoolModal(school) {
   
   // 2027 학년도 버튼 영역 생성
   let buttons2027Html = '';
-  if (school.curriculum2026Pdf) {
-    // PDF 학교(영재고/특성화고/마이스터/각종학교): 2027 PDF 등록 전까지 "준비 중", 시뮬레이터 버튼 없음
+  if (school.vocational && school.curriculum2027) {
+    // 직업계고: 2027부터 구글 시트(학교 전체/전문교과/학습영역 탭) 연동, 시뮬레이터 없음
+    const escapedSchool = school.name.replace(/'/g, "\\'");
+    buttons2027Html = `<div class="year-buttons single-btn">
+        <div class="year-btn-cell">
+          <button class="year-btn curriculum" onclick="openVocationalEmbed('${escapedSchool}', '${school.curriculum2027}')">
+            <span class="icon">${SVG_CLIPBOARD}</span>
+            <span class="label">교육과정 편성표</span>
+          </button>
+        </div>
+      </div>`;
+  } else if (school.curriculum2026Pdf) {
+    // PDF 학교(영재고 등): 2027 자료 등록 전까지 "준비 중", 시뮬레이터 버튼 없음
     buttons2027Html = `<div class="year-buttons single-btn">
         <div class="year-btn-cell">
           <button class="year-btn curriculum disabled" onclick="alert('2027학년도 입학생 자료는 추후 업데이트될 예정입니다.')">
@@ -2274,6 +2451,45 @@ function showSchoolModal(school) {
 // Google Sheets API 키
 const GOOGLE_API_KEY = 'AIzaSyBC95kjuGRE0cgsHHWWco0-MnBt9XiPfCY';
 
+// 시트 셀 글자를 화면에 넣을 때 HTML로 해석되지 않게 바꿈 (예: '<AI 기초>'가 사라지거나 표가 깨지는 것 방지)
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// 편성표 창을 열 때마다 1씩 증가 → 늦게 도착한 이전 학교의 응답이 지금 표를 덮어쓰지 않게 함
+let curriculumLoadSeq = 0;
+
+// 편성표 창 열기 공통: 제목·로딩 표시 후 이번 요청 번호를 돌려줌
+function startCurriculumModal(title) {
+  closeModal();  // 학교 모달 닫기
+  document.getElementById('embedTitle').textContent = title;
+  document.getElementById('sheetNav').hidden = true;
+  document.getElementById('embedLoading').classList.remove('hidden');
+  document.getElementById('curriculumTableWrap').innerHTML = '';
+  document.getElementById('embedOverlay').classList.add('active');
+  return ++curriculumLoadSeq;
+}
+
+function showCurriculumError(err) {
+  console.error('편성표 로드 실패:', err);
+  document.getElementById('embedLoading').classList.add('hidden');
+  document.getElementById('curriculumTableWrap').innerHTML = `
+      <div class="curriculum-message">
+        <div class="icon">⚠️</div>
+        <div class="title">편성표를 불러올 수 없습니다</div>
+        <div class="desc">
+          ${escapeHtml(err.message || '알 수 없는 오류가 발생했습니다.')}<br>
+          잠시 후 다시 시도해주세요.
+        </div>
+      </div>
+    `;
+}
+
 // 편성표 모달 열기 - API로 데이터 + 병합 정보 가져와서 표 그리기
 async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
   // 스프레드시트 ID 추출
@@ -2283,14 +2499,7 @@ async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
     return;
   }
   const sheetId = match[1];
-  
-  // 학교 모달 닫기
-  closeModal();
-  
-  // 임베드 모달 표시 + 로딩
-  const embedOverlay = document.getElementById('embedOverlay');
-  const embedLoading = document.getElementById('embedLoading');
-  const tableWrap = document.getElementById('curriculumTableWrap');
+
   // 학교명에 "_학과" 형식이 포함되면 분리 표시
   let displayName = schoolName;
   if (schoolName.includes('_')) {
@@ -2299,11 +2508,9 @@ async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
   } else {
     displayName = `${schoolName}등학교`;
   }
-  document.getElementById('embedTitle').textContent = `${displayName} - ${year}학년도 입학생 교육과정 편성표`;
-  embedLoading.classList.remove('hidden');
-  tableWrap.innerHTML = '';
-  embedOverlay.classList.add('active');
-  
+  const seq = startCurriculumModal(`${displayName} - ${year}학년도 입학생 교육과정 편성표`);
+  const embedLoading = document.getElementById('embedLoading');
+
   try {
     // Google Sheets API: 셀 값 + 병합 정보까지 가져오기
     // ranges: A1:M500, fields: 필요한 것만 (응답 크기 줄임)
@@ -2319,39 +2526,30 @@ async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
     }
     
     const data = await response.json();
+    if (seq !== curriculumLoadSeq) return;  // 그사이 창을 닫았거나 다른 편성표를 열었음
     const sheet = (data.sheets || [])[0];
     if (!sheet) throw new Error('편성표 시트를 찾을 수 없습니다.');
-    
+
     // 병합 정보
     const merges = sheet.merges || [];
-    
+
     // 셀 값들을 2D 배열로 변환
     const rowData = (sheet.data && sheet.data[0] && sheet.data[0].rowData) || [];
-    const grid = rowData.map(r => 
+    const grid = rowData.map(r =>
       (r.values || []).map(c => (c && c.formattedValue) || '')
     );
-    
+
     if (grid.length < 4) {
       throw new Error('편성표 데이터가 부족합니다.');
     }
-    
+
     // 표 그리기
     renderCurriculumTable(schoolName, grid, merges, sheetUrl);
     embedLoading.classList.add('hidden');
-    
+
   } catch (err) {
-    console.error('편성표 로드 실패:', err);
-    embedLoading.classList.add('hidden');
-    tableWrap.innerHTML = `
-      <div class="curriculum-message">
-        <div class="icon">⚠️</div>
-        <div class="title">편성표를 불러올 수 없습니다</div>
-        <div class="desc">
-          ${err.message || '알 수 없는 오류가 발생했습니다.'}<br>
-          잠시 후 다시 시도해주세요.
-        </div>
-      </div>
-    `;
+    if (seq !== curriculumLoadSeq) return;
+    showCurriculumError(err);
   }
 }
 
@@ -2477,8 +2675,8 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
     <div class="curriculum-info">
       ${metaItems.map(item => `
       <div class="curriculum-info-item">
-        <span class="label">${item.label}</span>
-        <span class="value">${item.value}</span>
+        <span class="label">${escapeHtml(item.label)}</span>
+        <span class="value">${escapeHtml(item.value)}</span>
       </div>`).join(`
       <div class="curriculum-info-divider"></div>`)}
     </div>
@@ -2563,7 +2761,7 @@ function renderCurriculumTable(schoolName, grid, merges, sheetUrl) {
       // 병합으로 가려진 셀은 그리지 않음
       if (skipMap[r] && skipMap[r][c]) continue;
       
-      const value = (row[c] || '').toString().trim();
+      const value = escapeHtml((row[c] || '').toString().trim());
       const merge = mergeMap[r] && mergeMap[r][c];
       const rowSpan = merge ? merge.rowSpan : 1;
       const colSpan = merge ? merge.colSpan : 1;
@@ -2672,14 +2870,353 @@ function renderSemesterCell(value, spanAttr = '') {
 }
 
 function closeEmbedModal() {
+  const closedSeq = ++curriculumLoadSeq;  // 아직 불러오는 중인 편성표는 도착해도 그리지 않음
+  vocationalView = null;
   const embedOverlay = document.getElementById('embedOverlay');
   embedOverlay.classList.remove('active');
-  // 표 컨테이너 비우기
+  // 표 컨테이너 비우기 (그사이 다른 편성표를 새로 열었으면 건드리지 않음)
   setTimeout(() => {
+    if (closedSeq !== curriculumLoadSeq) return;
     const tableWrap = document.getElementById('curriculumTableWrap');
     if (tableWrap) tableWrap.innerHTML = '';
+    document.getElementById('sheetNav').hidden = true;
   }, 300);
 }
+
+// ============================================
+// 직업계고 편성표 (2027학년도~)
+// 구글 시트의 세 탭을 병합 모양 그대로 보여 줌 (숨긴 참고용 탭은 읽지 않음)
+// 전문교과·학습영역 탭은 학과별로 골라 볼 수 있음
+// ============================================
+const VOCATIONAL_TABS = [
+  { key: 'school', sheet: '교육과정(학교전체)', label: '학교 전체' },
+  { key: 'major', sheet: '전문교과', label: '전문교과', byDept: true },
+  { key: 'ncs', sheet: '학습영역', label: '학습영역(NCS)', byDept: true },
+];
+let vocationalView = null;  // { tabs, deptLabels, activeTab, dept }
+
+async function openVocationalEmbed(schoolName, sheetUrl) {
+  const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (!match) {
+    alert('스프레드시트 URL이 올바르지 않습니다.');
+    return;
+  }
+  vocationalView = null;
+  const seq = startCurriculumModal(`${schoolName}등학교 - 2027학년도 입학생 교육과정 편성표`);
+
+  try {
+    // 세 탭을 한 번에 요청 (탭 이름에 괄호가 있어 작은따옴표로 감쌈)
+    const ranges = VOCATIONAL_TABS.map(t => `ranges=${encodeURIComponent(`'${t.sheet}'`)}`).join('&');
+    const fields = encodeURIComponent('sheets(properties.title,merges,data.rowData.values(formattedValue))');
+    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${match[1]}?${ranges}&fields=${fields}&key=${GOOGLE_API_KEY}`);
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `${response.status} 오류`);
+    }
+    const data = await response.json();
+    if (seq !== curriculumLoadSeq) return;  // 그사이 창을 닫았거나 다른 편성표를 열었음
+
+    const tabs = {};
+    for (const sheet of data.sheets || []) {
+      const tab = VOCATIONAL_TABS.find(t => t.sheet === sheet.properties.title);
+      if (!tab) continue;
+      const rowData = (sheet.data && sheet.data[0] && sheet.data[0].rowData) || [];
+      const grid = rowData.map(r => (r.values || []).map(c => (c && c.formattedValue) || ''));
+      tabs[tab.key] = parseSheetBlocks(grid, sheet.merges || [], !!tab.byDept);
+    }
+    if (!tabs.school || tabs.school.blocks.length === 0) {
+      throw new Error('편성표 탭을 찾을 수 없습니다.');
+    }
+
+    vocationalView = { tabs, deptLabels: collectDeptLabels(tabs.school), activeTab: 'school', dept: '' };
+    renderVocationalView();
+    document.getElementById('embedLoading').classList.add('hidden');
+  } catch (err) {
+    if (seq !== curriculumLoadSeq) return;
+    showCurriculumError(err);
+  }
+}
+
+// 학과 이름 비교용 (시트마다 '소프트\n웨어과', '자동화 설비과'처럼 줄바꿈·띄어쓰기가 달라서 공백을 모두 뺌)
+const deptKey = (name) => name.replace(/\s/g, '');
+
+// 시트 한 탭을 [제목 + 머리글 + 본문] 표 묶음들로 나눔
+// - A열이 '구분'/'학과'/'학과명'인 행: 표 머리글 시작 (아래로 병합된 행까지 머리글)
+// - 머리글 바로 위 'ㅣ …' 행: 표 제목
+// - 다음 머리글이나 'ㅣ' 제목 행 전까지: 본문
+function parseSheetBlocks(grid, merges, byDept) {
+  const text = (r, c) => ((grid[r] || [])[c] || '').toString().trim();
+  const isTitleRow = (r) => /^ㅣ/.test(text(r, 0));
+  const isHeaderRow = (r) => /^(구분|학과|학과명)$/.test(text(r, 0));
+
+  // 학교 정보 한 줄: "학교명   OO고등학교          학교유형   특성화고등학교 …" → 라벨/값 쌍
+  const meta = [];
+  for (let r = 0; r < Math.min(grid.length, 6) && meta.length === 0; r++) {
+    const first = (grid[r] || []).map(c => (c || '').toString().trim()).find(c => c) || '';
+    if (first.startsWith('학교명') && /\s{2,}/.test(first)) {
+      const parts = first.split(/\s{2,}/);
+      for (let i = 0; i + 1 < parts.length; i += 2) meta.push({ label: parts[i], value: parts[i + 1] });
+    }
+  }
+
+  // A열 병합 영역은 맨 위 칸의 값으로 채워 둠 (본문 행마다 어느 학과인지 알기 위해)
+  const colAValue = (r) => {
+    for (const m of merges) {
+      if (m.startColumnIndex === 0 && m.startRowIndex <= r && r < m.endRowIndex) return text(m.startRowIndex, 0);
+    }
+    return text(r, 0);
+  };
+
+  const blocks = [];
+  let r = 0;
+  while (r < grid.length) {
+    if (!isHeaderRow(r)) { r++; continue; }
+    // 머리글: 이 행에서 시작해 아래로 병합된 칸이 있으면 그 행까지 (머리글은 최대 3행)
+    let headerEnd = r + 1;
+    for (const m of merges) {
+      if (m.startRowIndex === r && m.endRowIndex - r <= 3) headerEnd = Math.max(headerEnd, m.endRowIndex);
+    }
+    let bodyEnd = headerEnd;
+    while (bodyEnd < grid.length && !isHeaderRow(bodyEnd) && !isTitleRow(bodyEnd)) bodyEnd++;
+
+    const block = {
+      title: r > 0 && isTitleRow(r - 1) ? text(r - 1, 0).replace(/^ㅣ\s*/, '') : '',
+      headerStart: r,
+      headerEnd,
+      bodyStart: headerEnd,
+      bodyEnd,
+      cols: countBlockColumns(grid, merges, r, headerEnd),
+      deptOf: new Map(),  // 본문 행 → 학과 이름 (학과별 탭만)
+    };
+    if (byDept) {
+      let current = '';
+      for (let row = block.bodyStart; row < block.bodyEnd; row++) {
+        const value = colAValue(row);
+        if (value) current = value;
+        block.deptOf.set(row, current);
+      }
+    }
+    blocks.push(block);
+    r = bodyEnd;
+  }
+  return { grid, merges, meta, blocks };
+}
+
+// 표에 보여 줄 열 수: 머리글에서 마지막으로 글자가 있는(또는 병합이 시작되는) 열까지
+// 단, 시트 오른쪽의 '학과 필터' 칸(선택값 '전체')과 그 뒤 보조 열은 빼고 셈
+function countBlockColumns(grid, merges, headerStart, headerEnd) {
+  let filterCol = Infinity;
+  for (let r = Math.max(0, headerStart - 1); r < headerEnd; r++) {
+    (grid[r] || []).forEach((v, c) => {
+      const t = (v || '').toString().trim();
+      if (t.includes('학과 필터') || (r >= headerStart && t === '전체')) filterCol = Math.min(filterCol, c);
+    });
+  }
+  let last = 0;
+  for (let r = headerStart; r < headerEnd; r++) {
+    (grid[r] || []).forEach((v, c) => {
+      if (c < filterCol && (v || '').toString().trim()) last = Math.max(last, c);
+    });
+  }
+  for (const m of merges) {
+    if (m.startRowIndex >= headerStart && m.startRowIndex < headerEnd && m.startColumnIndex < filterCol) {
+      last = Math.max(last, Math.min(m.endColumnIndex, filterCol) - 1);
+    }
+  }
+  return last + 1;
+}
+
+// '학교 전체' 탭의 학과현황 표에서 학과 이름을 가져와 학과 버튼 이름으로 씀 (가장 깔끔한 표기)
+function collectDeptLabels(schoolTab) {
+  const labels = {};
+  for (const b of schoolTab.blocks) {
+    if (((schoolTab.grid[b.headerStart] || [])[0] || '').trim() !== '학과명') continue;
+    for (let r = b.bodyStart; r < b.bodyEnd; r++) {
+      const name = ((schoolTab.grid[r] || [])[0] || '').toString().trim();
+      if (name && !/^(합계|소계|총계)$/.test(name)) labels[deptKey(name)] = name.replace(/\s*\n\s*/g, ' ');
+    }
+  }
+  return labels;
+}
+
+// 탭 안에 나오는 학과 목록 (나오는 순서대로)
+function listDepts(parsed) {
+  const depts = new Map();
+  for (const b of parsed.blocks) {
+    for (const name of b.deptOf.values()) {
+      const key = deptKey(name);
+      if (!key || /^(합계|소계|총계)$/.test(key) || depts.has(key)) continue;
+      // 시트 칸 폭 때문에 넣은 줄바꿈은 붙여 씀 ('소프트\n웨어과' → '소프트웨어과', '전자과\n(도제반)' → '전자과 (도제반)')
+      depts.set(key, name.replace(/\n(?=\()/g, ' ').replace(/\s*\n\s*/g, ''));
+    }
+  }
+  return [...depts].map(([key, label]) => ({ key, label }));
+}
+
+function renderVocationalView() {
+  const view = vocationalView;
+  if (!view) return;
+  const tabDef = VOCATIONAL_TABS.find(t => t.key === view.activeTab);
+  const parsed = view.tabs[view.activeTab];
+
+  document.getElementById('sheetNav').hidden = false;
+  document.getElementById('sheetTabs').innerHTML = VOCATIONAL_TABS.filter(t => view.tabs[t.key]).map(t => `
+    <button type="button" class="sheet-tab${t.key === view.activeTab ? ' active' : ''}" role="tab" aria-selected="${t.key === view.activeTab}" data-tab="${t.key}">${t.label}</button>`).join('');
+
+  // 학과 선택 (학과가 2개 이상인 전문교과·학습영역 탭만)
+  const depts = tabDef.byDept ? listDepts(parsed) : [];
+  if (view.dept && !depts.some(d => d.key === view.dept)) view.dept = '';
+  const deptFilter = document.getElementById('deptFilter');
+  deptFilter.hidden = depts.length < 2;
+  deptFilter.innerHTML = depts.length < 2 ? '' : [{ key: '', label: '전체' }, ...depts].map(d => `
+    <button type="button" class="dept-chip${d.key === view.dept ? ' active' : ''}" data-dept="${escapeHtml(d.key)}">${escapeHtml(view.deptLabels[d.key] || d.label)}</button>`).join('');
+
+  // 학교 정보 막대 + 표들
+  const meta = view.tabs.school.meta;
+  let html = meta.length ? `
+    <div class="curriculum-info">
+      ${meta.map(item => `
+      <div class="curriculum-info-item">
+        <span class="label">${escapeHtml(item.label)}</span>
+        <span class="value">${escapeHtml(item.value)}</span>
+      </div>`).join(`
+      <div class="curriculum-info-divider"></div>`)}
+    </div>` : '';
+  let tableCount = 0;
+  for (const b of parsed.blocks) {
+    const bodyRows = [];
+    for (let r = b.bodyStart; r < b.bodyEnd; r++) {
+      if (view.dept && deptKey(b.deptOf.get(r) || '') !== view.dept) continue;
+      bodyRows.push(r);
+    }
+    const table = renderSheetTable(parsed, b, bodyRows);
+    if (!table) continue;
+    tableCount++;
+    html += `${b.title ? `<h4 class="sheet-block-title">${escapeHtml(b.title)}</h4>` : ''}
+      <div class="sheet-table-scroll">${table}</div>`;
+  }
+  if (tableCount === 0) {
+    html += `<div class="curriculum-message"><div class="title">표시할 내용이 없습니다</div></div>`;
+  }
+
+  const tableWrap = document.getElementById('curriculumTableWrap');
+  tableWrap.innerHTML = html;
+  tableWrap.scrollTop = 0;
+}
+
+// 시트 영역 하나를 표로 그림: 병합은 보이는 행만 세어 rowspan을 다시 계산 (학과로 거른 경우 대비)
+function renderSheetTable(parsed, b, bodyRows) {
+  const { grid, merges } = parsed;
+  const text = (r, c) => ((grid[r] || [])[c] || '').toString().trim();
+  const isBlankRow = (r) => {
+    for (let c = 0; c < b.cols; c++) if (text(r, c)) return false;
+    return true;
+  };
+
+  const headerRows = [];
+  for (let r = b.headerStart; r < b.headerEnd; r++) headerRows.push(r);
+
+  // 병합 정리: 머리글·본문 각각에서 보이는 행만 세어 시작 칸과 rowspan/colspan을 정함
+  const spanAt = new Map();  // "행,열" → { rowSpan, colSpan, value }
+  const covered = new Set(); // 병합으로 가려져 그리지 않는 칸
+  const mergedRows = new Set();
+  for (const m of merges) {
+    if (m.startColumnIndex >= b.cols) continue;
+    const colEnd = Math.min(m.endColumnIndex, b.cols);
+    for (const rows of [headerRows, bodyRows]) {
+      const inside = rows.filter(r => r >= m.startRowIndex && r < m.endRowIndex);
+      if (inside.length === 0) continue;
+      const anchor = inside[0];
+      spanAt.set(`${anchor},${m.startColumnIndex}`, {
+        rowSpan: inside.length,
+        colSpan: colEnd - m.startColumnIndex,
+        value: text(m.startRowIndex, m.startColumnIndex),
+      });
+      for (const r of inside) {
+        mergedRows.add(r);
+        for (let c = m.startColumnIndex; c < colEnd; c++) {
+          if (r !== anchor || c !== m.startColumnIndex) covered.add(`${r},${c}`);
+        }
+      }
+    }
+  }
+
+  // 완전히 빈 본문 행(병합도 없음)은 뺌
+  const rows = bodyRows.filter(r => mergedRows.has(r) || !isBlankRow(r));
+  if (rows.length === 0) return '';
+
+  // 학기 열(머리글이 '1학기'/'2학기')과 왼쪽 정렬할 글자 열
+  const semCols = new Set();
+  const textCols = new Set();
+  for (const r of headerRows) {
+    for (let c = 0; c < b.cols; c++) {
+      const h = text(r, c).replace(/\s/g, '');
+      if (/^\d학기$/.test(h)) semCols.add(c);
+      if (/^(과목명|학습영역|세분류|인력양성유형)$/.test(h)) textCols.add(c);
+    }
+  }
+
+  const renderCell = (tag, r, c) => {
+    const key = `${r},${c}`;
+    if (covered.has(key)) return '';
+    const span = spanAt.get(key);
+    const value = span ? span.value : text(r, c);
+    const rowSpan = span ? span.rowSpan : 1;
+    const colSpan = span ? span.colSpan : 1;
+    const classes = [];
+    if (tag === 'td') {
+      if (c === 0) {
+        classes.push('first-col');
+        // '보통교과'처럼 짧은 글자가 여러 행에 걸치면 세로쓰기
+        if (rowSpan >= 4 && !value.includes('\n') && value.replace(/\s/g, '').length <= 5) classes.push('vertical');
+      }
+      if (semCols.has(c)) classes.push(value ? 'semester has-value' : 'semester');
+      if (textCols.has(c)) classes.push('text-left');
+    }
+    const attrs = `${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}${colSpan > 1 ? ` colspan="${colSpan}"` : ''}${classes.length ? ` class="${classes.join(' ')}"` : ''}`;
+    return `<${tag}${attrs}>${escapeHtml(value)}</${tag}>`;
+  };
+
+  // 합계·소계·총계·창의적 체험활동 행은 머리글과 같은 색으로
+  const isSummaryRow = (r) => {
+    for (let c = 0; c < Math.min(b.cols, 8); c++) {
+      const t = text(r, c).replace(/\s/g, '');
+      if (/^(합계|소계|총계)$/.test(t) || /(소계|총계)$/.test(t) || /^(학기별|창의적체험활동)/.test(t)) return true;
+    }
+    return false;
+  };
+
+  let html = '<table class="sheet-table"><thead>';
+  for (const r of headerRows) {
+    html += '<tr>';
+    for (let c = 0; c < b.cols; c++) html += renderCell('th', r, c);
+    html += '</tr>';
+  }
+  html += '</thead><tbody>';
+  for (const r of rows) {
+    html += `<tr${isSummaryRow(r) ? ' class="summary-row"' : ''}>`;
+    for (let c = 0; c < b.cols; c++) html += renderCell('td', r, c);
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// 탭·학과 버튼 (이벤트 위임: 버튼을 다시 그려도 한 번만 연결)
+document.getElementById('sheetNav').addEventListener('click', (e) => {
+  if (!vocationalView) return;
+  const tab = e.target.closest('.sheet-tab');
+  if (tab && tab.dataset.tab !== vocationalView.activeTab) {
+    vocationalView.activeTab = tab.dataset.tab;
+    renderVocationalView();
+    return;
+  }
+  const chip = e.target.closest('.dept-chip');
+  if (chip && chip.dataset.dept !== vocationalView.dept) {
+    vocationalView.dept = chip.dataset.dept;
+    renderVocationalView();
+  }
+});
 
 // PDF 미리보기 모달 (영재고/특성화고/마이스터/각종학교)
 function openPdfEmbed(schoolName, pdfFileId) {

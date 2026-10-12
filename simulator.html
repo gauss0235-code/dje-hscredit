@@ -1935,7 +1935,9 @@ async function init() {
     
     // 2. 편성표 데이터 로드
     state.curriculumData = await loadCurriculum();
-    
+    // 저장된 선택(이전 방문·공유 링크)을 지금 시트 기준으로 정리
+    reconcileSelections();
+
     // 3. 첫 단계 (진로 선택) 표시
     renderStep();
   } catch (err) {
@@ -4705,6 +4707,34 @@ function loadState() {
     state.selections = data.selections || {};
     state.currentStep = data.currentStep || 1;
   } catch (e) {}
+}
+
+// 저장된 선택을 방금 읽은 시트에 맞춤
+// 학생이 진행한 뒤 시트에서 선택군을 새로 만들거나 이름을 바꾸고, 과목을 지우거나 옮기면
+// 예전 선택이 남아 과목 카드가 눌리지 않거나 '다음'이 막히던 문제를 막음
+function reconcileSelections() {
+  const SKIP_KEY = '__SKIP__';
+  const semesters = state.curriculumData.semesters;
+  const before = JSON.stringify(state.selections);
+  for (const semKey of Object.keys(state.selections || {})) {
+    const sel = state.selections[semKey];
+    const semData = semesters[semKey];
+    if (!semData || !sel || typeof sel !== 'object') {
+      delete state.selections[semKey];
+      continue;
+    }
+    const oldChoices = sel.choices || {};
+    const choices = {};
+    for (const [groupName, group] of Object.entries(semData.choiceGroups)) {
+      const names = new Set(group.subjects.map(s => s.name));
+      const allOptional = group.subjects.length > 0 && group.subjects.every(s => s.optional);
+      const kept = (oldChoices[groupName] || []).filter(n => names.has(n) || (n === SKIP_KEY && allOptional));
+      choices[groupName] = [...new Set(kept)];
+    }
+    sel.choices = choices;
+    sel.fixed = semData.fixed.map(s => s.name);
+  }
+  if (JSON.stringify(state.selections) !== before) saveState();
 }
 
 // ============================================
