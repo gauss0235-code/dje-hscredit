@@ -1216,6 +1216,24 @@ h1, h2 {
 .curriculum-table tbody td.semester.multi-value div {
   font-weight: 700;
 }
+/* 학기 셀의 괄호 안내 문구 (희망자만, 택5/택2 등) - 작은 글씨
+   width:0 + min-width:100% → 열 너비 계산에서는 빠지고, 정해진 열 너비 안에서 표시 (좁으면 줄바꿈) */
+.curriculum-table tbody td.semester.multi-value .semester-note {
+  font-size: 0.68em;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+  opacity: 0.85;
+  width: 0;
+  min-width: 100%;
+}
+/* 합계 행의 범위 값 (예: 30~32) - 같은 방식으로 열 너비를 넓히지 않게 */
+.curriculum-table tbody td.semester .semester-range {
+  display: block;
+  width: 0;
+  min-width: 100%;
+  overflow-wrap: anywhere;
+}
 
 .curriculum-table tbody td.completion-type {
   font-size: 1em;
@@ -2449,11 +2467,17 @@ function renderSemesterCell(value, spanAttr = '') {
   // 줄바꿈이 있는 다중 값 (병합셀의 "3 3 3 / 3 3 3 / 3" 같은 경우)
   if (value.includes('\n')) {
     const lines = value.split('\n').map(l => l.trim()).filter(l => l);
+    // "(희망자만)", "(택5/택2)" 같은 괄호 안내 문구는 작은 글씨로 (열 너비가 넓어지지 않게)
     return `<td class="semester multi-value has-value"${spanAttr}>
-      ${lines.map(l => `<div>${l}</div>`).join('')}
+      ${lines.map(l => /^\(.*\)$/.test(l) ? `<div class="semester-note">${l}</div>` : `<div>${l}</div>`).join('')}
     </td>`;
   }
   
+  // 범위 값(예: 합계 행의 "30~32")은 열 너비를 넓히지 않도록 감쌈
+  if (value.includes('~')) {
+    return `<td class="semester has-value"${spanAttr}><span class="semester-range">${value}</span></td>`;
+  }
+
   return `<td class="semester has-value"${spanAttr}>${value}</td>`;
 }
 
