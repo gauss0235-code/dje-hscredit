@@ -1136,7 +1136,10 @@ h1, h2 {
   width: 100%;
   background: white;
   border-radius: 14px;
+  /* 둥근 모서리 자르기: clip은 스크롤 상자를 만들지 않아 머리글 고정(sticky)이 동작
+     (clip을 모르는 옛 브라우저는 hidden → 모서리는 둥글고 머리글만 고정 안 됨) */
   overflow: hidden;
+  overflow: clip;
   box-shadow: 0 4px 16px rgba(74, 138, 184, 0.1);
   border-collapse: separate;
   border-spacing: 0;
@@ -1560,21 +1563,23 @@ h1, h2 {
 }
 .curriculum-info + .sheet-block-title { margin-top: 4px; }
 
-/* 표가 화면보다 넓으면 표만 옆으로 밀어서 봄 */
+/* 표 상자: 따로 스크롤하지 않음 → 머리글이 표 영역(#curriculumTableWrap) 기준으로 고정되고,
+   화면보다 넓은 표는 표 영역 전체를 옆으로 밀어서 봄 */
 .sheet-table-scroll {
-  overflow-x: auto;
   margin-bottom: 18px;
+}
+/* 창 폭 안에 들어오는 표(JS stickTableHeaders가 .fits를 붙임): 둥근 모서리로 자름
+   clip은 스크롤 상자를 만들지 않아 머리글 고정이 유지됨 (clip 미지원 브라우저는 visible) */
+.sheet-table-scroll.fits {
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(74, 138, 184, 0.1);
-  -webkit-overflow-scrolling: touch;
-}
-/* 창 폭 안에 들어오는 표(JS fitSheetTables가 .fits를 붙임): 머리글을 위에 고정
-   clip은 스크롤 상자를 만들지 않아 머리글이 바깥 스크롤 기준으로 붙음 (clip 미지원 브라우저는 visible) */
-.sheet-table-scroll.fits {
   overflow: visible;
   overflow: clip;
 }
-.sheet-table-scroll.fits .sheet-table th {
+.sheet-table-scroll:not(.fits) .sheet-table {
+  box-shadow: 0 4px 16px rgba(74, 138, 184, 0.1);
+}
+.sheet-table th {
   position: sticky;
   z-index: 2;
 }
@@ -2560,6 +2565,7 @@ async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
     // 표 그리기
     renderCurriculumTable(schoolName, grid, merges, sheetUrl);
     embedLoading.classList.add('hidden');
+    stickTableHeaders();
 
   } catch (err) {
     if (seq !== curriculumLoadSeq) return;
@@ -3155,33 +3161,33 @@ function renderVocationalView() {
   const tableWrap = document.getElementById('curriculumTableWrap');
   tableWrap.innerHTML = html;
   tableWrap.scrollTop = 0;
-  fitSheetTables();
+  stickTableHeaders();
 }
 
-// 창 폭 안에 들어오는 표는 스크롤할 때 머리글(학년·학기)을 위에 고정
-// 폭이 넘치는 표(주로 휴대폰)는 표만 옆으로 밀어 보는 상자로 둠 (이때는 고정하지 않음)
-function fitSheetTables() {
+// 편성표 머리글(학년·학기)을 스크롤해도 표 영역 맨 위에 고정 (일반고·직업계고, PC·휴대폰 공통)
+// - 머리글 둘째 줄부터는 윗줄 높이만큼 아래에 붙임
+// - 표 영역 안쪽 여백만큼 위로 올려 붙여야 머리글 위로 본문이 비쳐 보이지 않음
+function stickTableHeaders() {
   const wrap = document.getElementById('curriculumTableWrap');
-  // 표 영역 안쪽 여백만큼 위로 올려 붙여야 머리글 위로 본문이 비쳐 보이지 않음
   const padTop = parseFloat(getComputedStyle(wrap).paddingTop) || 0;
-  for (const box of wrap.querySelectorAll('.sheet-table-scroll')) {
-    box.classList.remove('fits');
-    const table = box.querySelector('.sheet-table');
-    if (!table || table.offsetWidth > box.clientWidth) continue;
-    box.classList.add('fits');
-    // 머리글 둘째 줄부터는 윗줄 높이만큼 아래에 고정
+  for (const table of wrap.querySelectorAll('.curriculum-table, .sheet-table')) {
     let top = -padTop;
     for (const tr of table.tHead.rows) {
       for (const th of tr.cells) th.style.top = `${top}px`;
       top += tr.offsetHeight;
     }
   }
+  // 직업계고 표: 창 폭 안에 들어오면 모서리를 둥글게 자르고, 넘치면 자르지 않고 표 영역 전체를 옆으로 밀어 봄
+  for (const box of wrap.querySelectorAll('.sheet-table-scroll')) {
+    const table = box.querySelector('.sheet-table');
+    box.classList.toggle('fits', !!table && table.offsetWidth <= box.clientWidth);
+  }
 }
-let fitSheetTablesTimer = null;
+let stickTableHeadersTimer = null;
 window.addEventListener('resize', () => {
-  if (!vocationalView) return;
-  clearTimeout(fitSheetTablesTimer);
-  fitSheetTablesTimer = setTimeout(fitSheetTables, 150);
+  if (!document.getElementById('embedOverlay').classList.contains('active')) return;
+  clearTimeout(stickTableHeadersTimer);
+  stickTableHeadersTimer = setTimeout(stickTableHeaders, 150);
 });
 
 // 시트 영역 하나를 표로 그림: 병합은 보이는 행만 세어 rowspan을 다시 계산 (학과로 거른 경우 대비)
