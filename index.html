@@ -778,6 +778,16 @@ h1, h2 {
   grid-template-columns: 1fr;
 }
 
+/* 버튼을 감싸는 칸 (마우스 올림 판정은 움직이지 않는 이 칸 기준) */
+.year-btn-cell {
+  display: flex;
+  min-width: 0;
+}
+.year-btn-cell > .year-btn {
+  flex: 1;
+  min-width: 0;
+}
+
 .year-btn {
   padding: 18px 16px;
   border: 2px solid transparent;
@@ -788,7 +798,11 @@ h1, h2 {
   font-weight: 700;
   color: var(--text-dark);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 마우스 효과: 바뀌는 속성만 전환, 버튼은 자체 레이어로 분리해 떠오를 때 다시 그리지 않고 이동만 */
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease;
+  will-change: transform;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -824,12 +838,13 @@ h1, h2 {
   stroke-linejoin: round;
   transition: transform 0.25s;
 }
+.year-btn-cell:hover .year-btn .icon svg,
 .year-btn:hover .icon svg {
   transform: scale(1.1);
 }
 
 .year-btn .label {
-  font-size: 0.88em;
+  font-size: 1.05em;
   line-height: 1.3;
   text-align: center;
 }
@@ -841,11 +856,13 @@ h1, h2 {
 .year-btn.curriculum .icon svg {
   stroke: var(--sky-blue-dark);
 }
+.year-btn-cell:hover > .year-btn.curriculum,
 .year-btn.curriculum:hover {
   border-color: var(--sky-blue-dark);
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(74, 138, 184, 0.25);
 }
+.year-btn-cell:hover > .year-btn.curriculum::before,
 .year-btn.curriculum:hover::before { opacity: 1; }
 
 .year-btn.subject {
@@ -855,11 +872,13 @@ h1, h2 {
 .year-btn.subject .icon svg {
   stroke: #B45309;
 }
+.year-btn-cell:hover > .year-btn.subject,
 .year-btn.subject:hover {
   border-color: #F59E0B;
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
 }
+.year-btn-cell:hover > .year-btn.subject::before,
 .year-btn.subject:hover::before { opacity: 1; }
 
 /* 비활성 버튼 아이콘 색상 */
@@ -876,10 +895,11 @@ h1, h2 {
   border: 2px solid #E5E7EB;
   border-radius: 10px;
   font-family: inherit;
+  font-size: 1.05em;
   font-weight: 700;
   cursor: pointer;
   margin-top: 8px;
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 }
 .modal .close-btn:hover {
   background: #F3F4F6;
@@ -896,6 +916,7 @@ h1, h2 {
 .year-btn.disabled::before {
   display: none;
 }
+.year-btn-cell:hover > .year-btn.disabled,
 .year-btn.disabled:hover {
   border-color: #D1D5DB;
   transform: none;
@@ -2110,7 +2131,10 @@ function showSchoolModal(school) {
          </button>`;
     }
     
-    return { currBtn, simBtn };
+    // 버튼을 움직이지 않는 칸으로 감쌈: 마우스 올림 판정을 칸 기준으로 해서
+    // 버튼이 3px 떠올라도 마우스가 버튼에서 벗어났다 걸리기를 반복(떨림)하지 않도록
+    const wrapCell = (html) => html ? `<div class="year-btn-cell">${html}</div>` : html;
+    return { currBtn: wrapCell(currBtn), simBtn: wrapCell(simBtn) };
   };
   
   // 다학과 학교(예: 대전외국어고)의 학과별 버튼 영역 생성
@@ -2151,11 +2175,13 @@ function showSchoolModal(school) {
   if (school.curriculum2026Pdf) {
     // PDF 학교(영재고/특성화고/마이스터/각종학교): 2027 PDF 등록 전까지 "준비 중", 시뮬레이터 버튼 없음
     buttons2027Html = `<div class="year-buttons single-btn">
-        <button class="year-btn curriculum disabled" onclick="alert('2027학년도 입학생 자료는 추후 업데이트될 예정입니다.')">
-          <span class="icon">${SVG_CLIPBOARD}</span>
-          <span class="label">교육과정 편성표</span>
-          <span class="status">준비 중</span>
-        </button>
+        <div class="year-btn-cell">
+          <button class="year-btn curriculum disabled" onclick="alert('2027학년도 입학생 자료는 추후 업데이트될 예정입니다.')">
+            <span class="icon">${SVG_CLIPBOARD}</span>
+            <span class="label">교육과정 편성표</span>
+            <span class="status">준비 중</span>
+          </button>
+        </div>
       </div>`;
   } else if (school.departments2027 && school.departments2027.length > 0) {
     // 다학과 학교 (예: 대전외국어고)
