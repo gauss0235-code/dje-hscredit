@@ -3542,7 +3542,7 @@ async function openSubjectGuide(subjectName, opener) {
     const description = getSubjectDescription(subjectName);
     body.innerHTML = description
       ? `<section class="guide-section"><h3 class="guide-section-title">특성</h3><div class="guide-features"><p>${escapeGuideText(description)}</p></div></section>`
-      : `<div class="guide-empty">이 과목은 대전광역시교육청 선택 과목 안내서에 실려 있지 않아요.<br>특수 목적고 과목이거나 교육감 승인 과목일 수 있어요.<br>자세한 내용은 학교 교육과정 안내를 참고해 주세요.</div>`;
+      : `<div class="guide-empty">해당 과목은 대전광역시교육청 선택 과목 안내서에 수록되어 있지 않습니다.<br>특수 목적 고등학교 선택 과목, 전문 교과, 또는 교육감 승인 과목일 수 있으니, 자세한 사항은 학교별 교육과정 안내를 참고해 주시기 바랍니다.</div>`;
   }
   body.scrollTop = 0;
 }
