@@ -2234,7 +2234,7 @@ async function openCurriculumEmbed(schoolName, sheetUrl, year = '2026') {
   } else {
     displayName = `${schoolName}등학교`;
   }
-  document.getElementById('embedTitle').textContent = `${displayName} - ${year}학년도 교육과정 편성표`;
+  document.getElementById('embedTitle').textContent = `${displayName} - ${year}학년도 입학생 교육과정 편성표`;
   embedLoading.classList.remove('hidden');
   tableWrap.innerHTML = '';
   embedOverlay.classList.add('active');
@@ -2624,7 +2624,7 @@ function openPdfEmbed(schoolName, pdfFileId) {
   const frame = document.getElementById('pdfFrame');
   const loading = document.getElementById('pdfLoading');
   
-  titleEl.textContent = `${schoolName} - 2026학년도 교육과정 편성표`;
+  titleEl.textContent = `${schoolName}등학교 - 2026학년도 입학생 교육과정 편성표`;
   
   // 로딩 표시
   if (loading) loading.style.display = 'flex';
