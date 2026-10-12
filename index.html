@@ -3177,13 +3177,33 @@ function renderSheetTable(parsed, b, bodyRows) {
     return `<${tag}${attrs}>${escapeHtml(value)}</${tag}>`;
   };
 
-  // 합계·소계·총계·창의적 체험활동 행은 머리글과 같은 색으로
+  // 과목명 열 범위 (머리글의 '과목명' 칸, 병합됐으면 그 폭까지)
+  let subjectStart = -1, subjectEnd = -1;
+  for (const r of headerRows) {
+    for (let c = 0; c < b.cols && subjectStart < 0; c++) {
+      if (text(r, c).replace(/\s/g, '') !== '과목명') continue;
+      const m = merges.find(m => m.startRowIndex === r && m.startColumnIndex === c);
+      subjectStart = c;
+      subjectEnd = m ? m.endColumnIndex : c + 1;
+    }
+  }
+
+  // 합계 행(머리글과 같은 색):
+  // - 합계·소계·총계·창의적 체험활동 문구가 있는 행
+  // - 과목명 칸을 넘어 옆으로 병합된 이름 칸이 있는 행 (예: '전공 일반'·'전공 실무' 학점 합계,
+  //   '전공 실무 운영 학점', '전문 공통/전공 일반/전공 실무') → 과목 한 줄이 아니라 묶음 합계
   const isSummaryRow = (r) => {
     for (let c = 0; c < Math.min(b.cols, 8); c++) {
       const t = text(r, c).replace(/\s/g, '');
       if (/^(합계|소계|총계)$/.test(t) || /(소계|총계)$/.test(t) || /^(학기별|창의적체험활동)/.test(t)) return true;
     }
-    return false;
+    if (subjectStart < 0) return false;
+    return merges.some(m => m.startRowIndex === r
+      && m.startColumnIndex >= 1
+      && m.endColumnIndex - m.startColumnIndex >= 2
+      && text(r, m.startColumnIndex)
+      && ((m.startColumnIndex < subjectStart && m.endColumnIndex > subjectStart)
+        || (m.startColumnIndex === subjectStart && m.endColumnIndex > subjectEnd)));
   };
 
   let html = '<table class="sheet-table"><thead>';
