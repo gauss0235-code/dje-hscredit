@@ -977,11 +977,11 @@ h1, h2 {
 .embed-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  /* 화면 전체 흐림(backdrop-filter)은 창 안에서 스크롤·클릭할 때마다 다시 계산돼 버벅임의 원인 → 어둡기만 사용 */
+  background: rgba(0, 0, 0, 0.72);
   display: none;
   z-index: 2000;
   padding: 20px;
-  backdrop-filter: blur(8px);
   animation: fadeIn 0.25s ease-out;
 }
 .embed-overlay.active {
@@ -1004,7 +1004,8 @@ h1, h2 {
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
-  animation: embedIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 튕김 없이 부드럽게 감속하며 등장 */
+  animation: embedIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes embedIn {
   from { opacity: 0; transform: scale(0.95); }
@@ -1510,8 +1511,7 @@ h1, h2 {
 }
 
 @media (max-width: 600px) {
-  /* 모바일에선 창이 화면을 꽉 채워 배경 블러가 보이지 않으므로 계산하지 않음 */
-  .embed-overlay { padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .embed-overlay { padding: 0; }
   .embed-container { border-radius: 0; }
   .embed-title { font-size: 0.9em; }
   .embed-action { padding: 6px 10px; font-size: 0.75em; }
@@ -2733,7 +2733,7 @@ function openSimulatorEmbed(schoolName, sheetId, year = '2026') {
   const titleEl = document.getElementById('simulatorTitle');
   const frame = document.getElementById('simulatorFrame');
 
-  titleEl.textContent = `${schoolName}등학교 - ${year}학년도 과목 선택 시뮬레이터`;
+  titleEl.textContent = `${schoolName}등학교 - ${year}학년도 입학생 과목 선택 시뮬레이터`;
   // iframe src 설정 - embed=1 파라미터로 헤더 숨김
   // 2026은 기존 주소 그대로, 그 외 학년도는 year 파라미터 추가
   const yearParam = year === '2026' ? '' : `&year=${year}`;

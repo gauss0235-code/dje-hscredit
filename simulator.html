@@ -3057,6 +3057,7 @@ function getSubjectDescription(subjectName) {
 // ============================================
 // 단계별 렌더링
 // ============================================
+let lastTrackedStep = null;  // 마지막으로 '단계 진입' 통계를 보낸 단계
 function renderStep(scrollToTop = true) {
   // 진행률 업데이트
   const stepNum = state.currentStep;
@@ -3066,8 +3067,9 @@ function renderStep(scrollToTop = true) {
   const stepLabels = ['진로 선택', '1학년 1학기', '1학년 2학기', '2학년 1학기', '2학년 2학기', '3학년 1학기', '3학년 2학기', '결과 확인'];
   document.getElementById('stepLabel').textContent = stepLabels[stepNum - 1] || '';
   
-  // 📊 GA4 이벤트: 시뮬레이터 단계 진입 (이탈 분석용)
-  if (typeof gtag === 'function') {
+  // 📊 GA4 이벤트: 시뮬레이터 단계 진입 (이탈 분석용) - 단계가 바뀔 때만 전송
+  if (typeof gtag === 'function' && stepNum !== lastTrackedStep) {
+    lastTrackedStep = stepNum;
     gtag('event', 'simulator_step', {
       'step_number': stepNum,
       'step_name': stepLabels[stepNum - 1] || '',
@@ -3639,138 +3641,188 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
   `;
 }
 
-function bindSemesterEvents(sem) {
-  // 과목 카드 클릭 (체크/언체크)
-  document.querySelectorAll('.subject-card').forEach(card => {
-    const main = card.querySelector('.subject-main');
-    const isFixed = card.dataset.fixed === 'true';
-    const subjectName = card.dataset.subject;
-    const groupName = card.dataset.group;
-    
-    main.addEventListener('click', (e) => {
-      // 토글 버튼 클릭은 제외
-      if (e.target.closest('.subject-toggle')) return;
-      
-      if (isFixed) return;  // 학교지정은 토글 불가
-      if (!groupName) return;
-      
-      const SKIP_KEY = '__SKIP__';
-      const choices = state.selections[sem.key].choices[groupName];
-      const idx = choices.indexOf(subjectName);
-      
-      if (subjectName === SKIP_KEY) {
-        // === "선택 안함" 가상 옵션 클릭 ===
-        if (idx >= 0) {
-          // 이미 선택됨 → 해제
-          choices.splice(idx, 1);
-        } else {
-          // 새로 선택 → 그 그룹의 다른 모든 선택 해제 + SKIP_KEY 추가
-          choices.length = 0;
-          choices.push(SKIP_KEY);
-        }
-      } else if (idx >= 0) {
-        // 일반 과목 해제
-        choices.splice(idx, 1);
-      } else {
-        // === 일반 과목 선택 ===
-        // SKIP_KEY가 선택되어 있으면 자동 해제
-        const skipIdx = choices.indexOf(SKIP_KEY);
-        if (skipIdx >= 0) {
-          choices.splice(skipIdx, 1);
-        }
-        
-        // === 동일 과목 중복 선택 차단 ===
-        // (다른 학기에 같은 이름의 과목이 학교지정/학생선택으로 있는지)
-        const dupInfo = findDuplicateSemester(subjectName, sem.key);
-        if (dupInfo) {
-          showDuplicateAlert(card, subjectName, dupInfo);
-          return;
-        }
-        
-        // === 선택군 한도 초과 차단 ===
-        const semData = state.curriculumData.semesters[sem.key];
-        const group = semData.choiceGroups[groupName];
-        const subjectCredit = parseFloat(card.dataset.credit) || 0;
-        const realChoiceCount = choices.filter(n => n !== SKIP_KEY).length;
-        
-        if (group) {
-          // 패턴 3 (이문고): takeMax + takeCredit 둘 다 체크
-          if (group.takeMax !== null && group.takeMax !== undefined && realChoiceCount >= group.takeMax) {
-            showLimitAlert(groupName, group.takeMax);
-            return;
-          }
-          // 학점 합계 초과 차단 (이문고 선택군C/D)
-          if (group.takeCredit !== null && group.takeCredit !== undefined) {
-            const currentCredits = choices.reduce((sum, name) => {
-              if (name === SKIP_KEY) return sum;
-              const s = group.subjects.find(x => x.name === name);
-              return sum + (s ? s.credit : 0);
-            }, 0);
-            if (currentCredits + subjectCredit > group.takeCredit) {
-              showCreditLimitAlert(card, groupName, currentCredits + subjectCredit, group.takeCredit);
-              return;
-            }
-          }
-          // 패턴 1: 단순 takeN 체크 (takeMax 없는 경우)
-          if (group.takeN !== null && (group.takeMax === null || group.takeMax === undefined) 
-              && realChoiceCount >= group.takeN) {
-            showLimitAlert(groupName, group.takeN);
-            return;
-          }
-        }
-        
-        // === 국·수·영 상한 초과 차단 ===
-        const subjectArea = card.dataset.area;
-        if (subjectArea === '국어' || subjectArea === '수학' || subjectArea === '영어') {
-          const stats = computeStats(state, state.curriculumData);
-          const effective = getEffectiveTargets(state, state.curriculumData);
-          const currentKME = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
-          const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
-          if (currentKME + subjectCredit > kmeMax) {
-            showKMEAlert(card, currentKME + subjectCredit, kmeMax);
-            return;
-          }
-        }
-        
-        choices.push(subjectName);
-      }
-      
-      // 저장 + 다시 렌더 (스크롤 위치 보존)
-      saveState();
-      renderStep(false);
-    });
-  });
-  
+// 학기 화면의 클릭은 #stepContent 한 곳에서 처리 (이벤트 위임)
+// → 과목을 누를 때 화면 전체를 다시 만들지 않고 바뀐 부분만 고쳐도 클릭이 계속 동작
+let semesterEventsBound = false;
+function bindSemesterEvents() {
+  if (semesterEventsBound) return;
+  semesterEventsBound = true;
+  document.getElementById('stepContent').addEventListener('click', onSemesterContentClick);
+}
+
+function onSemesterContentClick(e) {
+  if (state.currentStep < 2 || state.currentStep > 7) return;
+  // 다른 단계 처리 중 화면이 바뀌어 떨어져 나간 요소의 클릭은 무시 (예: 진로 선택의 '다음' 직후)
+  const content = document.getElementById('stepContent');
+  if (!content.contains(e.target)) return;
+  const sem = SEMESTERS[state.currentStep - 2];
+
   // 설명 토글 버튼
-  document.querySelectorAll('.subject-toggle').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const key = btn.dataset.toggle;
-      if (state.expandedSubjects.has(key)) {
-        state.expandedSubjects.delete(key);
-        btn.classList.remove('open');
-        btn.closest('.subject-card').querySelector('.subject-detail').classList.remove('open');
-      } else {
-        state.expandedSubjects.add(key);
-        btn.classList.add('open');
-        btn.closest('.subject-card').querySelector('.subject-detail').classList.add('open');
-      }
-    });
-  });
-  
-  // 이전 버튼
-  document.getElementById('prevBtn').addEventListener('click', () => {
+  const toggleBtn = e.target.closest('.subject-toggle');
+  if (toggleBtn) {
+    const key = toggleBtn.dataset.toggle;
+    if (state.expandedSubjects.has(key)) {
+      state.expandedSubjects.delete(key);
+      toggleBtn.classList.remove('open');
+      toggleBtn.closest('.subject-card').querySelector('.subject-detail').classList.remove('open');
+    } else {
+      state.expandedSubjects.add(key);
+      toggleBtn.classList.add('open');
+      toggleBtn.closest('.subject-card').querySelector('.subject-detail').classList.add('open');
+    }
+    return;
+  }
+
+  // 이전 / 다음 버튼
+  if (e.target.closest('#prevBtn')) {
     state.currentStep--;
     saveState();
     renderStep();
-  });
-  
-  // 다음 버튼
-  document.getElementById('nextBtn').addEventListener('click', () => {
+    return;
+  }
+  const nextBtn = e.target.closest('#nextBtn');
+  if (nextBtn) {
+    if (nextBtn.disabled) return;
     state.currentStep++;
     saveState();
     renderStep();
-  });
+    return;
+  }
+
+  // 과목 카드 클릭 (체크/언체크)
+  const main = e.target.closest('.subject-main');
+  if (!main) return;
+  const card = main.closest('.subject-card');
+  if (!card) return;
+  const isFixed = card.dataset.fixed === 'true';
+  const subjectName = card.dataset.subject;
+  const groupName = card.dataset.group;
+
+  if (isFixed) return;  // 학교지정은 토글 불가
+  if (!groupName) return;
+
+  const SKIP_KEY = '__SKIP__';
+  const choices = state.selections[sem.key].choices[groupName];
+  const idx = choices.indexOf(subjectName);
+  
+  if (subjectName === SKIP_KEY) {
+    // === "선택 안함" 가상 옵션 클릭 ===
+    if (idx >= 0) {
+      // 이미 선택됨 → 해제
+      choices.splice(idx, 1);
+    } else {
+      // 새로 선택 → 그 그룹의 다른 모든 선택 해제 + SKIP_KEY 추가
+      choices.length = 0;
+      choices.push(SKIP_KEY);
+    }
+  } else if (idx >= 0) {
+    // 일반 과목 해제
+    choices.splice(idx, 1);
+  } else {
+    // === 일반 과목 선택 ===
+    // SKIP_KEY가 선택되어 있으면 자동 해제
+    const skipIdx = choices.indexOf(SKIP_KEY);
+    if (skipIdx >= 0) {
+      choices.splice(skipIdx, 1);
+    }
+    
+    // === 동일 과목 중복 선택 차단 ===
+    // (다른 학기에 같은 이름의 과목이 학교지정/학생선택으로 있는지)
+    const dupInfo = findDuplicateSemester(subjectName, sem.key);
+    if (dupInfo) {
+      showDuplicateAlert(card, subjectName, dupInfo);
+      return;
+    }
+    
+    // === 선택군 한도 초과 차단 ===
+    const semData = state.curriculumData.semesters[sem.key];
+    const group = semData.choiceGroups[groupName];
+    const subjectCredit = parseFloat(card.dataset.credit) || 0;
+    const realChoiceCount = choices.filter(n => n !== SKIP_KEY).length;
+    
+    if (group) {
+      // 패턴 3 (이문고): takeMax + takeCredit 둘 다 체크
+      if (group.takeMax !== null && group.takeMax !== undefined && realChoiceCount >= group.takeMax) {
+        showLimitAlert(groupName, group.takeMax);
+        return;
+      }
+      // 학점 합계 초과 차단 (이문고 선택군C/D)
+      if (group.takeCredit !== null && group.takeCredit !== undefined) {
+        const currentCredits = choices.reduce((sum, name) => {
+          if (name === SKIP_KEY) return sum;
+          const s = group.subjects.find(x => x.name === name);
+          return sum + (s ? s.credit : 0);
+        }, 0);
+        if (currentCredits + subjectCredit > group.takeCredit) {
+          showCreditLimitAlert(card, groupName, currentCredits + subjectCredit, group.takeCredit);
+          return;
+        }
+      }
+      // 패턴 1: 단순 takeN 체크 (takeMax 없는 경우)
+      if (group.takeN !== null && (group.takeMax === null || group.takeMax === undefined) 
+          && realChoiceCount >= group.takeN) {
+        showLimitAlert(groupName, group.takeN);
+        return;
+      }
+    }
+    
+    // === 국·수·영 상한 초과 차단 ===
+    const subjectArea = card.dataset.area;
+    if (subjectArea === '국어' || subjectArea === '수학' || subjectArea === '영어') {
+      const stats = computeStats(state, state.curriculumData);
+      const effective = getEffectiveTargets(state, state.curriculumData);
+      const currentKME = stats.areaCredits['국어'] + stats.areaCredits['수학'] + stats.areaCredits['영어'];
+      const kmeMax = calcKMECapacity(effective.totalCurriculumCredits);
+      if (currentKME + subjectCredit > kmeMax) {
+        showKMEAlert(card, currentKME + subjectCredit, kmeMax);
+        return;
+      }
+    }
+    
+    choices.push(subjectName);
+  }
+  
+  // 저장 + 바뀐 부분만 갱신 (스크롤 위치·마우스 상태 유지, 화면 전체를 다시 만들지 않음)
+  saveState();
+  refreshSemesterStep(sem);
+}
+
+// 현재 학기 화면을 새로 그린 결과와 비교해 바뀐 노드만 고침
+function refreshSemesterStep(sem) {
+  const content = document.getElementById('stepContent');
+  const tpl = document.createElement('template');
+  tpl.innerHTML = renderSemesterStep(sem);
+  morphChildren(content, tpl.content);
+  updateStatusSummary(state.currentStep);
+}
+
+// 간단한 DOM 비교 갱신: 같은 위치의 노드끼리 비교해 속성·글자·자식만 맞춤
+function morphChildren(oldParent, newParent) {
+  const oldKids = Array.from(oldParent.childNodes);
+  const newKids = Array.from(newParent.childNodes);
+  for (let i = 0; i < newKids.length; i++) {
+    if (i < oldKids.length) morphNode(oldKids[i], newKids[i]);
+    else oldParent.appendChild(newKids[i]);
+  }
+  for (let i = newKids.length; i < oldKids.length; i++) oldKids[i].remove();
+}
+
+function morphNode(oldNode, newNode) {
+  if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
+    oldNode.replaceWith(newNode);
+    return;
+  }
+  if (oldNode.nodeType !== Node.ELEMENT_NODE) {
+    if (oldNode.nodeValue !== newNode.nodeValue) oldNode.nodeValue = newNode.nodeValue;
+    return;
+  }
+  for (const attr of Array.from(oldNode.attributes)) {
+    if (!newNode.hasAttribute(attr.name)) oldNode.removeAttribute(attr.name);
+  }
+  for (const attr of Array.from(newNode.attributes)) {
+    if (oldNode.getAttribute(attr.name) !== attr.value) oldNode.setAttribute(attr.name, attr.value);
+  }
+  morphChildren(oldNode, newNode);
 }
 
 function calculateSemesterCredit(semKey) {
