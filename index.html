@@ -1524,14 +1524,11 @@ h1, h2 {
   color: white;
 }
 
-/* 학과 버튼: 많으면 옆으로 밀어서 봄 */
+/* 학과 버튼: PC는 여러 줄로 모두 보이게, 휴대폰은 한 줄로 옆으로 밀어서 봄 (아래 600px 규칙) */
 .dept-filter {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
 }
 .dept-chip {
   flex-shrink: 0;
@@ -1570,6 +1567,16 @@ h1, h2 {
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(74, 138, 184, 0.1);
   -webkit-overflow-scrolling: touch;
+}
+/* 창 폭 안에 들어오는 표(JS fitSheetTables가 .fits를 붙임): 머리글을 위에 고정
+   clip은 스크롤 상자를 만들지 않아 머리글이 바깥 스크롤 기준으로 붙음 (clip 미지원 브라우저는 visible) */
+.sheet-table-scroll.fits {
+  overflow: visible;
+  overflow: clip;
+}
+.sheet-table-scroll.fits .sheet-table th {
+  position: sticky;
+  z-index: 2;
 }
 .sheet-table {
   width: 100%;
@@ -1639,6 +1646,13 @@ h1, h2 {
 @media (max-width: 600px) {
   .sheet-nav { padding: 8px 10px; gap: 6px; }
   .sheet-tab { font-size: 0.85em; padding: 6px 12px; }
+  .dept-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 3px 3px 4px;  /* 키보드 포커스 테두리가 잘리지 않게 */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
   .dept-chip { font-size: 0.78em; padding: 5px 10px; }
   .sheet-block-title { font-size: 0.95em; margin: 16px 0 8px; }
   .sheet-table { min-width: 600px; font-size: 0.72em; }
@@ -2010,7 +2024,7 @@ footer {
     <!-- 직업계고 편성표 전용: 시트 탭 + 학과 선택 (일반고 편성표에서는 숨김) -->
     <div class="sheet-nav" id="sheetNav" hidden>
       <div class="sheet-tabs" id="sheetTabs" role="tablist"></div>
-      <div class="dept-filter" id="deptFilter"></div>
+      <div class="dept-filter" id="deptFilter" role="group" aria-label="학과 선택"></div>
     </div>
     <div class="embed-frame-wrap">
       <div class="embed-loading" id="embedLoading">
@@ -3039,18 +3053,56 @@ function collectDeptLabels(schoolTab) {
   return labels;
 }
 
-// 탭 안에 나오는 학과 목록 (나오는 순서대로)
-function listDepts(parsed) {
-  const depts = new Map();
+// 학과 버튼 목록과 '이 묶음(A열)이 고른 학과에 해당하는가' 판단 기준
+// 시트의 A열 묶음이 학과가 아닐 때가 있음 (예: '1학년 전학과 공통과정', '소프트웨어개발과/인공지능소프트웨어과')
+// → 학과현황 표의 학과 이름으로 연결:
+//   - 학과 자체, 학과의 과정(학과명+괄호, 예: 전자과(도제반)) → 학과 버튼
+//   - 학과 이름이 여러 개 든 묶음 → 그 학과들을 고를 때 함께 보임
+//   - 학과 이름이 없는 묶음(학년 공통·선택 등) → 모든 학과에서 함께 보임
+// 학과현황 이름과 맞는 묶음이 하나도 없는 학교는 묶음 이름을 그대로 버튼으로 씀
+function buildDeptIndex(parsed, deptLabels) {
+  const groups = new Map();  // 묶음 키 → 시트 글자 (나오는 순서대로)
   for (const b of parsed.blocks) {
     for (const name of b.deptOf.values()) {
       const key = deptKey(name);
-      if (!key || /^(합계|소계|총계)$/.test(key) || depts.has(key)) continue;
-      // 시트 칸 폭 때문에 넣은 줄바꿈은 붙여 씀 ('소프트\n웨어과' → '소프트웨어과', '전자과\n(도제반)' → '전자과 (도제반)')
-      depts.set(key, name.replace(/\n(?=\()/g, ' ').replace(/\s*\n\s*/g, ''));
+      if (key && !/^(합계|소계|총계)$/.test(key) && !groups.has(key)) groups.set(key, name);
     }
   }
-  return [...depts].map(([key, label]) => ({ key, label }));
+  // 버튼 이름: 학과현황 표기 우선, 없으면 칸 폭 때문에 넣은 줄바꿈만 붙여 씀
+  // ('소프트\n웨어과' → '소프트웨어과', '전자과\n(도제반)' → '전자과 (도제반)', '3학년 \n선택' → '3학년 선택')
+  const chipLabel = (key, name) => deptLabels[key]
+    || name.replace(/\n(?=\()/g, ' ').replace(/[ \t]+\n[ \t]*|\n[ \t]+/g, ' ').replace(/\n/g, '');
+
+  const real = Object.keys(deptLabels);
+  const own = new Map();     // 묶음 키 → 학과 버튼 키
+  const shared = new Map();  // 묶음 키 → 해당 학과 키들 (비면 모든 학과 공통)
+  for (const key of groups.keys()) {
+    if (real.includes(key) || real.some(k => key.startsWith(k + '('))) {
+      own.set(key, key);
+    } else {
+      const fullName = key.length >= 2 && real.find(k => k.startsWith(key));  // '바이오제약생명' → '바이오제약생명과'
+      if (fullName) own.set(key, fullName);
+      else shared.set(key, real.filter(k => key.includes(k)));
+    }
+  }
+
+  if (own.size === 0) {
+    return {
+      chips: [...groups].map(([key, name]) => ({ key, label: chipLabel(key, name) })),
+      matches: (groupKey, dept) => groupKey === dept,
+    };
+  }
+  const chips = [];
+  for (const chip of new Set(own.values())) chips.push({ key: chip, label: chipLabel(chip, groups.get(chip) || chip) });
+  const baseOf = (chip) => real.find(k => chip === k || chip.startsWith(k + '(')) || chip;
+  return {
+    chips,
+    matches: (groupKey, dept) => {
+      if (own.has(groupKey)) return own.get(groupKey) === dept;
+      const depts = shared.get(groupKey) || [];
+      return depts.length === 0 || depts.includes(baseOf(dept));
+    },
+  };
 }
 
 function renderVocationalView() {
@@ -3064,12 +3116,13 @@ function renderVocationalView() {
     <button type="button" class="sheet-tab${t.key === view.activeTab ? ' active' : ''}" role="tab" aria-selected="${t.key === view.activeTab}" data-tab="${t.key}">${t.label}</button>`).join('');
 
   // 학과 선택 (학과가 2개 이상인 전문교과·학습영역 탭만)
-  const depts = tabDef.byDept ? listDepts(parsed) : [];
+  const deptIndex = tabDef.byDept ? buildDeptIndex(parsed, view.deptLabels) : null;
+  const depts = deptIndex ? deptIndex.chips : [];
   if (view.dept && !depts.some(d => d.key === view.dept)) view.dept = '';
   const deptFilter = document.getElementById('deptFilter');
   deptFilter.hidden = depts.length < 2;
   deptFilter.innerHTML = depts.length < 2 ? '' : [{ key: '', label: '전체' }, ...depts].map(d => `
-    <button type="button" class="dept-chip${d.key === view.dept ? ' active' : ''}" data-dept="${escapeHtml(d.key)}">${escapeHtml(view.deptLabels[d.key] || d.label)}</button>`).join('');
+    <button type="button" class="dept-chip${d.key === view.dept ? ' active' : ''}" aria-pressed="${d.key === view.dept}" data-dept="${escapeHtml(d.key)}">${escapeHtml(d.label)}</button>`).join('');
 
   // 학교 정보 막대 + 표들
   const meta = view.tabs.school.meta;
@@ -3086,7 +3139,7 @@ function renderVocationalView() {
   for (const b of parsed.blocks) {
     const bodyRows = [];
     for (let r = b.bodyStart; r < b.bodyEnd; r++) {
-      if (view.dept && deptKey(b.deptOf.get(r) || '') !== view.dept) continue;
+      if (view.dept && !deptIndex.matches(deptKey(b.deptOf.get(r) || ''), view.dept)) continue;
       bodyRows.push(r);
     }
     const table = renderSheetTable(parsed, b, bodyRows, view.activeTab === 'school');
@@ -3102,7 +3155,34 @@ function renderVocationalView() {
   const tableWrap = document.getElementById('curriculumTableWrap');
   tableWrap.innerHTML = html;
   tableWrap.scrollTop = 0;
+  fitSheetTables();
 }
+
+// 창 폭 안에 들어오는 표는 스크롤할 때 머리글(학년·학기)을 위에 고정
+// 폭이 넘치는 표(주로 휴대폰)는 표만 옆으로 밀어 보는 상자로 둠 (이때는 고정하지 않음)
+function fitSheetTables() {
+  const wrap = document.getElementById('curriculumTableWrap');
+  // 표 영역 안쪽 여백만큼 위로 올려 붙여야 머리글 위로 본문이 비쳐 보이지 않음
+  const padTop = parseFloat(getComputedStyle(wrap).paddingTop) || 0;
+  for (const box of wrap.querySelectorAll('.sheet-table-scroll')) {
+    box.classList.remove('fits');
+    const table = box.querySelector('.sheet-table');
+    if (!table || table.offsetWidth > box.clientWidth) continue;
+    box.classList.add('fits');
+    // 머리글 둘째 줄부터는 윗줄 높이만큼 아래에 고정
+    let top = -padTop;
+    for (const tr of table.tHead.rows) {
+      for (const th of tr.cells) th.style.top = `${top}px`;
+      top += tr.offsetHeight;
+    }
+  }
+}
+let fitSheetTablesTimer = null;
+window.addEventListener('resize', () => {
+  if (!vocationalView) return;
+  clearTimeout(fitSheetTablesTimer);
+  fitSheetTablesTimer = setTimeout(fitSheetTables, 150);
+});
 
 // 시트 영역 하나를 표로 그림: 병합은 보이는 행만 세어 rowspan을 다시 계산 (학과로 거른 경우 대비)
 // mergedLabelTotals: 옆으로 병합된 이름 칸이 있는 행도 합계 행으로 볼지 ('학교 전체' 탭만)
@@ -3169,7 +3249,8 @@ function renderSheetTable(parsed, b, bodyRows, mergedLabelTotals = false) {
       if (c === 0) {
         classes.push('first-col');
         // '보통교과'처럼 짧은 글자가 여러 행에 걸치면 세로쓰기
-        if (rowSpan >= 4 && !value.includes('\n') && value.replace(/\s/g, '').length <= 5) classes.push('vertical');
+        // (학과 이름 열은 학과마다 방향이 섞이지 않게 항상 가로쓰기)
+        if (b.deptOf.size === 0 && rowSpan >= 4 && !value.includes('\n') && value.replace(/\s/g, '').length <= 5) classes.push('vertical');
       }
       if (semCols.has(c)) classes.push(value ? 'semester has-value' : 'semester');
       if (textCols.has(c)) classes.push('text-left');
@@ -3197,7 +3278,7 @@ function renderSheetTable(parsed, b, bodyRows, mergedLabelTotals = false) {
   const isSummaryRow = (r) => {
     for (let c = 0; c < Math.min(b.cols, 8); c++) {
       const t = text(r, c).replace(/\s/g, '');
-      if (/^(합계|소계|총계)$/.test(t) || /(소계|총계)$/.test(t) || /^(학기별|창의적체험활동)/.test(t)) return true;
+      if (/(합계|소계|총계)$/.test(t) || /^(학기별|창의적체험활동)/.test(t)) return true;
     }
     if (!mergedLabelTotals || subjectStart < 0) return false;
     return merges.some(m => m.startRowIndex === r
@@ -3228,15 +3309,18 @@ function renderSheetTable(parsed, b, bodyRows, mergedLabelTotals = false) {
 document.getElementById('sheetNav').addEventListener('click', (e) => {
   if (!vocationalView) return;
   const tab = e.target.closest('.sheet-tab');
+  // 버튼을 새로 그린 뒤 같은 버튼에 포커스를 되돌림 (키보드로 차례로 고를 수 있게)
   if (tab && tab.dataset.tab !== vocationalView.activeTab) {
     vocationalView.activeTab = tab.dataset.tab;
     renderVocationalView();
+    [...document.querySelectorAll('#sheetTabs .sheet-tab')].find(b => b.dataset.tab === vocationalView.activeTab)?.focus();
     return;
   }
   const chip = e.target.closest('.dept-chip');
   if (chip && chip.dataset.dept !== vocationalView.dept) {
     vocationalView.dept = chip.dataset.dept;
     renderVocationalView();
+    [...document.querySelectorAll('#deptFilter .dept-chip')].find(b => b.dataset.dept === vocationalView.dept)?.focus();
   }
 });
 
