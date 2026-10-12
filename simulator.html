@@ -346,6 +346,10 @@ body {
   flex-wrap: wrap;
   gap: 8px;
 }
+.semester-summary .semester-summary-label {
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+}
 .semester-summary .credit-status {
   font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
@@ -3569,7 +3573,7 @@ function renderSemesterStep(sem) {
       </div>
       
       <div class="semester-summary">
-        <div>현재 ${sem.label} 학점</div>
+        <div class="semester-summary-label">현재 ${sem.label} 학점</div>
         <div class="credit-status ${creditStatusClass}">${creditStatusHTML}</div>
       </div>
       
