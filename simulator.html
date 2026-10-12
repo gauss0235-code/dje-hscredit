@@ -688,6 +688,7 @@ body {
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
+  word-break: keep-all;  /* 좁은 화면에서 '윤 / 리'처럼 낱말 중간에서 끊기지 않게 */
 }
 
 .subject-recommend-mark {
@@ -794,47 +795,310 @@ body {
   flex-shrink: 0;
 }
 
-.subject-toggle {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: var(--text-mid);
-  display: flex;
+/* 과목 설명 창 여는 버튼 */
+.subject-info-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
-  transition: transform 0.2s;
+  padding: 5px 10px;
+  border: 1.5px solid #D6E6F2;
+  border-radius: 999px;
+  background: white;
+  color: var(--sky-blue-dark);
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 0.78em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
-.subject-toggle.open {
-  transform: rotate(180deg);
+.subject-info-btn:hover {
+  background: #F0F9FF;
+  border-color: var(--sky-blue);
 }
-.subject-toggle svg {
-  width: 18px;
-  height: 18px;
+.subject-info-btn svg {
+  width: 14px;
+  height: 14px;
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* 과목 설명 (펼쳐졌을 때) */
-.subject-detail {
-  border-top: 1px solid #F0F4F8;
-  padding: 14px 16px;
-  font-size: 0.88em;
+/* ============ 과목 설명 창 (선택 과목 안내서) ============ */
+/* --guide-color / --guide-soft / --guide-deep: 교과별 색 (JS에서 안내서 쪽 색으로 지정) */
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  animation: shareModalFade 0.2s ease-out;
+}
+.guide-overlay[hidden] { display: none; }
+.guide-modal {
+  --guide-color: #4A8AB8;
+  --guide-soft: #EAF3FA;
+  --guide-deep: #2F6A94;
+  width: 100%;
+  max-width: 760px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: shareModalSlide 0.25s ease-out;
+}
+.guide-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 16px 24px;
+  background: var(--guide-soft);
+  border-bottom: 3px solid var(--guide-color);
+}
+.guide-head-text { flex: 1; min-width: 0; }
+.guide-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.guide-chip {
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 0.78em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--guide-deep);
+  color: white;
+}
+.guide-chip.outline {
+  background: white;
+  color: var(--guide-deep);
+  border: 1.5px solid var(--guide-color);
+}
+.guide-title {
+  margin: 0;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 1.5em;
+  line-height: 1.3;
+  color: var(--text-dark);
+  word-break: keep-all;
+}
+.guide-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: white;
   color: var(--text-mid);
-  line-height: 1.65;
-  background: rgba(248, 250, 252, 0.6);
-  display: none;
+  font-size: 1.05em;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
-.subject-detail.open {
-  display: block;
+.guide-close:hover { color: var(--text-dark); background: #F3F4F6; }
+.guide-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+.guide-section + .guide-section { margin-top: 22px; }
+.guide-section-title {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--guide-deep);
+  color: white;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 0.92em;
+}
+.guide-features {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--beige);
+  border: 1px solid #F3E2B8;
+  color: var(--text-dark);
+  font-size: 0.93em;
+  line-height: 1.75;
+  word-break: keep-all;
+}
+.guide-features p { margin: 0; }
+.guide-features p + p { margin-top: 8px; }
+
+/* 내용 체계 표 */
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86em;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+/* 열 폭: 영역은 좁게, 내용 요소는 짧은 항목이 줄바꿈되지 않을 만큼 */
+.guide-table th:nth-child(1):not(:last-child) { width: 17%; }
+.guide-table th:nth-child(3) { width: 30%; }
+.guide-table th {
+  padding: 7px 8px;
+  background: var(--guide-deep);
+  color: white;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  border: 1px solid white;
+}
+.guide-table td {
+  padding: 9px 10px;
+  vertical-align: middle;
+  color: var(--text-dark);
+  border-bottom: 1px solid #E5E7EB;
+}
+.guide-table td + td { border-left: 1px solid #E5E7EB; }
+.guide-table td.guide-area {
+  width: 18%;
+  text-align: center;
+  background: var(--beige);
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  white-space: pre-line;
+}
+.guide-table td.text-cell { white-space: pre-line; }
+.guide-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide-list li {
+  position: relative;
+  padding-left: 11px;
+}
+.guide-list li + li { margin-top: 3px; }
+.guide-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.68em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--guide-color);
 }
 
-.subject-detail-empty {
-  color: #9CA3AF;
-  font-style: italic;
+/* 과목 관련 정보: 평가 정보·구분·관련 학과·관련 직업 */
+.guide-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--guide-soft);
+}
+/* 옆 카드보다 내용이 짧으면 제목 아래 남는 공간의 가운데에 */
+.guide-card > table,
+.guide-card > p { margin-top: auto; margin-bottom: auto; }
+.guide-card-title {
+  margin: 0 0 8px;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  font-size: 0.88em;
+  color: var(--guide-deep);
+  text-align: center;
+}
+.guide-card-text {
+  margin: 0;
+  font-size: 0.86em;
+  line-height: 1.65;
+  color: var(--text-dark);
+  word-break: keep-all;
+}
+.guide-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: white;
+  font-size: 0.78em;
+  text-align: center;
+  word-break: keep-all;
+}
+.guide-mini-table th {
+  padding: 5px 2px;
+  background: var(--guide-deep);
+  color: white;
+  font-family: 'Paperlogy', sans-serif;
+  font-weight: 700;
+  line-height: 1.25;
+  border: 1px solid white;
+}
+.guide-mini-table td {
+  padding: 6px 2px;
+  border: 1px solid #E5E7EB;
+  color: var(--text-dark);
+  vertical-align: middle;
+  line-height: 1.45;
+}
+.guide-mini-table .guide-block + .guide-block {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #D1D5DB;
+}
+.guide-mini-table th small {
+  display: block;
   font-size: 0.85em;
+  font-weight: 600;
+  opacity: 0.9;
+}
+/* 구분 그림에서 지금 보고 있는 과목 */
+.guide-current {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--guide-deep);
+  color: white;
+  font-weight: 800;
+}
+.guide-note {
+  margin-top: 6px;
+  font-size: 0.92em;
+  color: var(--text-mid);
+}
+.guide-card-text a {
+  color: var(--guide-deep);
+  word-break: break-all;
+}
+.guide-source {
+  margin-top: 18px;
+  font-size: 0.75em;
+  color: #9CA3AF;
+  text-align: right;
+}
+.guide-empty {
+  padding: 24px 8px;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .subject-info-btn { padding: 5px 8px; }
+  .guide-overlay { padding: 0; align-items: stretch; }
+  .guide-modal { max-width: none; border-radius: 0; }
+  .guide-head { padding: 14px 14px 12px 16px; }
+  .guide-title { font-size: 1.25em; }
+  .guide-body { padding: 16px 14px 20px; }
+  .guide-features { font-size: 0.88em; }
+  .guide-table { font-size: 0.8em; }
+  .guide-table td { padding: 7px 6px; }
+  .guide-info-grid { grid-template-columns: 1fr; }
 }
 
 /* 선택 그룹 (선택군 A, B...) */
@@ -1570,6 +1834,20 @@ body {
 <!-- 토스트 알림 -->
 <div class="toast-alert" id="toastAlert"></div>
 
+<!-- 과목 설명 창 (2022 개정 교육과정 선택 과목 안내서) -->
+<div class="guide-overlay" id="guideOverlay" hidden>
+  <div class="guide-modal" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="guide-head">
+      <div class="guide-head-text">
+        <div class="guide-chips" id="guideChips"></div>
+        <h2 class="guide-title" id="guideTitle"></h2>
+      </div>
+      <button type="button" class="guide-close" id="guideClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="guide-body" id="guideBody"></div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // 시뮬레이터 메인 로직
@@ -1597,8 +1875,7 @@ const state = {
   career: null,    // '인문', '자연', '예체능', '모르겠음'
   selections: {},  // {semesterKey: [subjectName, ...]}
   curriculumData: null,  // 편성표 분석 결과
-  subjectLookup: null,    // PDF에서 추출한 과목 설명
-  expandedSubjects: new Set(),  // 펼쳐진 과목들
+  subjectLookup: null,    // PDF에서 추출한 과목 설명 (안내서에 없는 과목의 설명 창 대체 문구)
   fromShare: false,  // 공유 링크로 접속한 경우
 };
 
@@ -1808,6 +2085,7 @@ const ICONS = {
   result: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   check: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
   chevron: '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>',
+  book: '<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
   arrowRight: '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
   arrowLeft: '<svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 19 5"/></svg>',
   download: '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
@@ -1944,6 +2222,9 @@ async function init() {
 
     // 3. 첫 단계 (진로 선택) 표시
     renderStep();
+
+    // 4. 과목 설명 창 자료는 화면이 뜬 뒤 미리 받아 둠 (처음 '설명'을 눌러도 바로 열리게)
+    setTimeout(loadSubjectGuide, 1000);
   } catch (err) {
     showError('편성표를 불러올 수 없어요', err.message || '오류가 발생했습니다.');
   }
@@ -3056,9 +3337,232 @@ function getSubjectDescription(subjectName) {
       return val.description;
     }
   }
-  
+
   return null;
 }
+
+// ============================================
+// 과목 설명 창 (2022 개정 교육과정 선택 과목 안내서를 옮긴 subject_guide.json)
+// ============================================
+function escapeGuideText(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// 과목명 비교용: 띄어쓰기·가운뎃점 모양·로마 숫자(Ⅰ, I) 차이를 없앰
+function guideKey(name) {
+  return String(name)
+    .replace(/\s/g, '')
+    .replace(/[•∙・]/g, '·')
+    .replace(/Ⅰ/g, '1').replace(/Ⅱ/g, '2').replace(/Ⅲ/g, '3')
+    .replace(/([가-힣])(III|II|I)(?![A-Za-z])/g, (m, ch, r) => ch + ({ I: '1', II: '2', III: '3' })[r]);
+}
+
+let subjectGuideIndex = null;    // 비교용 과목명 → 안내서 항목
+let subjectGuidePromise = null;
+function loadSubjectGuide() {
+  if (!subjectGuidePromise) {
+    subjectGuidePromise = fetch('subject_guide.json')
+      .then(r => (r.ok ? r.json() : { subjects: [] }))
+      .then(data => {
+        const index = {};
+        for (const s of data.subjects || []) {
+          for (const n of (s.names && s.names.length ? s.names : [s.title])) index[guideKey(n)] = s;
+        }
+        subjectGuideIndex = index;
+        return index;
+      })
+      .catch(() => {
+        subjectGuidePromise = null;  // 다음에 다시 시도
+        return {};
+      });
+  }
+  return subjectGuidePromise;
+}
+
+// 교과 색에서 연한 배경색·진한 글자색을 만듦 (흰 글자가 잘 보이도록 진한 색은 30% 어둡게)
+function mixHex(hex, target, ratio) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return '#' + rgb.map((v, i) => Math.round(v + (target[i] - v) * ratio).toString(16).padStart(2, '0')).join('');
+}
+
+function renderGuideCellContent(cell) {
+  const note = cell.note ? `<div class="guide-note">${escapeGuideText(cell.note)}</div>` : '';
+  if (cell.items && cell.items.length) {
+    return `<ul class="guide-list">${cell.items.map(it => `<li>${escapeGuideText(it)}</li>`).join('')}</ul>${note}`;
+  }
+  return escapeGuideText(cell.text || '') + note;
+}
+
+// 글 속 주소(http://…)는 새 창 링크로
+function linkifyGuideText(text) {
+  return escapeGuideText(text).replace(/https?:\/\/[^\s)]+/g, url => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+}
+
+function renderGuideContentTable(content) {
+  if (!content || !content.rows || content.rows.length === 0) return '';
+  const header = content.header || [];
+  const areaFirst = /영역/.test(header[0] || '');
+  // 병합으로 가려진 칸을 건너뛰며 각 칸이 몇 번째 열에서 시작하는지 계산 (첫 열 = 영역)
+  const taken = [];
+  const rowsHtml = content.rows.map((row, r) => {
+    taken[r] = taken[r] || [];
+    let col = 0;
+    return `<tr>${row.map(cell => {
+      while (taken[r][col]) col++;
+      const rs = cell.rowspan || 1, cs = cell.colspan || 1;
+      for (let dr = 0; dr < rs; dr++) {
+        taken[r + dr] = taken[r + dr] || [];
+        for (let dc = 0; dc < cs; dc++) taken[r + dr][col + dc] = true;
+      }
+      const cls = areaFirst && col === 0 ? 'guide-area' : (cell.items && cell.items.length ? '' : 'text-cell');
+      col += cs;
+      return `<td${cls ? ` class="${cls}"` : ''}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}>${renderGuideCellContent(cell)}</td>`;
+    }).join('')}</tr>`;
+  }).join('');
+  return `
+    <section class="guide-section">
+      <h3 class="guide-section-title">내용 체계</h3>
+      <table class="guide-table">
+        ${header.length ? `<thead><tr>${header.map(h => `<th>${escapeGuideText(h)}</th>`).join('')}</tr></thead>` : ''}
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </section>`;
+}
+
+// 구분 그림: 안내서 쪽마다 머리글이 다름
+//  - '공통 과목 | 선택 과목(일반·진로·융합)'
+//  - '중학교 공통(기초소양) | 고등학교(일반·진로·융합)' (기술·가정, 정보, 교양 등)
+//  - '고등학교(일반·진로·융합)'만 (체육, 예술 등) / '일반·진로·융합'만 (제2외국어·한문)
+function renderGuideHierarchy(h, labels, currentNames) {
+  if (!h) return '';
+  labels = labels || { common: '공통 과목', general: '일반', career: '진로', fusion: '융합' };
+  const current = new Set(currentNames.map(guideKey));
+  const column = (blocks, highlight = true) => (blocks || []).map(block => `<div class="guide-block">${block.map(name =>
+    highlight && current.has(guideKey(name)) ? `<span class="guide-current">${escapeGuideText(name)}</span>` : escapeGuideText(name)).join('<br>')}</div>`).join('');
+  const sub = (label) => escapeGuideText(label).replace(/\s*\((.+)\)$/, '<small>($1)</small>');  // '일반 (학문별 주요내용)' → 작은 글씨 괄호
+  const hasCommon = !!labels.common;
+  const middleSchool = hasCommon && /^중학교/.test(labels.common);
+  const highSchoolTop = /\(/.test(labels.general || '') ? '고등학교' : '선택 과목';
+  const selHead = `<th colspan="3">${highSchoolTop}</th>`;
+  const selCols = `<th>${sub(labels.general || '일반')}</th><th>${sub(labels.career || '진로')}</th><th>${sub(labels.fusion || '융합')}</th>`;
+  const head = !hasCommon
+    ? `<tr>${selHead}</tr><tr>${selCols}</tr>`
+    : middleSchool
+      ? `<tr><th>중학교</th>${selHead}</tr><tr><th>${sub(labels.common.replace(/^중학교\s*/, ''))}</th>${selCols}</tr>`
+      : `<tr><th rowspan="2">${sub(labels.common)}</th>${selHead}</tr><tr>${selCols}</tr>`;
+  return `
+    <div class="guide-card">
+      <h4 class="guide-card-title">구분</h4>
+      <table class="guide-mini-table">
+        <thead>${head}</thead>
+        <tbody><tr>${hasCommon ? `<td>${column(h.common, !middleSchool)}</td>` : ''}<td>${column(h.general)}</td><td>${column(h.career)}</td><td>${column(h.fusion)}</td></tr></tbody>
+      </table>
+    </div>`;
+}
+
+function renderSubjectGuide(entry) {
+  const features = (entry.features || '').split(/\n{2,}/).filter(Boolean);
+  const evaluation = entry.evaluation || [];
+  return `
+    ${features.length ? `
+    <section class="guide-section">
+      <h3 class="guide-section-title">특성</h3>
+      <div class="guide-features">${features.map(p => `<p>${escapeGuideText(p)}</p>`).join('')}</div>
+    </section>` : ''}
+    ${renderGuideContentTable(entry.content)}
+    <section class="guide-section">
+      <h3 class="guide-section-title">과목 관련 정보</h3>
+      <div class="guide-info-grid">
+        ${evaluation.length ? `
+        <div class="guide-card">
+          <h4 class="guide-card-title">평가 정보</h4>
+          <table class="guide-mini-table">
+            <thead><tr>${evaluation.map(e => `<th>${escapeGuideText(e.label)}</th>`).join('')}</tr></thead>
+            <tbody><tr>${evaluation.map(e => `<td>${escapeGuideText(e.value)}</td>`).join('')}</tr></tbody>
+          </table>
+        </div>` : ''}
+        ${renderGuideHierarchy(entry.hierarchy, entry.hierarchy_labels, entry.names || [entry.title])}
+        ${entry.majors ? `
+        <div class="guide-card">
+          <h4 class="guide-card-title">관련 학과 및 계열</h4>
+          <p class="guide-card-text">${escapeGuideText(entry.majors)}</p>
+        </div>` : ''}
+        ${entry.jobs ? `
+        <div class="guide-card">
+          <h4 class="guide-card-title">관련 직업</h4>
+          <p class="guide-card-text">${escapeGuideText(entry.jobs)}</p>
+        </div>` : ''}
+        ${entry.sites ? `
+        <div class="guide-card">
+          <h4 class="guide-card-title">관련 사이트</h4>
+          <p class="guide-card-text">${linkifyGuideText(entry.sites)}</p>
+        </div>` : ''}
+      </div>
+    </section>
+    <div class="guide-source">출처: 2022 개정 교육과정 고등학교 선택 과목 안내서${entry.page ? ` ${entry.page}쪽` : ''}</div>`;
+}
+
+let guideOpener = null;  // 창을 닫으면 포커스를 돌려줄 '설명' 버튼
+async function openSubjectGuide(subjectName, opener) {
+  guideOpener = opener || null;
+  const overlay = document.getElementById('guideOverlay');
+  const modal = document.getElementById('guideModal');
+  const chips = document.getElementById('guideChips');
+  const title = document.getElementById('guideTitle');
+  const body = document.getElementById('guideBody');
+
+  title.textContent = subjectName;
+  chips.innerHTML = '';
+  if (!subjectGuideIndex) body.innerHTML = '<div class="guide-empty">설명을 불러오는 중이에요…</div>';
+  overlay.hidden = false;
+  document.documentElement.style.overflow = 'hidden';
+  document.getElementById('guideClose').focus();
+
+  const index = subjectGuideIndex || await loadSubjectGuide();
+  if (overlay.hidden) return;  // 불러오는 사이 닫음
+  const entry = index[guideKey(subjectName)];
+
+  const color = (entry && entry.color) || '#4A8AB8';
+  modal.style.setProperty('--guide-color', color);
+  modal.style.setProperty('--guide-soft', mixHex(color, [255, 255, 255], 0.86) || '#EAF3FA');
+  modal.style.setProperty('--guide-deep', mixHex(color, [0, 0, 0], 0.3) || '#2F6A94');
+
+  if (entry) {
+    title.textContent = (entry.title || subjectName).replace(/[•∙]/g, '·');
+    chips.innerHTML = [entry.area, entry.category].filter(Boolean)
+      .map((t, i) => `<span class="guide-chip${i ? ' outline' : ''}">${escapeGuideText(t)}</span>`).join('');
+    body.innerHTML = renderSubjectGuide(entry);
+  } else {
+    // 안내서에 없는 과목(학교 자체 개설 과목 등): 짧은 설명이 있으면 보여 줌
+    const description = getSubjectDescription(subjectName);
+    body.innerHTML = description
+      ? `<section class="guide-section"><h3 class="guide-section-title">특성</h3><div class="guide-features"><p>${escapeGuideText(description)}</p></div></section>`
+      : `<div class="guide-empty">이 과목은 선택 과목 안내서(보통 교과)에 실려 있지 않아요.<br>전문 교과(과학·예술·체육·외국어 계열 등)이거나 학교에서 따로 개설한 과목일 수 있어요.<br>자세한 내용은 학교 교육과정 안내를 참고해 주세요.</div>`;
+  }
+  body.scrollTop = 0;
+}
+
+function closeSubjectGuide() {
+  const overlay = document.getElementById('guideOverlay');
+  if (overlay.hidden) return;
+  overlay.hidden = true;
+  document.documentElement.style.overflow = '';
+  if (guideOpener && document.contains(guideOpener)) guideOpener.focus();
+  guideOpener = null;
+}
+
+document.getElementById('guideClose').addEventListener('click', closeSubjectGuide);
+document.getElementById('guideOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'guideOverlay') closeSubjectGuide();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSubjectGuide();
+});
 
 // ============================================
 // 단계별 렌더링
@@ -3597,8 +4101,6 @@ function renderSemesterStep(sem) {
 function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
   const recommended = isRecommended(subj.name, subj.area, semKey);
   const suneung = isSuneung(subj.name);
-  const description = getSubjectDescription(subj.name);
-  const isExpanded = state.expandedSubjects.has(`${semKey}-${subj.name}`);
   const isSelected = isFixed || (groupName && (state.selections[semKey]?.choices[groupName] || []).includes(subj.name));
   
   // 다른 학기에 같은 이름의 과목이 있는지 (학교지정 또는 학생선택)
@@ -3634,14 +4136,9 @@ function renderSubjectCard(subj, isFixed, semKey, groupName = null) {
           </div>
         </div>
         <div class="subject-credits">${subj.credit}학점</div>
-        ${description !== null || true ? `
-          <button class="subject-toggle ${isExpanded ? 'open' : ''}" data-toggle="${semKey}-${subj.name}">
-            ${ICONS.chevron}
-          </button>
-        ` : ''}
-      </div>
-      <div class="subject-detail ${isExpanded ? 'open' : ''}">
-        ${description ? description : '<span class="subject-detail-empty">이 과목의 상세 설명이 아직 등록되지 않았어요.</span>'}
+        <button type="button" class="subject-info-btn" data-info="${escapeGuideText(subj.name)}" aria-label="${escapeGuideText(subj.name)} 과목 설명 보기">
+          ${ICONS.book}<span>설명</span>
+        </button>
       </div>
     </div>
   `;
@@ -3663,19 +4160,10 @@ function onSemesterContentClick(e) {
   if (!content.contains(e.target)) return;
   const sem = SEMESTERS[state.currentStep - 2];
 
-  // 설명 토글 버튼
-  const toggleBtn = e.target.closest('.subject-toggle');
-  if (toggleBtn) {
-    const key = toggleBtn.dataset.toggle;
-    if (state.expandedSubjects.has(key)) {
-      state.expandedSubjects.delete(key);
-      toggleBtn.classList.remove('open');
-      toggleBtn.closest('.subject-card').querySelector('.subject-detail').classList.remove('open');
-    } else {
-      state.expandedSubjects.add(key);
-      toggleBtn.classList.add('open');
-      toggleBtn.closest('.subject-card').querySelector('.subject-detail').classList.add('open');
-    }
+  // 과목 설명 버튼 → 설명 창 (과목 선택은 바뀌지 않음)
+  const infoBtn = e.target.closest('.subject-info-btn');
+  if (infoBtn) {
+    openSubjectGuide(infoBtn.dataset.info, infoBtn);
     return;
   }
 
@@ -4147,7 +4635,6 @@ function bindResultEvents() {
       state.currentStep = 1;
       state.career = null;
       state.selections = {};
-      state.expandedSubjects.clear();
       saveState();
       renderStep();
     }
@@ -4670,7 +5157,6 @@ function startFresh() {
   state.currentStep = 1;
   state.career = null;
   state.selections = {};
-  state.expandedSubjects.clear();
   state.fromShare = false;
   
   // localStorage 초기화
