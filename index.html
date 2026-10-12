@@ -1534,7 +1534,8 @@ footer {
 }
 @media (max-width: 600px) {
   .hero { padding: 30px 18px 16px; }
-  .hero h1 { font-size: 1.5em; line-height: 1.3; word-break: keep-all; }
+  /* 모바일 첫 화면 제목은 한 단계 굵게 (페이퍼로지 ExtraBold) */
+  .hero h1 { font-size: 1.5em; line-height: 1.3; word-break: keep-all; font-family: 'Paperlogy ExtraBold', 'Paperlogy', sans-serif !important; }
   .hero-subtitle {
     font-size: 0.82em;
     line-height: 1.5;
@@ -1574,7 +1575,8 @@ footer {
   }
   
   .main-content { padding: 0 12px 40px; }
-  .district-label { font-size: 46px; }
+  /* 모바일 지도 구 이름: 작고 한 단계 가늘게 (페이퍼로지 Bold) */
+  .district-label { font-size: 38px; font-family: 'Paperlogy', sans-serif; stroke-width: 4; }
   .school-name { font-size: 12px; }
   .back-btn { padding: 0 20px; font-size: 0.9em; }
   .back-btn.visible { height: 38px; }
