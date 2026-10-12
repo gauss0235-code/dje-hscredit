@@ -56,16 +56,17 @@
   }
 </script>
 
-<!-- 폰트 -->
+<!-- 폰트: 제목류 페이퍼로지 Bold, 본문 Asta Sans -->
 <style>
+/* 페이퍼로지 Bold 한 가지 굵기만 사용 (어떤 font-weight에서도 같은 Bold, 가짜 굵게 처리 없음) */
 @font-face {
-  font-family: 'YeogiOttaeJalnanGothic';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff') format('woff');
-  font-weight: normal;
+  font-family: 'Paperlogy';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
 }
 </style>
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/asta-sans@5.3.0/index.css">
 
 <!-- html2canvas: 결과 이미지 생성용 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -96,7 +97,7 @@
 }
 
 body {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   background: linear-gradient(180deg, #E0F2FE 0%, #FFFFFF 30%);
   color: var(--text-dark);
   min-height: 100vh;
@@ -130,7 +131,7 @@ body {
   border: none;
   border-radius: 10px;
   padding: 9px 16px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.9em;
   color: white;
   cursor: pointer;
@@ -175,7 +176,7 @@ body {
 
 .progress-text strong {
   color: var(--sky-blue-dark);
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-weight: 700;
   font-size: 1.1em;
 }
@@ -207,7 +208,7 @@ body {
 }
 
 .school-name {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.5em;
   color: var(--sky-blue-dark);
   margin-bottom: 4px;
@@ -228,7 +229,7 @@ body {
 }
 
 .step-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.6em;
   color: var(--text-dark);
   margin-bottom: 8px;
@@ -319,7 +320,7 @@ body {
 }
 
 .career-card .career-name {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
   color: var(--sky-blue-dark);
 }
@@ -346,7 +347,7 @@ body {
   gap: 8px;
 }
 .semester-summary .credit-status {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
 }
 .semester-summary .credit-status.complete {
@@ -377,7 +378,7 @@ body {
   align-items: center;
   justify-content: center;
   color: white;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.95em;
 }
 .validation-alert .alert-content {
@@ -385,7 +386,7 @@ body {
   min-width: 0;
 }
 .validation-alert .alert-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.95em;
   color: #991B1B;
   margin-bottom: 4px;
@@ -409,7 +410,7 @@ body {
   color: white;
   padding: 14px 22px;
   border-radius: 14px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.95em;
   box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
   z-index: 1000;
@@ -466,7 +467,7 @@ body {
   font-size: 0.92em;
 }
 .status-summary .status-quick .item .value {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   color: var(--sky-blue-dark);
   font-size: 0.95em;
 }
@@ -499,7 +500,7 @@ body {
   margin-bottom: 0;
 }
 .status-summary .status-section .section-label {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   color: var(--text-dark);
   font-size: 0.92em;
   margin-bottom: 4px;
@@ -545,7 +546,7 @@ body {
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.05em;
   color: var(--text-dark);
 }
@@ -555,7 +556,7 @@ body {
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 0.78em;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 .section-badge.fixed {
   background: var(--gradient-beige);
@@ -571,7 +572,7 @@ body {
 .section-info {
   font-size: 0.85em;
   color: var(--text-mid);
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 400;
 }
 
@@ -692,7 +693,7 @@ body {
   border-radius: 4px;
   background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
   color: #92400E;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 
 .subject-suneung-mark {
@@ -702,7 +703,7 @@ body {
   border-radius: 4px;
   background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
   color: #991B1B;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 
 /* 다른 학기에 같은 과목이 있을 때 (중복 차단 안내) */
@@ -713,7 +714,7 @@ body {
   border-radius: 4px;
   background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
   color: #9A3412;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 .subject-card.duplicate {
   background: #F9FAFB;
@@ -783,7 +784,7 @@ body {
 }
 
 .subject-credits {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.92em;
   color: var(--sky-blue-dark);
   flex-shrink: 0;
@@ -851,7 +852,7 @@ body {
 }
 
 .choice-group-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1em;
   color: var(--text-dark);
 }
@@ -861,7 +862,7 @@ body {
   color: var(--text-mid);
 }
 .choice-group-status .selected-count {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
   color: var(--sky-blue-dark);
 }
@@ -890,7 +891,7 @@ body {
   padding: 16px;
   border: none;
   border-radius: 14px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
   cursor: pointer;
   transition: all 0.2s;
@@ -945,7 +946,7 @@ body {
   text-align: center;
 }
 .result-summary h2 {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.6em;
   color: var(--text-brown);
   margin-bottom: 4px;
@@ -955,7 +956,7 @@ body {
   color: var(--text-brown);
 }
 .result-summary .total-credit strong {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.3em;
   color: var(--sky-blue-dark);
 }
@@ -976,7 +977,7 @@ body {
   background: var(--gradient-blue);
   color: white;
   padding: 10px 6px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-weight: 700;
 }
 
@@ -989,7 +990,7 @@ body {
 }
 
 .result-table td.semester-cell {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
 }
 
 .result-actions {
@@ -1078,7 +1079,7 @@ body {
   margin-bottom: 20px;
 }
 .share-modal-title {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 600;
   font-size: 1.1em;
   color: var(--text-dark);
@@ -1147,7 +1148,7 @@ body {
 .share-modal-icon.image { background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%); }
 .share-modal-icon.other { background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%); }
 .share-modal-label {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 500;
   font-size: 0.82em;
   color: var(--text-dark);
@@ -1182,7 +1183,7 @@ body {
   min-width: 200px;
 }
 .view-only-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
   color: var(--text-brown);
   margin-bottom: 6px;
@@ -1198,7 +1199,7 @@ body {
   border: none;
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
   color: white;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.95em;
   cursor: pointer;
   display: flex;
@@ -1225,7 +1226,7 @@ body {
 }
 
 .share-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.05em;
   color: var(--sky-blue-dark);
   margin-bottom: 14px;
@@ -1243,7 +1244,7 @@ body {
   border-radius: 12px;
   border: none;
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.88em;
   color: white;
   cursor: pointer;
@@ -1307,11 +1308,11 @@ body {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed #E5E7EB;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 
 .share-school-name {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.15em;
   color: var(--sky-blue-dark);
   margin-bottom: 6px;
@@ -1338,7 +1339,7 @@ body {
   flex: 1;
 }
 .shared-banner .banner-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1em;
   margin-bottom: 2px;
 }
@@ -1351,7 +1352,7 @@ body {
   border: none;
   background: var(--gradient-blue);
   color: white;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.88em;
   cursor: pointer;
   transition: all 0.15s;
@@ -1377,7 +1378,7 @@ body {
   border-color: #FCA5A5;
 }
 .validation-section .v-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.1em;
   margin-bottom: 12px;
   display: flex;
@@ -1414,7 +1415,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.85em;
   color: white;
 }
@@ -1466,7 +1467,7 @@ body {
 }
 .error-screen .icon { font-size: 3em; margin-bottom: 12px; }
 .error-screen h2 {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   margin-bottom: 8px;
   color: var(--text-dark);
 }
@@ -1481,7 +1482,7 @@ body {
   color: white;
   text-decoration: none;
   border-radius: 10px;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 
 /* ============ 모바일 반응형 ============ */

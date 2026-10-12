@@ -87,14 +87,17 @@
 ]
 </script>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff" as="font" type="font/woff" crossorigin>
+<!-- 본문: Asta Sans (가변 폰트, 한글은 글자 묶음별로 필요한 것만 로드) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/asta-sans@5.3.0/index.css">
+<!-- 제목류: 페이퍼로지 Bold -->
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2" as="font" type="font/woff2" crossorigin>
 
 <style>
+/* 페이퍼로지 Bold 한 가지 굵기만 사용 (어떤 font-weight에서도 같은 Bold, 가짜 굵게 처리 없음) */
 @font-face {
-  font-family: 'YeogiOttaeJalnanGothic';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff') format('woff');
-  font-weight: normal;
+  font-family: 'Paperlogy';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
   font-display: block;
 }
@@ -119,7 +122,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   background: #C8E2F4;
   color: var(--text-dark);
   line-height: 1.6;
@@ -138,7 +141,7 @@ body::before {
 }
 
 h1, h2 {
-  font-family: 'YeogiOttaeJalnanGothic', 'Pretendard', sans-serif !important;
+  font-family: 'Paperlogy', 'Asta Sans Variable', sans-serif !important;
   font-weight: normal;
 }
 
@@ -386,17 +389,19 @@ h1, h2 {
   100% { transform: scaleY(1.15) scaleX(1.05); opacity: 1; }
 }
 
-/* 모달(학교·편성표·PDF·시뮬레이터)이 열려 있는 동안 구름·로켓 애니메이션 일시정지
-   → 모달 뒤 배경 블러(backdrop-filter)를 매 프레임 다시 계산하지 않도록 */
-body:has(.modal-overlay.active, .embed-overlay.active) .cloud,
-body:has(.modal-overlay.active, .embed-overlay.active) .rocket,
-body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
+/* 구름·로켓 일시정지 (JS syncDecor가 .decor-paused를 붙임)
+   - 모달(학교·편성표·PDF·시뮬레이터)이 열려 있을 때: 모달 뒤 배경 블러를 매 프레임 다시 계산하지 않도록
+   - 첫 화면이 스크롤로 화면 밖에 있을 때: 보이지 않는 애니메이션이 계속 돌지 않도록 */
+.hero.decor-paused .cloud,
+.hero.decor-paused .rocket,
+.hero.decor-paused .rocket-flame {
   animation-play-state: paused;
 }
 
 /* 움직임 줄이기 설정을 켠 기기에서는 장식 애니메이션 정지 */
 @media (prefers-reduced-motion: reduce) {
   .cloud, .rocket, .rocket-flame { animation: none; }
+  .svg-wrap, .district-group, .district-shape, .district-label, .school-marker { transition: none; }
 }
 
 /* 모바일에서는 로켓 작게 + 구름 일부 숨김 */
@@ -479,13 +484,11 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   display: block;
   filter: drop-shadow(0 8px 24px rgba(180, 140, 80, 0.18));
   transform-style: preserve-3d;
-  transition: filter 0.3s ease;
 }
-/* 확대/축소 애니메이션 중에는 지도 전체 그림자(큰 블러)를 잠시 끄고, 끝나면 서서히 복원
+/* 확대/축소 애니메이션 중에는 지도 전체 그림자(큰 블러)를 잠시 끄고, 끝나면 복원
    (매 프레임 큰 블러를 다시 계산하지 않도록) */
 #daejeonMap.map-animating {
   filter: none;
-  transition: none;
 }
 
 .district-group {
@@ -499,13 +502,11 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 .map-state-overview #districts:hover .district-group:not(:hover) {
   opacity: 0.5;
-  filter: saturate(0.6);
 }
 .map-state-zoomed .district-group:not(.zoomed-active) {
   opacity: 0;
   pointer-events: none;
-  /* 사라지는 구: 채도 필터는 바로 해제하고 투명도만 전환 (필터 재계산 방지) */
-  filter: none;
+  /* 사라지는 구: 투명도만 짧게 전환 */
   transition: opacity 0.35s ease;
 }
 .map-state-zoomed .district-group.zoomed-active {
@@ -536,7 +537,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 
 .district-label {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 24px;
   fill: var(--text-brown);
   text-anchor: middle;
@@ -596,7 +597,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 
 .school-name {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 700;
   font-size: 9px;
   fill: var(--text-dark);
@@ -632,6 +633,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   width: 100%;
   box-shadow: 0 24px 70px rgba(0,0,0,0.35);
   animation: modalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;  /* 열려 있는 동안 레이어를 한 번만 만들어 유지 */
   position: relative;
   /* 화면보다 길어지면(예: 대전외국어고 2026·2027 학과별 버튼) 모달 안에서 스크롤 */
   max-height: calc(100vh - 40px);
@@ -664,7 +666,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 
 .modal h3 {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.7em;
   margin-bottom: 10px;
   color: var(--text-dark);
@@ -708,7 +710,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   margin-bottom: 4px;
 }
 .department-label {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 0.95em;
   color: #92400E;
   margin-bottom: 8px;
@@ -723,7 +725,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   padding: 0 4px;
 }
 .year-title .year-badge {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.05em;
   color: var(--sky-blue-dark);
   font-weight: 700;
@@ -962,7 +964,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 
 .embed-title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.05em;
   flex: 1;
   letter-spacing: -0.02em;
@@ -1061,7 +1063,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   font-size: 0.95em;
   color: var(--text-dark);
   font-weight: 800;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
 }
 
 .curriculum-info-divider {
@@ -1087,7 +1089,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 .curriculum-table thead th {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%);
   color: white;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-weight: 700;
   padding: 10px 3px;
   text-align: center;
@@ -1120,7 +1122,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   vertical-align: middle;
   background: white;
   transition: background 0.15s;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
@@ -1137,7 +1139,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 /* 구분 열: 짧은 단어 (학교지정/학생선택)는 세로쓰기 */
 .curriculum-table tbody td.section {
   background: linear-gradient(180deg, #FFF8E7 0%, #FFE9B3 100%);
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-weight: 700;
   font-size: 1em;
   color: var(--text-brown);
@@ -1173,7 +1175,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 .curriculum-table tbody tr.summary-row td {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%) !important;
   color: white !important;
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-weight: 700;
 }
 .curriculum-table tbody tr.summary-row td.section {
@@ -1292,7 +1294,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 
 /* 과목유형 - 일반 텍스트, 과목명과 동일 */
 .curriculum-table tbody td.subject-type {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 700;
   font-size: 1em;
   color: var(--text-dark);
@@ -1310,7 +1312,7 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   margin-bottom: 12px;
 }
 .curriculum-message .title {
-  font-family: 'YeogiOttaeJalnanGothic', sans-serif;
+  font-family: 'Paperlogy', sans-serif;
   font-size: 1.3em;
   color: var(--text-dark);
   margin-bottom: 8px;
@@ -1329,6 +1331,25 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
   text-decoration: none;
   font-weight: 700;
   font-size: 0.9em;
+}
+
+/* PC - 편성표 열 너비
+   구분·기본학점·운영학점은 내용에 맞는 고정 폭, 학기 열 6개는 같은 비율,
+   남는 공간은 교과(군)·과목·과목유형·이수구분이 나눠 가짐 (짧은 열이 넓어지지 않게) */
+@media (min-width: 801px) {
+  .curriculum-table thead th { width: auto !important; min-width: 0 !important; }
+  .curriculum-table col.col-section { width: 64px; }
+  .curriculum-table col.col-base { width: 56px; }
+  .curriculum-table col.col-total { width: 64px; }
+  .curriculum-table col.col-sem { width: 6.5%; }
+  .curriculum-table col.col-area { width: 8.5%; }
+  .curriculum-table col.col-type { width: 7.5%; }
+  .curriculum-table tbody td.subject-area,
+  .curriculum-table tbody td.subject-name,
+  .curriculum-table tbody td.subject-type,
+  .curriculum-table tbody td.completion-type { width: auto; min-width: 0; }
+  /* 합계 행의 "174~178" 같은 긴 값은 칸 안에서 줄바꿈 */
+  .curriculum-table tbody td.total-credits { overflow-wrap: anywhere; }
 }
 
 /* 모바일 반응형 - 편성표 */
@@ -1411,7 +1432,8 @@ body:has(.modal-overlay.active, .embed-overlay.active) .rocket-flame {
 }
 
 @media (max-width: 600px) {
-  .embed-overlay { padding: 0; }
+  /* 모바일에선 창이 화면을 꽉 채워 배경 블러가 보이지 않으므로 계산하지 않음 */
+  .embed-overlay { padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .embed-container { border-radius: 0; }
   .embed-title { font-size: 0.9em; }
   .embed-action { padding: 6px 10px; font-size: 0.75em; }
@@ -1662,23 +1684,16 @@ footer {
     
     <div class="svg-wrap overview" id="svgWrap">
       <svg id="daejeonMap" viewBox="0 0 800 1001" xmlns="http://www.w3.org/2000/svg" class="map-state-overview">
-        <style type="text/css"><![CDATA[
-          @font-face {
-            font-family: 'YeogiOttaeJalnanGothic';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_231029@1.1/JalnanGothic.woff') format('woff');
-          }
-          .district-label { font-family: 'YeogiOttaeJalnanGothic', sans-serif; }
-        ]]></style>
-        
         <defs>
-          <filter id="districtShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <!-- 그림자 필터 영역은 블러(σ)·이동 거리에 필요한 만큼만 (영역이 클수록 매 프레임 계산량 증가) -->
+          <filter id="districtShadow" x="-5%" y="-4%" width="110%" height="110%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
             <feOffset dx="0" dy="4" result="offsetblur"/>
             <feFlood flood-color="#B8956A" flood-opacity="0.3"/>
             <feComposite in2="offsetblur" operator="in"/>
             <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="districtShadowHover" x="-30%" y="-30%" width="160%" height="160%">
+          <filter id="districtShadowHover" x="-8%" y="-5%" width="116%" height="115%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
             <feOffset dx="0" dy="8" result="offsetblur"/>
             <feFlood flood-color="#8B6F47" flood-opacity="0.4"/>
@@ -1890,14 +1905,18 @@ let viewBoxAnimId = 0;  // 진행 중인 확대/축소 애니메이션 식별 (�
 function animateViewBox(targetVb, duration = 600) {
   const current = svg.getAttribute('viewBox').split(/\s+/).map(Number);
   const target = targetVb.split(/\s+/).map(Number);
-  const startTime = performance.now();
   const animId = ++viewBoxAnimId;
+  // 움직임 줄이기 설정 기기에서는 바로 이동
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) duration = 1;
+  // 시작 시각은 첫 프레임 기준 (클릭 직후 무거운 첫 프레임에서 확대가 한꺼번에 건너뛰지 않도록)
+  let startTime = null;
 
   // 애니메이션 동안 지도 전체 그림자 끄기 (CSS #daejeonMap.map-animating)
   svg.classList.add('map-animating');
 
   function step(now) {
     if (animId !== viewBoxAnimId) return;  // 새 애니메이션이 시작되면 이전 것은 중단
+    if (startTime === null) startTime = now;
     const elapsed = now - startTime;
     const t = Math.min(elapsed / duration, 1);
     const eased = 1 - Math.pow(1 - t, 3);
@@ -2475,9 +2494,10 @@ function renderCurriculumCell(colIdx, value, spanAttr) {
     // 구분 (학교지정/학생선택은 세로, 긴 문구는 가로)
     // 4글자 이하면 세로쓰기, 그 이상은 가로쓰기
     const cleanValue = value.replace(/\s/g, '');
-    const orientClass = cleanValue.length <= 4 ? 'vertical' : 'horizontal';
-    // 시트에서 줄을 나눈 문구(예: "2학년\n학생\n선택")는 그 줄바꿈대로 표시 (단어 중간 끊김 방지)
-    const lineClass = orientClass === 'horizontal' && value.includes('\n') ? ' line-break' : '';
+    // 시트에서 줄을 나눈 문구(예: "학교\n지정", "2학년\n학생\n선택")는 가로쓰기로 그 줄바꿈대로 표시
+    const hasLineBreak = value.includes('\n');
+    const orientClass = !hasLineBreak && cleanValue.length <= 4 ? 'vertical' : 'horizontal';
+    const lineClass = hasLineBreak ? ' line-break' : '';
     return `<td class="section ${orientClass}${lineClass}"${spanAttr}>${value}</td>`;
   }
   if (colIdx === 1) {
@@ -2768,11 +2788,26 @@ document.addEventListener('click', (e) => {
   }
 });
 
-document.fonts.ready.then(() => {
-  document.querySelectorAll('.district-label').forEach(t => {
-    t.style.fontFamily = "'YeogiOttaeJalnanGothic', sans-serif";
+// 구름·로켓 장식 애니메이션: 모달이 열려 있거나 첫 화면이 화면 밖이면 일시정지
+(function setupDecorPause() {
+  const heroEl = document.querySelector('.hero');
+  if (!heroEl) return;
+  let heroOnScreen = true;
+  const syncDecor = () => {
+    const overlayOpen = !!document.querySelector('.modal-overlay.active, .embed-overlay.active');
+    heroEl.classList.toggle('decor-paused', !heroOnScreen || overlayOpen);
+  };
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+      heroOnScreen = entry.isIntersecting;
+      syncDecor();
+    }).observe(heroEl);
+  }
+  const mo = new MutationObserver(syncDecor);
+  document.querySelectorAll('.modal-overlay, .embed-overlay').forEach(el => {
+    mo.observe(el, { attributes: true, attributeFilter: ['class'] });
   });
-});
+})();
 
 renderAllMarkers();
 </script>
