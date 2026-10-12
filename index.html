@@ -1225,12 +1225,14 @@ h1, h2 {
 .curriculum-table tbody tr.summary-row td {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%) !important;
   color: white !important;
-  font-family: 'Paperlogy', sans-serif;
+  /* 합계 행의 학점 숫자는 Asta Sans (행 이름은 아래 td.section에서 페이퍼로지) */
+  font-family: 'Asta Sans Variable', sans-serif;
   font-weight: 700;
 }
 .curriculum-table tbody tr.summary-row td.section {
   background: linear-gradient(135deg, #5392BE 0%, #609EC7 100%) !important;
   color: white !important;
+  font-family: 'Paperlogy', sans-serif;
   border-right: 1px solid rgba(255,255,255,0.3);
 }
 .curriculum-table tbody tr.summary-row:hover td {
@@ -1460,6 +1462,11 @@ h1, h2 {
   .curriculum-table tbody td.semester.multi-value { padding: 5px 1px; }
   .curriculum-table tbody td.semester .cross-mark,
   .curriculum-table tbody td.semester .semester-note { word-break: break-all; line-height: 1.15; letter-spacing: 0; }
+  /* 범위 값(30~32, 174~178): 좁은 열에서도 '30~ / 32'처럼 물결 뒤에서만 나뉘도록 여백·크기 조정 */
+  .curriculum-table tbody td.semester.has-range,
+  .curriculum-table tbody td.total-credits.has-range { padding-left: 0; padding-right: 0; }
+  .curriculum-table tbody td.semester .semester-range,
+  .curriculum-table tbody td.total-credits.has-range { font-size: 0.85em; letter-spacing: -0.05em; }
   .curriculum-table tbody td.subject { font-size: 0.95em; word-break: keep-all; line-height: 1.3; }
 }
 
@@ -2614,8 +2621,9 @@ function renderCurriculumCell(colIdx, value, spanAttr) {
     return renderSemesterCell(value, spanAttr);
   }
   if (colIdx === 12) {
-    // 운영학점
-    return `<td class="total-credits"${spanAttr}>${value}</td>`;
+    // 운영학점 (범위 값 "174~178"은 줄이 나뉠 때 물결 뒤에서 나뉘게)
+    const rangeClass = value.includes('~') ? ' has-range' : '';
+    return `<td class="total-credits${rangeClass}"${spanAttr}>${value.replace(/~/g, '~<wbr>')}</td>`;
   }
   // 기본
   return `<td${spanAttr}>${value}</td>`;
@@ -2645,9 +2653,9 @@ function renderSemesterCell(value, spanAttr = '') {
     </td>`;
   }
   
-  // 범위 값(예: 합계 행의 "30~32")은 열 너비를 넓히지 않도록 감쌈
+  // 범위 값(예: 합계 행의 "30~32")은 열 너비를 넓히지 않도록 감싸고, 줄이 나뉠 땐 물결 뒤에서 나뉘게
   if (value.includes('~')) {
-    return `<td class="semester has-value"${spanAttr}><span class="semester-range">${value}</span></td>`;
+    return `<td class="semester has-value has-range"${spanAttr}><span class="semester-range">${value.replace(/~/g, '~<wbr>')}</span></td>`;
   }
 
   return `<td class="semester has-value"${spanAttr}>${value}</td>`;
