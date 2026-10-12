@@ -631,13 +631,13 @@ h1, h2 {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  /* 화면 전체 흐림(backdrop-filter)은 열릴 때마다 매 프레임 다시 계산돼 버벅임의 원인 → 어둡기만 사용 */
+  background: rgba(0,0,0,0.6);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  backdrop-filter: blur(6px);
 }
 .modal-overlay.active { display: flex; }
 
@@ -648,7 +648,8 @@ h1, h2 {
   max-width: 520px;
   width: 100%;
   box-shadow: 0 24px 70px rgba(0,0,0,0.35);
-  animation: modalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 튕김 없이 부드럽게 감속하며 등장 */
+  animation: modalIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;  /* 열려 있는 동안 레이어를 한 번만 만들어 유지 */
   position: relative;
   /* 화면보다 길어지면(예: 대전외국어고 2026·2027 학과별 버튼) 모달 안에서 스크롤 */
@@ -2043,15 +2044,7 @@ backBtn.addEventListener('click', zoomOut);
 
 function showSchoolModal(school) {
   const modal = document.getElementById('modalContent');
-  
-  // 📊 GA4 이벤트: 학교 클릭 추적
-  if (typeof gtag === 'function') {
-    gtag('event', 'school_click', {
-      'school_name': school.name,
-      'district': school.district || '미분류'
-    });
-  }
-  
+
   // SVG 아이콘 정의 (Lucide 스타일 라인 아트)
   const SVG_STUDENTS = `<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><circle cx="16" cy="8" r="2.5"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 14a3.5 3.5 0 0 1 3.5 3.5V19"/></svg>`;
   
@@ -2203,7 +2196,24 @@ function showSchoolModal(school) {
     
     <button class="close-btn" onclick="closeModal()">닫기</button>
   `;
+
+  // 창이 튀어 오르는 동안은 버튼 마우스 효과를 막음 (마우스 아래 버튼이 등장 중에 반응하지 않도록)
+  modal.style.pointerEvents = 'none';
+  const enablePointer = () => { modal.style.pointerEvents = ''; };
+  modal.addEventListener('animationend', enablePointer, { once: true });
+  setTimeout(enablePointer, 400);  // 애니메이션이 없는 환경(움직임 줄이기 등) 대비
+
   document.getElementById('modalOverlay').classList.add('active');
+
+  // 📊 GA4 이벤트: 학교 클릭 추적 (창이 화면에 그려진 뒤 여유 있을 때 전송)
+  if (typeof gtag === 'function') {
+    const sendClick = () => gtag('event', 'school_click', {
+      'school_name': school.name,
+      'district': school.district || '미분류'
+    });
+    if ('requestIdleCallback' in window) requestIdleCallback(sendClick, { timeout: 2000 });
+    else setTimeout(sendClick, 500);
+  }
 }
 
 // Google Sheets API 키
