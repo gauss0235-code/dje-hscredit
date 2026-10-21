@@ -1,0 +1,235 @@
+/* =====================================================================
+ *  학생용 모바일 설문
+ * ===================================================================== */
+body { background: var(--bg); min-height: 100vh; }
+
+/* ---------- 히어로 ---------- */
+.hero {
+  position: relative; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, #1d3f8f 0%, var(--navy-900) 55%, var(--navy-950) 100%);
+  padding: 26px 20px 64px;
+}
+.hero-art { position: absolute; top: 0; right: 0; width: 100%; max-width: 560px; height: 100%; pointer-events: none; }
+.hero-inner { position: relative; max-width: 600px; margin: 0 auto; }
+.hero-kicker {
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, .72);
+  letter-spacing: 0;
+}
+.hero-kicker i { width: 3px; height: 3px; border-radius: 50%; background: rgba(255, 255, 255, .5); }
+.hero-title { margin: 14px 0 0; font-weight: 800; line-height: 1.22; letter-spacing: -0.03em; text-wrap: balance; }
+.hero-title .t-term {
+  display: block; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: #9fb8ff; letter-spacing: -0.01em; margin-bottom: 6px;
+}
+.hero-title .t-main { display: block; font-size: 27px; }
+.hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.hero-chip {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .14); color: rgba(255, 255, 255, .92);
+  font-size: 12.5px; font-weight: 600;
+}
+.hero-chip svg { width: 13px; height: 13px; opacity: .85; }
+
+/* ---------- 본문 틀 ---------- */
+.wrap { max-width: 600px; margin: -40px auto 0; padding: 0 16px 28px; position: relative; }
+.panel {
+  background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--sh-2); padding: 22px 20px;
+}
+.center-state { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 44px 24px 36px; color: var(--ink-2); }
+.center-state h2 { margin: 8px 0 0; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.35; }
+.center-state p { margin: 0; font-size: 15px; }
+.state-icon { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; background: var(--primary-50); color: var(--primary); }
+.state-icon svg { width: 30px; height: 30px; }
+.state-icon.ok { background: var(--good-50); color: var(--good); border-radius: 50%; width: 76px; height: 76px; }
+.state-icon.ok svg { width: 38px; height: 38px; }
+.state-icon.ok svg path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .5s .15s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* 단계 표시 */
+.stepper { display: flex; align-items: center; gap: 6px; margin: 0 0 18px; }
+.stepper .st { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-4); white-space: nowrap; }
+.stepper .st b {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display);
+  font-weight: 700; font-size: 12px; background: var(--surface-3); color: var(--ink-3);
+}
+.stepper .st.on { color: var(--ink); }
+.stepper .st.on b { background: var(--primary); color: #fff; }
+.stepper .st.done { color: var(--ink-2); }
+.stepper .st.done b { background: var(--primary-100); color: var(--primary); }
+.stepper .bar { flex: 1; height: 2px; border-radius: 2px; background: var(--line); min-width: 10px; }
+.stepper .bar.done { background: var(--primary-100); }
+
+.step-head h2 { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.35; text-wrap: balance; }
+.step-head p { margin: 6px 0 0; color: var(--ink-3); font-size: 14.5px; }
+
+/* ---------- 1단계: 강좌 선택 ---------- */
+.picker { display: grid; gap: 8px; margin-top: 18px; }
+.search { position: relative; display: block; }
+.search svg { position: absolute; left: 15px; top: 50%; width: 19px; height: 19px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.search .input, .picker select.input {
+  min-height: 52px; font-size: 16px; border-radius: 14px; background-color: var(--surface-2); border-color: transparent;
+}
+.search .input { padding-left: 44px; }
+.search .input:focus, .picker select.input:focus { background-color: var(--surface); border-color: var(--primary); }
+.picker select.input { font-weight: 600; color: var(--ink-2); }
+
+.done-note {
+  display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 11px 14px; border-radius: 12px;
+  background: var(--good-50); color: var(--good); font-size: 13.5px; font-weight: 600;
+}
+.done-note svg { width: 16px; height: 16px; flex: none; }
+
+.course-list { margin-top: 14px; display: grid; gap: 8px; }
+.group-label {
+  display: flex; align-items: center; gap: 8px; margin: 14px 4px 2px; font-family: var(--font-display);
+  font-size: 13.5px; font-weight: 600; color: var(--ink-2); letter-spacing: -0.01em;
+}
+.group-label small { font-family: var(--font-body); font-weight: 600; font-size: 12px; color: var(--ink-4); }
+.group-label:first-child { margin-top: 0; }
+.course {
+  width: 100%; text-align: left; display: flex; align-items: center; gap: 14px; padding: 15px 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: border-color .15s, background .15s, transform .08s, box-shadow .15s;
+}
+.course:hover { border-color: var(--line-2); box-shadow: var(--sh-1); }
+.course:active { transform: scale(.985); background: var(--surface-2); }
+.course .c-ic { flex: none; width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; }
+.course .c-ic svg { width: 22px; height: 22px; }
+.c-ic.online { background: var(--t-online-50); color: var(--t-online); }
+.c-ic.offline { background: var(--t-offline-50); color: var(--t-offline); }
+.c-ic.career { background: var(--t-career-50); color: var(--t-career); }
+.course .c-body { flex: 1; min-width: 0; }
+.course .c-name { display: block; font-weight: 700; font-size: 16.5px; line-height: 1.4; color: var(--ink); }
+.course .c-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 3px; font-size: 13px; color: var(--ink-3); }
+.course .c-meta .sep { width: 2px; height: 2px; border-radius: 50%; background: var(--ink-4); }
+.course .chev { flex: none; color: var(--ink-4); width: 20px; height: 20px; }
+.course.done { cursor: default; background: var(--surface-2); border-color: transparent; }
+.course.done .c-name { color: var(--ink-3); }
+.course.done .c-ic { background: var(--good-50); color: var(--good); }
+.course.done:active { transform: none; }
+.empty { text-align: center; color: var(--ink-3); padding: 30px 10px; font-size: 14.5px; }
+
+/* ---------- 2단계: 응답 ---------- */
+.sticky {
+  position: sticky; top: 0; z-index: 20; margin: 0 -16px; padding: 10px 16px 12px;
+  background: rgba(242, 244, 247, .9); -webkit-backdrop-filter: saturate(1.6) blur(12px); backdrop-filter: saturate(1.6) blur(12px);
+  transition: box-shadow .2s;
+}
+.sticky.scrolled { box-shadow: 0 1px 0 var(--line); }
+.chosen {
+  display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 16px; padding: 12px 12px 12px 14px;
+  box-shadow: var(--sh-2);
+}
+.chosen .c-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; }
+.chosen .c-ic svg { width: 19px; height: 19px; }
+.chosen .c-body { flex: 1; min-width: 0; }
+.chosen .c-name { font-weight: 700; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chosen .c-meta { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 0 2px; }
+.progress .bar { flex: 1; height: 6px; background: #dfe3e8; border-radius: 99px; overflow: hidden; }
+.progress .bar i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width .3s cubic-bezier(.2, .8, .2, 1); }
+.progress span { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--ink-2); min-width: 42px; text-align: right; }
+
+.form-intro { margin: 14px 4px 0; }
+.form-intro h2 { margin: 0; font-size: 21px; font-weight: 700; }
+.form-intro p { margin: 4px 0 0; font-size: 14px; color: var(--ink-3); }
+
+.section-head { display: flex; align-items: center; gap: 10px; margin: 28px 4px 10px; }
+.section-head span { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.section-head::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+
+.q {
+  background: var(--surface); border-radius: 20px; padding: 20px 16px 16px; box-shadow: var(--sh-1);
+  border: 1.5px solid transparent; scroll-margin-top: 150px; transition: border-color .2s, box-shadow .2s;
+}
+.q + .q { margin-top: 10px; }
+.q.answered .q-no { background: var(--primary); color: #fff; }
+.q.missing { border-color: var(--bad); box-shadow: 0 0 0 4px rgba(216, 58, 63, .1); }
+.q fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.q legend, .q .q-text { padding: 0; display: flex; gap: 10px; align-items: flex-start; width: 100%; }
+.q .q-no {
+  flex: none; min-width: 30px; height: 24px; padding: 0 7px; border-radius: 7px; display: inline-grid; place-items: center;
+  font-family: var(--font-display); font-size: 12.5px; font-weight: 700; background: var(--primary-50); color: var(--primary);
+  margin-top: 1px; transition: background .2s, color .2s;
+}
+.q .q-t { font-size: 16.5px; font-weight: 600; line-height: 1.55; color: var(--ink); }
+.q .req { color: var(--bad); margin-left: 2px; }
+.q .opt-note { font-size: 12.5px; color: var(--ink-3); font-weight: 500; margin-left: 4px; }
+
+.likert { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 16px; }
+.likert label { position: relative; display: flex; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.likert input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.likert .opt {
+  flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
+  min-height: 82px; padding: 12px 2px 10px; border-radius: 14px; background: var(--surface-2); border: 1.5px solid transparent;
+  text-align: center; transition: background .15s, border-color .15s, color .15s, transform .1s;
+}
+.likert label:hover .opt { background: var(--surface-3); }
+.likert label:active .opt { transform: scale(.96); }
+.likert .score { font-family: var(--font-display); font-size: 21px; font-weight: 700; line-height: 1; color: var(--ink-3); }
+.likert .lab { font-size: 11.5px; line-height: 1.3; color: var(--ink-2); font-weight: 600; }
+.likert input:focus-visible + .opt { box-shadow: var(--focus); }
+.likert input:checked + .opt { background: var(--primary); border-color: var(--primary); box-shadow: 0 6px 16px rgba(37, 86, 212, .28); }
+.likert input:checked + .opt .score, .likert input:checked + .opt .lab { color: #fff; }
+.scale-ends { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 4px; font-size: 11.5px; color: var(--ink-4); font-weight: 600; }
+
+.choice { display: grid; gap: 8px; margin-top: 14px; }
+.choice label {
+  display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: var(--surface-2);
+  border: 1.5px solid transparent; cursor: pointer; font-weight: 600; transition: background .15s, border-color .15s;
+}
+.choice input { width: 18px; height: 18px; accent-color: var(--primary); }
+.choice label.on { border-color: var(--primary); background: var(--primary-50); color: var(--primary-press); }
+
+.q textarea.input {
+  margin-top: 14px; min-height: 120px; font-size: 16px; background: var(--surface-2); border-color: transparent; border-radius: 14px; padding: 14px;
+}
+.q textarea.input:focus { background: var(--surface); border-color: var(--primary); }
+.counter { text-align: right; font-size: 12px; color: var(--ink-4); margin-top: 6px; font-weight: 600; }
+
+.submit-bar { position: relative; margin: 22px -16px 0; padding: 0 16px calc(14px + env(safe-area-inset-bottom)); }
+/* 필수 문항을 모두 답하면 제출 버튼이 화면 아래에 고정됨 */
+.submit-bar.ready {
+  position: sticky; bottom: 0; z-index: 15; padding-top: 22px;
+  background: linear-gradient(to bottom, rgba(242, 244, 247, 0), var(--bg) 38%);
+  animation: rise .25s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes rise { from { transform: translateY(12px); opacity: .4; } to { transform: none; opacity: 1; } }
+.submit-bar .btn { width: 100%; }
+.submit-bar.ready .btn { box-shadow: 0 10px 24px rgba(37, 86, 212, .28); }
+.submit-note { text-align: center; font-size: 12.5px; color: var(--ink-3); margin: 10px 0 0; }
+
+/* ---------- 3단계: 완료 ---------- */
+.done-list { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; width: 100%; }
+.done-list li {
+  display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; background: var(--surface-2);
+  font-size: 14px; color: var(--ink-2); text-align: left;
+}
+.done-list li svg { width: 16px; height: 16px; color: var(--good); flex: none; }
+.done-list li b { color: var(--ink); font-weight: 700; }
+.done-actions { display: grid; gap: 8px; width: 100%; margin-top: 18px; }
+.done-actions .btn { width: 100%; }
+
+.foot {
+  max-width: 600px; margin: 0 auto; padding: 4px 20px 36px; font-size: 12.5px; color: var(--ink-3); text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+
+@media (min-width: 560px) {
+  .hero { padding: 36px 20px 76px; }
+  .hero-title .t-main { font-size: 32px; }
+  .panel { padding: 28px 28px; }
+  .likert .lab { font-size: 12.5px; }
+  .q { padding: 24px 22px 20px; }
+}
+@media (max-width: 350px) {
+  .likert { gap: 4px; }
+  .likert .lab { font-size: 10.5px; }
+  .likert .score { font-size: 18px; }
+  .hero-title .t-main { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .state-icon.ok svg path { stroke-dashoffset: 0; }
+}
+.center-state .stepper { align-self: stretch; margin-bottom: 22px; }
+.form-intro .stepper { margin-bottom: 14px; }

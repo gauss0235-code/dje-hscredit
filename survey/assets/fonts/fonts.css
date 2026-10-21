@@ -1,0 +1,22 @@
+/* 페이퍼로지(Paperlogy) — 제목·숫자용 디스플레이 서체, SIL OFL 1.1 (OFL-Paperlogy.txt)
+   본문·UI 서체 Asta Sans는 HTML에서 Google Fonts로 불러옵니다. */
+@font-face {
+  font-family: "Paperlogy";
+  src: url("Paperlogy-5Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Paperlogy";
+  src: url("Paperlogy-6SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Paperlogy";
+  src: url("Paperlogy-7Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Paperlogy";
+  src: url("Paperlogy-8ExtraBold.woff2") format("woff2");
+  font-weight: 800; font-style: normal; font-display: swap;
+}

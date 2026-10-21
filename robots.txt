@@ -41,5 +41,8 @@ Allow: /
 # 일반 검색엔진의 색인은 제외 (위 소셜 봇들은 위에서 별도 허용)
 Disallow: /simulator.html
 
+# 공동교육과정 만족도 조사(학생 응답용, QR로만 접속)는 검색 색인 제외
+Disallow: /survey/
+
 # 사이트맵 위치
 Sitemap: https://djhs-curriculum.kro.kr/sitemap.xml
