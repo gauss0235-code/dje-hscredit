@@ -249,7 +249,7 @@
         lastSection = q.section;
       }
       no++;
-      var req = q.required ? '<span class="req" aria-label="필수">*</span>' : '<span class="opt-note">(선택)</span>';
+      var req = q.required ? '<span class="req">필수 응답</span>' : '<span class="opt-note">(선택)</span>';
       var head = '<span class="q-no">Q' + no + '</span><span class="q-t">' + esc(q.text) + req + "</span>";
       var v = state.answers[q.id];
       var cls = "q" + (isAnswered(q) ? " answered" : "");

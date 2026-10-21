@@ -356,8 +356,11 @@
           var v = Math.round(quality + person + bias + gauss() * 0.45);
           a[q] = Math.max(1, Math.min(5, v));
         });
-        if (rnd() < 0.55) a.good = pick(goodPool);
-        if (rnd() < (quality < 3.8 ? 0.6 : 0.3)) a.improve = pick(improvePool);
+        // 서술형은 한 문항(opinion, 필수)에 좋았던 점과 개선할 점을 함께 씀
+        var parts = [];
+        if (rnd() < 0.7) parts.push(pick(goodPool));
+        if (!parts.length || rnd() < (quality < 3.8 ? 0.6 : 0.3)) parts.push((parts.length ? "다만 " : "") + pick(improvePool));
+        a.opinion = parts.join(" ");
         rid++;
         var day = Math.floor(Math.pow(rnd(), 1.6) * 10);
         responses.push({
@@ -408,13 +411,12 @@
       });
       var ids = {}; cs.forEach(function (c) { ids[c.id] = 1; });
       var rs = responses.filter(function (r) { return ids[r.course_id]; });
-      function tally(key, pool) {
-        var m = {};
-        rs.forEach(function (r) { if (r.answers[key]) m[r.answers[key]] = (m[r.answers[key]] || 0) + 1; });
-        return pool.map(function (t) { return { t: t, n: m[t] || 0 }; }).filter(function (x) { return x.n; })
-          .sort(function (a, b) { return b.n - a.n; });
+      function tally(pool) {
+        return pool.map(function (t) {
+          return { t: t, n: rs.filter(function (r) { return String(r.answers.opinion || "").indexOf(t) >= 0; }).length };
+        }).filter(function (x) { return x.n; }).sort(function (a, b) { return b.n - a.n; });
       }
-      var g = tally("good", goodPool), im = tally("improve", improvePool);
+      var g = tally(goodPool), im = tally(improvePool);
       var content = {
         overview: "(데모 예시) 학생들은 소속 학교에 없는 과목을 수강하고 실험·프로젝트 중심으로 배우는 점을 가장 높게 평가했습니다. " +
           "반면 늦은 종료 시각과 이동 부담, 수업 환경(공간·기자재)에 대한 개선 요구가 반복적으로 나타났습니다.",

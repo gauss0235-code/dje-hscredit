@@ -20,10 +20,8 @@ window.JCS_DEFAULT_QUESTIONS = [
     text: "수업이 진로와 적성을 탐색하고 진학을 준비하는 데 도움이 되었다." },
   { id: "q10", type: "likert", section: "기타", required: true,
     text: "관심 있는 친구들에게 이 수업을 권하고 싶을 만큼 만족스러웠다." },
-  { id: "good", type: "text", section: "서술형", required: false, textRole: "positive", maxLength: 1000,
-    text: "수업에 관해 좋았던 점을 자유롭게 적어 주세요.",
-    placeholder: "예) 실험 활동이 많아 내용을 이해하기 쉬웠어요." },
-  { id: "improve", type: "text", section: "서술형", required: true, textRole: "improve", maxLength: 1000,
-    text: "수업에 관해 개선해야 할 점을 자유롭게 적어 주세요.",
-    placeholder: "예) 수업 시간이 늦게 끝나 귀가가 늦었어요." }
+  // 기준표대로 좋았던 점과 개선할 점을 한 문항으로 받음 (2026-10-22, 필수). 둘을 나누는 일은 AI 분석이 함
+  { id: "opinion", type: "text", section: "서술형", required: true, textRole: "other", maxLength: 1000,
+    text: "수업에 관해 좋았던 점과 개선해야 할 점을 자유롭게 적어 주세요.",
+    placeholder: "예) 실험 활동이 많아 내용을 이해하기 쉬웠어요. 다만 수업이 늦게 끝나 귀가가 늦었어요." }
 ];

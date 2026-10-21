@@ -152,7 +152,11 @@ body { background: var(--bg); min-height: 100vh; }
   margin-top: 1px; transition: background .2s, color .2s;
 }
 .q .q-t { font-size: 16.5px; font-weight: 600; line-height: 1.55; color: var(--ink); }
-.q .req { color: var(--bad); margin-left: 2px; }
+/* 필수 문항 표시: 빨간 '필수 응답' 꼬리표 */
+.q .req {
+  display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; vertical-align: 2px;
+  background: #FDECEC; color: #DC2626; font-size: 12px; font-weight: 700; line-height: 1.6; white-space: nowrap;
+}
 .q .opt-note { font-size: 12.5px; color: var(--ink-3); font-weight: 500; margin-left: 4px; }
 
 .likert { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 16px; }
