@@ -294,7 +294,7 @@
 
     var surveyId = "demo-survey-2026-2";
     var survey = {
-      id: surveyId, slug: "2026-2", title: "2026학년도 2학기 너두나두 공동교육과정 만족도 조사",
+      id: surveyId, slug: "2026-2", title: "2026학년도 2학기 공동교육과정 만족도 조사",
       description: "수강한 공동교육과정 강좌에 대한 만족도 조사입니다. 응답은 익명으로 처리되며, 다음 학기 운영 개선에 활용됩니다.",
       year: 2026, semester: 2, questions: JSON.parse(JSON.stringify(window.JCS_DEFAULT_QUESTIONS || [])),
       settings: { preventDuplicate: true, showTeacher: true }, is_open: true, opens_at: null, closes_at: null,

@@ -14,6 +14,6 @@ window.JCS_CONFIG = {
   AI_FUNCTION_NAME: "jcs-ai-summary",
 
   // 화면에 표시되는 사업명
-  PROGRAM_NAME: "너두나두 공동교육과정",
+  PROGRAM_NAME: "공동교육과정",
   ORG_NAME: "대전광역시교육청"
 };
