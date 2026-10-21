@@ -1,0 +1,61 @@
+# 공동교육과정 만족도 조사: 설문별 공유 페이지(survey/<주소용 코드>/index.html) 자동 갱신
+# 카카오톡 링크 미리보기에 설문 제목이 뜨게 하려고, 관리자가 만든 설문마다 제목이 들어간 페이지를 만들어 둔다.
+# 할 일: Supabase 설문 목록 읽기 → tools/survey_share_pages.py 실행 → 바뀐 게 있을 때만 커밋·푸시 → 사이트 다시 배포 요청
+# 직접 실행: GitHub 저장소 → Actions → "설문 공유 페이지 갱신" → Run workflow
+# 주의: 공개 저장소라 60일 동안 저장소에 변화가 없으면 GitHub가 정기 실행을 멈춤 → Actions 화면에서 'Enable workflow'
+name: 설문 공유 페이지 갱신
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # 매시 17분(UTC 기준이지만 매시간이라 상관없음). GitHub 사정으로 조금 늦어질 수 있음
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "survey/index.html"
+      - "survey/assets/config.js"
+      - "tools/survey_share_pages.py"
+
+permissions:
+  contents: write   # 공유 페이지 커밋·푸시
+  pages: write      # 사이트 다시 배포 요청 (GITHUB_TOKEN으로 푸시한 커밋은 Pages 배포를 일으키지 않음)
+
+concurrency:
+  group: survey-share-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 설문별 공유 페이지 만들기
+        run: python3 tools/survey_share_pages.py
+
+      - name: 바뀐 것이 있으면 커밋·푸시
+        id: push
+        run: |
+          git add -A survey
+          if git diff --cached --quiet; then
+            echo "바뀐 페이지 없음"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "설문 공유 페이지 자동 갱신"
+          for i in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: 사이트 다시 배포 요청
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"

@@ -26,7 +26,7 @@ MARK = "<!-- 자동 생성: tools/survey_share_pages.py 가 만든 설문별 공
 SLUG_RE = re.compile(r"^[a-z0-9-]{2,40}$")
 OG_RE = re.compile(r"<!-- og:start.*?<!-- og:end -->", re.S)
 DESC = "대전광역시교육청 공동교육과정 수강 학생 만족도 조사입니다. 익명으로 약 2분이면 참여할 수 있어요."
-IMAGE = "assets/img/og-survey.png"
+IMAGE = "assets/img/og-survey.png?v=2"   # 카카오 권장 2:1(1200x600). 그림을 바꾸면 v를 올려 미리보기 캐시를 피함
 
 
 def read(path):
@@ -53,7 +53,8 @@ def config():
 def fetch_surveys(api_base, key):
     req = urllib.request.Request(
         api_base + "/rest/v1/jcs_surveys?select=slug,title&order=created_at.asc",
-        headers={"apikey": key, "Authorization": "Bearer " + key, "Accept": "application/json"},
+        # 새 publishable 키는 apikey 헤더로만 보냄(Supabase 문서). 설문 목록은 로그인 없이 읽을 수 있는 공개 정보
+        headers={"apikey": key, "Accept": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=30) as res:
         data = json.load(res)
@@ -75,7 +76,7 @@ def og_block(title, page_url, base_url):
         '<meta property="og:url" content="%s">' % e(page_url),
         '<meta property="og:image" content="%s">' % e(base_url + IMAGE),
         '<meta property="og:image:width" content="1200">',
-        '<meta property="og:image:height" content="630">',
+        '<meta property="og:image:height" content="600">',
         '<meta property="og:image:alt" content="%s">' % e(title),
         '<meta name="twitter:card" content="summary_large_image">',
         "<!-- og:end -->",
