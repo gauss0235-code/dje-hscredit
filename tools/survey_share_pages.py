@@ -1,37 +1,61 @@
 #!/usr/bin/env python3
-"""설문별 공유 페이지 만들기 — 카카오톡 등 링크 미리보기에 설문 제목이 뜨게 함
+"""설문별 공유 페이지·미리보기 이미지 만들기 — 카카오톡 등 링크 미리보기에 설문 제목이 뜨게 함
 
-링크 미리보기 봇은 자바스크립트를 실행하지 않고 HTML의 <title>·og:title만 읽는다.
+링크 미리보기 봇은 자바스크립트를 실행하지 않고 HTML의 <title>·og 태그만 읽는다.
 그래서 survey/index.html을 틀로 삼아 Supabase에 있는 설문마다
 survey/<주소용 코드>/index.html 을 만들고, 그 안의 제목·og 태그를 설문 제목으로 바꿔 둔다.
 화면과 동작은 survey/index.html과 같고, 설문 코드는 window.JCS_SLUG로 넘긴다.
 
+- 미리보기 이미지: tools/og_card.html 틀에 '2026학년도 2학기'(작게)·'공동교육과정 만족도 조사'(크게)를 넣어
+  헤드리스 브라우저(크롬·엣지)로 찍어 survey/<코드>/og-<글자 해시>.png 로 저장. 글자가 같으면 다시 찍지 않음.
+  브라우저가 없거나 실패하면 공용 이미지(survey/assets/img/og-survey.png)를 씀.
+- 기본 주소(survey/index.html, …/survey/?s=코드)의 og 태그는 학생 화면이 기본으로 여는 설문
+  (응답 받는 중인 최신 설문, 없으면 최신 설문)의 제목·이미지로 바꿔 둔다.
 - 이 스크립트가 만든 페이지(맨 위 MARK 표시)만 고치거나 지운다. 지워진 설문의 페이지는 지움.
 - GitHub Actions(.github/workflows/survey-share-pages.yml)가 정기적으로 실행해 바뀐 것만 커밋한다.
 - 내 컴퓨터에서 실행:  python tools/survey_share_pages.py
   (학교망처럼 파이썬이 HTTPS 인증서를 못 믿는 곳에서는 설문 목록을 따로 받아 넘김:
-   python tools/survey_share_pages.py --json 설문목록.json   ← [{"slug": "...", "title": "..."}, ...])
+   python tools/survey_share_pages.py --json 설문목록.json
+   ← [{"slug", "title", "year", "semester", "is_open", "created_at"}, ...] created_at 오름차순)
+- 공용 이미지 다시 그리기:  python tools/survey_share_pages.py --generic-image
 """
+import base64
+import hashlib
 import html
 import json
 import os
 import re
 import shutil
+import struct
+import subprocess
 import sys
+import tempfile
 import urllib.request
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SURVEY_DIR = os.path.join(ROOT, "survey")
+CARD_TPL = os.path.join(ROOT, "tools", "og_card.html")
+FONT_DIR = os.path.join(SURVEY_DIR, "assets", "fonts")
 MARK = "<!-- 자동 생성: tools/survey_share_pages.py 가 만든 설문별 공유 페이지입니다. 직접 고치지 말고 survey/index.html을 고치세요. -->"
 SLUG_RE = re.compile(r"^[a-z0-9-]{2,40}$")
 OG_RE = re.compile(r"<!-- og:start.*?<!-- og:end -->", re.S)
+OG_FILE_RE = re.compile(r"^og-[0-9a-f]{10}\.png$")
+DEFAULT_TITLE = "공동교육과정 만족도 조사"
 DESC = "대전광역시교육청 공동교육과정 수강 학생 만족도 조사입니다. 익명으로 약 2분이면 참여할 수 있어요."
-IMAGE = "assets/img/og-survey.png?v=2"   # 카카오 권장 2:1(1200x600). 그림을 바꾸면 v를 올려 미리보기 캐시를 피함
+GENERIC_IMAGE = "assets/img/og-survey.png?v=3"   # 공용 이미지(1200x600, 카카오 권장 2:1). 그림을 바꾸면 v를 올림
+CARD_VERSION = "1"   # og_card.html 디자인을 바꾸면 올림 → 모든 설문 이미지를 다시 찍음
+CARD_SIZE = (1200, 600)
 
 
 def read(path):
     with open(path, encoding="utf-8") as f:
         return f.read()
+
+
+def write(path, text):
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
 
 
 def config():
@@ -52,7 +76,7 @@ def config():
 
 def fetch_surveys(api_base, key):
     req = urllib.request.Request(
-        api_base + "/rest/v1/jcs_surveys?select=slug,title&order=created_at.asc",
+        api_base + "/rest/v1/jcs_surveys?select=slug,title,year,semester,is_open,created_at&order=created_at.asc",
         # 새 publishable 키는 apikey 헤더로만 보냄(Supabase 문서). 설문 목록은 로그인 없이 읽을 수 있는 공개 정보
         headers={"apikey": key, "Accept": "application/json"},
     )
@@ -63,10 +87,112 @@ def fetch_surveys(api_base, key):
     return data
 
 
-def og_block(title, page_url, base_url):
+def clean_title(s):
+    return " ".join(str(s.get("title") or "").split()) or DEFAULT_TITLE
+
+
+def split_title(s):
+    """'2026학년도 2학기 공동교육과정 만족도 조사' → ('2026학년도 2학기', '공동교육과정 만족도 조사')"""
+    title = clean_title(s)
+    m = re.match(r"^(.*?학기)\s+(.+)$", title)
+    if m:
+        return m.group(1), m.group(2)
+    if s.get("year") and s.get("semester"):
+        return "%s학년도 %s학기" % (s["year"], s["semester"]), title
+    return "", title
+
+
+def current_survey(surveys):
+    """학생 화면이 ?s= 없이 열 때와 같은 설문: 응답 받는 중인 최신 설문, 없으면 최신 설문 (api.js getSurvey)"""
+    newest = sorted(surveys, key=lambda s: str(s.get("created_at") or ""), reverse=True)
+    for s in newest:
+        if s.get("is_open"):
+            return s
+    return newest[0] if newest else None
+
+
+# ---------- 미리보기 이미지 ----------
+def find_browser():
+    cands = [os.environ.get("CHROME_PATH", "")]
+    cands += [shutil.which(n) or "" for n in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "msedge")]
+    cands += [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    ]
+    return next((c for c in cands if c and os.path.isfile(c)), None)
+
+
+def png_size(path):
+    try:
+        with open(path, "rb") as f:
+            head = f.read(24)
+        if head[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        return struct.unpack(">II", head[16:24])
+    except OSError:
+        return None
+
+
+def font_css():
+    rules = []
+    for weight, name in ((600, "Paperlogy-6SemiBold"), (700, "Paperlogy-7Bold"), (800, "Paperlogy-8ExtraBold")):
+        with open(os.path.join(FONT_DIR, name + ".woff2"), "rb") as f:
+            data = base64.b64encode(f.read()).decode("ascii")
+        rules.append('@font-face { font-family: "Paperlogy"; src: url(data:font/woff2;base64,%s) format("woff2"); font-weight: %d; }'
+                     % (data, weight))
+    return "\n  ".join(rules)
+
+
+def render_card(term, main, out_png):
+    """og_card.html에 글자를 넣어 1200x600 PNG로 찍음. 성공하면 True"""
+    browser = find_browser()
+    if not browser:
+        print("  (브라우저가 없어 미리보기 이미지를 못 만들었어요 → 공용 이미지 사용)")
+        return False
+    page = read(CARD_TPL).replace("__FONTS__", font_css()) \
+        .replace("__TERM__", html.escape(term)).replace("__MAIN__", html.escape(main))
+    with tempfile.TemporaryDirectory() as tmp:
+        src, shot = os.path.join(tmp, "card.html"), os.path.join(tmp, "card.png")
+        write(src, page)
+        cmd = [browser, "--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--no-first-run",
+               "--force-device-scale-factor=1", "--window-size=%d,%d" % CARD_SIZE, "--virtual-time-budget=6000",
+               "--user-data-dir=" + os.path.join(tmp, "profile"), "--screenshot=" + shot, Path(src).as_uri()]
+        try:
+            subprocess.run(cmd, timeout=120, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError) as e:
+            print("  (미리보기 이미지 찍기 실패: %s → 공용 이미지 사용)" % e)
+            return False
+        size = png_size(shot)
+        if size != CARD_SIZE:
+            print("  (미리보기 이미지 크기가 %s라 쓰지 않아요 → 공용 이미지 사용)" % (size,))
+            return False
+        shutil.copyfile(shot, out_png)
+    return True
+
+
+def survey_image(s, folder):
+    """설문 미리보기 이미지를 (없으면 만들어) (survey/ 기준 상대 경로, 파일 이름, 새로 찍었는지)로 돌려줌.
+    찍지 못하면 공용 이미지"""
+    term, main = split_title(s)
+    key = hashlib.sha1(("%s|%s|%s" % (CARD_VERSION, term, main)).encode("utf-8")).hexdigest()[:10]
+    name = "og-%s.png" % key
+    path = os.path.join(folder, name)
+    slug = os.path.basename(folder)
+    if os.path.exists(path):
+        return slug + "/" + name, name, False
+    os.makedirs(folder, exist_ok=True)
+    print("미리보기 이미지 만드는 중:", slug, "·", term, "/", main)
+    if not render_card(term, main, path):
+        return GENERIC_IMAGE, None, False
+    return slug + "/" + name, name, True
+
+
+# ---------- 페이지 ----------
+def og_block(title, page_url, image_url):
     e = lambda s: html.escape(s, quote=True)
     return "\n  ".join([
-        "<!-- og:start  설문별 공유 페이지 -->",
+        "<!-- og:start  링크 미리보기. 기본 주소·설문별 공유 페이지 모두 tools/survey_share_pages.py가 설문 제목으로 채움 -->",
         '<meta name="description" content="%s">' % e(DESC),
         '<meta property="og:type" content="website">',
         '<meta property="og:site_name" content="대전광역시교육청 공동교육과정">',
@@ -74,16 +200,16 @@ def og_block(title, page_url, base_url):
         '<meta property="og:title" content="%s">' % e(title),
         '<meta property="og:description" content="%s">' % e(DESC),
         '<meta property="og:url" content="%s">' % e(page_url),
-        '<meta property="og:image" content="%s">' % e(base_url + IMAGE),
-        '<meta property="og:image:width" content="1200">',
-        '<meta property="og:image:height" content="600">',
+        '<meta property="og:image" content="%s">' % e(image_url),
+        '<meta property="og:image:width" content="%d">' % CARD_SIZE[0],
+        '<meta property="og:image:height" content="%d">' % CARD_SIZE[1],
         '<meta property="og:image:alt" content="%s">' % e(title),
         '<meta name="twitter:card" content="summary_large_image">',
         "<!-- og:end -->",
     ])
 
 
-def build_page(tpl, slug, title, base_url):
+def build_page(tpl, slug, title, base_url, image_rel):
     """survey/index.html(틀)에서 설문 하나의 공유 페이지를 만듦. 틀 모양이 바뀌어 못 바꾸면 멈춤"""
     out, steps = tpl, []
 
@@ -96,7 +222,7 @@ def build_page(tpl, slug, title, base_url):
     # 이 페이지는 /survey/<코드>/에 있으므로, assets/… 같은 상대 주소를 /survey/ 기준으로 풀게 함
     sub(r'(<meta charset="utf-8">)', '<meta charset="utf-8">\n  <base href="/survey/">')
     sub(r"<title>.*?</title>", "<title>%s</title>" % html.escape(title), re.S)
-    sub(OG_RE.pattern, og_block(title, base_url + slug + "/", base_url), re.S)
+    sub(OG_RE.pattern, og_block(title, base_url + slug + "/", base_url + image_rel), re.S)
     sub(r'(<script src="assets/config\.js)', '<script>window.JCS_SLUG = %s;</script>\n  <script src="assets/config.js'
         % json.dumps(slug))
     sub(r"(<!doctype html>)", "<!doctype html>\n" + MARK, re.I)
@@ -106,15 +232,28 @@ def build_page(tpl, slug, title, base_url):
 
 
 def is_generated(folder):
+    """이 스크립트가 만든 폴더인지: MARK가 있는 index.html, 또는 (중간에 멈춰) 미리보기 이미지만 있는 폴더"""
     try:
         return MARK in read(os.path.join(folder, "index.html"))[:1000]
     except OSError:
-        return False
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            return False
+        return bool(names) and all(OG_FILE_RE.match(n) for n in names)
 
 
 def main():
+    if sys.argv[1:] == ["--generic-image"]:
+        out = os.path.join(SURVEY_DIR, "assets", "img", "og-survey.png")
+        ok = render_card("대전광역시교육청", DEFAULT_TITLE, out)
+        sys.exit(0 if ok else "공용 이미지를 만들지 못했어요.")
+
     api_base, key, base_url = config()
-    tpl = read(os.path.join(SURVEY_DIR, "index.html"))
+    tpl_path = os.path.join(SURVEY_DIR, "index.html")
+    tpl = read(tpl_path)
+    if not OG_RE.search(tpl):
+        sys.exit("survey/index.html에 <!-- og:start --> … <!-- og:end --> 표시가 없어요.")
     if "JCS_SLUG" not in read(os.path.join(SURVEY_DIR, "assets", "survey.js")):
         sys.exit("survey.js가 window.JCS_SLUG를 읽지 않아요. 공유 페이지가 설문을 못 찾으니 멈춥니다.")
     if len(sys.argv) == 3 and sys.argv[1] == "--json":
@@ -125,10 +264,10 @@ def main():
     else:
         surveys = fetch_surveys(api_base, key)
 
-    pages = {}
+    changed = 0
+    pages, images = {}, {}
     for s in surveys:
         slug = str(s.get("slug") or "")
-        title = " ".join(str(s.get("title") or "").split()) or "공동교육과정 만족도 조사"
         folder = os.path.join(SURVEY_DIR, slug)
         if not SLUG_RE.match(slug):
             print("건너뜀(주소용 코드 형식이 아님):", slug)
@@ -136,18 +275,35 @@ def main():
         if os.path.exists(folder) and not is_generated(folder):
             print("건너뜀(같은 이름의 폴더가 이미 있음, 예: assets):", slug)
             continue
-        pages[slug] = build_page(tpl, slug, title, base_url)
+        image_rel, image_name, rendered = survey_image(s, folder)
+        changed += rendered
+        images[slug] = image_rel
+        pages[slug] = build_page(tpl, slug, clean_title(s), base_url, image_rel)
+        # 글자가 바뀌어 새로 찍은 경우 예전 이미지 지우기
+        if os.path.isdir(folder):
+            for f in os.listdir(folder):
+                if OG_FILE_RE.match(f) and f != image_name:
+                    os.remove(os.path.join(folder, f))
+                    changed += 1
 
-    changed = 0
     for slug, page in pages.items():
         path = os.path.join(SURVEY_DIR, slug, "index.html")
         if os.path.exists(path) and read(path) == page:
             continue
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(page)
+        write(path, page)
         changed += 1
         print("만듦·고침:", slug)
+
+    # 기본 주소(survey/index.html)의 미리보기: 학생 화면이 기본으로 여는 설문의 제목·이미지
+    cur = current_survey([s for s in surveys if str(s.get("slug") or "") in pages])
+    block = og_block(clean_title(cur) if cur else DEFAULT_TITLE, base_url,
+                     base_url + (images[cur["slug"]] if cur else GENERIC_IMAGE))
+    new_tpl = OG_RE.sub(lambda m: block, tpl, count=1)
+    if new_tpl != tpl:
+        write(tpl_path, new_tpl)
+        changed += 1
+        print("기본 주소 미리보기:", clean_title(cur) if cur else DEFAULT_TITLE)
 
     # 없어진 설문의 페이지 지우기. 설문 목록이 비어 오면(권한 문제 등) 아무것도 지우지 않음
     if surveys:
@@ -161,7 +317,7 @@ def main():
     else:
         print("설문 목록이 비어 있어 기존 페이지는 그대로 둡니다.")
 
-    print("설문 %d개 · 바뀐 페이지 %d개" % (len(pages), changed))
+    print("설문 %d개 · 바뀐 파일 %d개" % (len(pages), changed))
 
 
 if __name__ == "__main__":

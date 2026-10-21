@@ -14,7 +14,7 @@ on:
     paths:
       - "survey/index.html"
       - "survey/assets/config.js"
-      - "tools/survey_share_pages.py"
+      - "tools/**"
 
 permissions:
   contents: write   # 공유 페이지 커밋·푸시
@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 설문별 공유 페이지 만들기
+      - name: 설문별 공유 페이지·미리보기 이미지 만들기 (이미지는 러너에 설치된 크롬으로 찍음)
         run: python3 tools/survey_share_pages.py
 
       - name: 바뀐 것이 있으면 커밋·푸시
