@@ -178,6 +178,10 @@
         var q = s.id ? client().from("jcs_surveys").update(row).eq("id", s.id) : client().from("jcs_surveys").insert(row);
         return q.select().single().then(must);
       },
+      // 응답 받기 시작·마감만 바꿈. 문항 등 다른 칸은 보내지 않아, 오래 열어 둔 화면이 바뀐 문항을 예전 것으로 덮어쓰지 않음
+      setSurveyOpen: function (id, open) {
+        return client().from("jcs_surveys").update({ is_open: !!open }).eq("id", id).select().single().then(must);
+      },
       deleteSurvey: function (id) { return client().from("jcs_surveys").delete().eq("id", id).then(must); },
       listCourses: function (surveyId) {
         return client().from("jcs_courses").select("*").eq("survey_id", surveyId)
@@ -259,7 +263,7 @@
    * ===================================================================== */
   function UnconfiguredBackend() {
     var names = ["getSurvey", "listPublicCourses", "submit", "getSession", "signIn", "signOut", "getMe", "currentUser",
-      "verifyPassword", "changePassword", "listSurveys", "saveSurvey", "deleteSurvey", "listCourses", "saveCourse",
+      "verifyPassword", "changePassword", "listSurveys", "saveSurvey", "setSurveyOpen", "deleteSurvey", "listCourses", "saveCourse",
       "insertCourses", "deleteCourse", "deleteCourses", "deleteAllCourses", "fetchResponses", "deleteResponse",
       "listMembers", "upsertMember", "deleteMember", "listAiReports", "deleteAiReport", "generateAiReport"];
     var api = { mode: "unconfigured" };
@@ -468,6 +472,11 @@
         var n = Object.assign({ id: "demo-" + uid(), created_at: new Date().toISOString() }, clone(s));
         surveys.unshift(n);
         return later(n);
+      },
+      setSurveyOpen: function (id, open) {
+        var i = surveys.findIndex(function (x) { return x.id === id; });
+        surveys[i] = Object.assign({}, surveys[i], { is_open: !!open });
+        return later(surveys[i]);
       },
       deleteSurvey: function (id) { surveys = surveys.filter(function (x) { return x.id !== id; }); return later(null); },
       listCourses: function (sid) { return later(courses.filter(function (c) { return c.survey_id === sid && canSeeCourse(c); })); },

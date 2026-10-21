@@ -73,6 +73,13 @@
   function saveDraft() { try { sessionStorage.setItem(draftKey(state.course.id), JSON.stringify(state.answers)); } catch (e) { /* 무시 */ } }
   function clearDraft(cid) { try { sessionStorage.removeItem(draftKey(cid)); } catch (e) { /* 무시 */ } }
   function questions() { return (state.survey.questions || []).filter(function (q) { return q && q.id && q.type !== "section"; }); }
+  // 예전 서술형 2문항(good·improve)에 써 둔 글을 합친 문항(opinion)으로 옮김 (2026-10-22 통합 전 임시 저장분)
+  function carryOldAnswers(a) {
+    var hasOpinion = questions().some(function (q) { return q.id === "opinion"; });
+    if (!hasOpinion || a.opinion != null || !(a.good || a.improve)) return;
+    a.opinion = [a.good, a.improve].filter(function (t) { return typeof t === "string" && t.trim(); }).join("\n");
+    delete a.good; delete a.improve;
+  }
   function isAnswered(q) {
     var v = state.answers[q.id];
     if (v == null) return false;
@@ -110,7 +117,8 @@
     if (J.isDemo) document.getElementById("demo-banner").classList.remove("hidden");
     if (cfg.PROGRAM_NAME) document.getElementById("program-name").textContent = cfg.PROGRAM_NAME;
     if (cfg.ORG_NAME) document.getElementById("org-name").textContent = cfg.ORG_NAME;
-    api.getSurvey(params.get("s")).then(function (s) {
+    // 설문 코드: 주소의 ?s= 또는 설문별 공유 페이지(/survey/코드/)가 넣어 둔 JCS_SLUG
+    api.getSurvey(params.get("s") || window.JCS_SLUG || null).then(function (s) {
       if (!s) { centerState("info", "설문을 찾을 수 없어요", "QR코드를 다시 확인하거나 선생님께 문의해 주세요."); return; }
       state.survey = s;
       setHero(s);
@@ -236,6 +244,7 @@
   function openForm(c) {
     state.course = c;
     state.answers = loadDraft(c.id);
+    carryOldAnswers(state.answers);
     history.pushState({ step: "form" }, "");
     renderForm();
     window.scrollTo(0, 0);
@@ -391,10 +400,29 @@
         renderDone(true);
         return;
       }
+      if (info.code === "REQUIRED_MISSING" || info.code === "VALUE_INVALID") return reloadQuestions(info.message);
       toast(info.message, true);
       btn.disabled = false;
       btn.textContent = "응답 제출하기";
     }).then(function () { state.submitting = false; });
+  }
+
+  // 응답하는 사이 관리자가 문항을 바꾸면 서버가 예전 답안을 거절함 → 문항을 다시 불러와 새로 그림(쓴 답은 유지)
+  function reloadQuestions(fallbackMsg) {
+    var before = JSON.stringify(state.survey.questions || []);
+    return api.getSurvey(state.survey.slug).then(function (s) {
+      if (!s || JSON.stringify(s.questions || []) === before) throw new Error("unchanged");
+      state.survey = s;
+      carryOldAnswers(state.answers);
+      saveDraft();
+      setHero(s);
+      renderForm();
+      toast("설문 문항이 바뀌었어요. 확인한 뒤 다시 제출해 주세요.", true);
+    }).catch(function () {
+      toast(fallbackMsg, true);
+      var btn = document.getElementById("submit");
+      if (btn) { btn.disabled = false; btn.textContent = "응답 제출하기"; }
+    });
   }
 
   /* ---------- 3단계: 완료 ---------- */

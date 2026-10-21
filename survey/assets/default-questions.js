@@ -23,5 +23,5 @@ window.JCS_DEFAULT_QUESTIONS = [
   // 기준표대로 좋았던 점과 개선할 점을 한 문항으로 받음 (2026-10-22, 필수). 둘을 나누는 일은 AI 분석이 함
   { id: "opinion", type: "text", section: "서술형", required: true, textRole: "other", maxLength: 1000,
     text: "수업에 관해 좋았던 점과 개선해야 할 점을 자유롭게 적어 주세요.",
-    placeholder: "예) 실험 활동이 많아 내용을 이해하기 쉬웠어요. 다만 수업이 늦게 끝나 귀가가 늦었어요." }
+    placeholder: "예) 실험 활동이 많아 내용을 이해하기 쉬웠어요." }
 ];

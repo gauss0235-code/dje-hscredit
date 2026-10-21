@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>페이지를 찾을 수 없어요 | 대전광역시 고등학교 교육과정</title>
+  <script>
+    // 공동교육과정 만족도 조사: 새 설문의 공유 페이지(/survey/코드/)가 아직 만들어지기 전이면
+    // 같은 설문을 여는 일반 주소(/survey/?s=코드)로 바로 넘김 (공유 페이지는 GitHub Actions가 만듦)
+    (function () {
+      var m = location.pathname.match(/^\/survey\/([a-z0-9-]{2,40})\/?(?:index\.html)?$/);
+      if (m && m[1] !== "assets") location.replace("/survey/?s=" + m[1] + location.search.replace(/^\?/, "&"));
+    })();
+  </script>
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    html, body { margin: 0; }
+    body {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif; background: #f5f7fb; color: #1f2937;
+    }
+    main { max-width: 420px; text-align: center; }
+    h1 { font-size: 22px; margin: 0 0 10px; }
+    p { margin: 0 0 22px; color: #6b7280; line-height: 1.6; }
+    a { display: inline-block; padding: 12px 22px; border-radius: 12px; background: #2d5a8a; color: #fff; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>페이지를 찾을 수 없어요</h1>
+    <p>주소가 바뀌었거나 없는 페이지예요.<br>주소를 다시 확인해 주세요.</p>
+    <a href="/">처음 화면으로</a>
+  </main>
+</body>
+</html>
