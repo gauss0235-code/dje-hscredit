@@ -23,7 +23,7 @@ window.JCS_DEFAULT_QUESTIONS = [
   { id: "good", type: "text", section: "서술형", required: false, textRole: "positive", maxLength: 1000,
     text: "수업에 관해 좋았던 점을 자유롭게 적어 주세요.",
     placeholder: "예) 실험 활동이 많아 내용을 이해하기 쉬웠어요." },
-  { id: "improve", type: "text", section: "서술형", required: false, textRole: "improve", maxLength: 1000,
+  { id: "improve", type: "text", section: "서술형", required: true, textRole: "improve", maxLength: 1000,
     text: "수업에 관해 개선해야 할 점을 자유롭게 적어 주세요.",
     placeholder: "예) 수업 시간이 늦게 끝나 귀가가 늦었어요." }
 ];
