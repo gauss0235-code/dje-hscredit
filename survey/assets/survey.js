@@ -115,8 +115,9 @@
   /* ---------- 초기화 ---------- */
   function init() {
     if (J.isDemo) document.getElementById("demo-banner").classList.remove("hidden");
-    if (cfg.PROGRAM_NAME) document.getElementById("program-name").textContent = cfg.PROGRAM_NAME;
-    if (cfg.ORG_NAME) document.getElementById("org-name").textContent = cfg.ORG_NAME;
+    // 상단에는 기관명(대전광역시교육청)만 표시 (2026-10-22). 사업명은 제목에 들어 있음
+    var orgEl = document.getElementById("org-name");
+    if (cfg.ORG_NAME && orgEl) orgEl.textContent = cfg.ORG_NAME;
     // 설문 코드: 주소의 ?s= 또는 설문별 공유 페이지(/survey/코드/)가 넣어 둔 JCS_SLUG
     api.getSurvey(params.get("s") || window.JCS_SLUG || null).then(function (s) {
       if (!s) { centerState("info", "설문을 찾을 수 없어요", "QR코드를 다시 확인하거나 선생님께 문의해 주세요."); return; }

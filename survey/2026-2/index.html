@@ -30,7 +30,7 @@
   <link rel="apple-touch-icon" href="../favicon-180x180.png">
   <link rel="stylesheet" href="assets/fonts/fonts.css?v=20261021">
   <link rel="stylesheet" href="assets/base.css?v=20261021">
-  <link rel="stylesheet" href="assets/survey.css?v=20261022b">
+  <link rel="stylesheet" href="assets/survey.css?v=20261022d">
 </head>
 <body>
   <div id="demo-banner" class="demo-banner hidden">데모 모드 — 가상 데이터로 동작하며 응답은 저장되지 않습니다.</div>
@@ -47,9 +47,11 @@
       <circle cx="340" cy="40" r="118" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.5"/>
     </svg>
     <div class="hero-inner">
-      <div class="hero-kicker"><span id="org-name">대전광역시교육청</span><i></i><span id="program-name">공동교육과정</span></div>
-      <h1 class="hero-title" id="survey-title"><span class="t-main">만족도 조사</span></h1>
-      <div class="hero-chips" id="hero-chips"></div>
+      <div class="hero-kicker"><span id="org-name">대전광역시교육청</span></div>
+      <!-- hero:start  설문 제목·칩. tools/survey_share_pages.py가 설문 정보로 미리 채움(화면이 열리자마자 제목이 보이게) -->
+      <h1 class="hero-title" id="survey-title"><span class="t-term">2026학년도 2학기</span><span class="t-main">공동교육과정 만족도 조사</span></h1>
+      <div class="hero-chips" id="hero-chips"><span class="hero-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>익명 응답</span><span class="hero-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>약 2분</span><span class="hero-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>11문항</span></div>
+      <!-- hero:end -->
     </div>
   </header>
 
@@ -67,6 +69,6 @@
   <script src="assets/config.js?v=20261021b"></script>
   <script src="assets/default-questions.js?v=20261022c"></script>
   <script src="assets/api.js?v=20261022c"></script>
-  <script src="assets/survey.js?v=20261022c"></script>
+  <script src="assets/survey.js?v=20261022d"></script>
 </body>
 </html>
